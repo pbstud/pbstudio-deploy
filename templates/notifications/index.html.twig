@@ -9,7 +9,7 @@
                 <div class="sessions-used-header">
                     <h2>Mis notificaciones</h2>
                     <a href="{{ path('profile') }}" class="link">
-                        <span class="icon-individual"></span>Regresar a mi perfil
+                        <i class="bi bi-person"></i>Regresar a mi perfil
                     </a>
                 </div>
 
@@ -33,19 +33,41 @@
                         {%- endif -%}
                     {%- endfor -%}
 
-                    {# Toolbar contextual — aparece solo con seleccion activa #}
-                    <div class="notifications-toolbar" data-notif-toolbar>
-                        <span class="notifications-toolbar__count" data-notif-toolbar-count>0 seleccionadas</span>
-                        <button type="button" class="notifications-toolbar__btn" data-bulk-read>Marcar leídas</button>
-                        <button type="button" class="notifications-toolbar__btn" data-bulk-unread>Marcar no leídas</button>
-                        <button type="button" class="notifications-toolbar__btn notifications-toolbar__btn--danger" data-bulk-delete>Eliminar</button>
-                        <button type="button" class="notifications-toolbar__btn notifications-toolbar__btn--outline" data-bulk-cancel>Cancelar</button>
-                    </div>
-
-                    {# Controles de seleccion rapida #}
-                    <div class="notifications-select-controls">
-                        <button type="button" class="notifications-select-btn" data-select-all>Seleccionar todos</button>
-                        <button type="button" class="notifications-select-btn" data-select-invert>Selección inversa</button>
+                    {# Barra de controles: contador izquierda, botones derecha — siempre visible #}
+                    <div class="notifications-controls-row">
+                        <div class="notifications-controls-row__left">
+                            <span class="notifications-toolbar__count" data-notif-toolbar-count></span>
+                        </div>
+                        <div class="notifications-controls-row__right">
+                            <div class="notifications-select-controls">
+                                <button type="button" class="notifications-select-btn" data-select-all>
+                                    <i class="bi bi-check2-square btn-icon"></i>
+                                    <span class="btn-label">Seleccionar todos</span>
+                                </button>
+                                <button type="button" class="notifications-select-btn" data-select-invert>
+                                    <i class="bi bi-arrow-down-up btn-icon"></i>
+                                    <span class="btn-label">Selección inversa</span>
+                                </button>
+                            </div>
+                            <div class="notifications-toolbar" data-notif-toolbar>
+                                <button type="button" class="notifications-toolbar__btn" data-bulk-read>
+                                    <i class="bi bi-eye btn-icon"></i>
+                                    <span class="btn-label">Marcar leídas</span>
+                                </button>
+                                <button type="button" class="notifications-toolbar__btn notifications-toolbar__btn--unread" data-bulk-unread>
+                                    <i class="bi bi-eye-slash btn-icon"></i>
+                                    <span class="btn-label">Marcar no leídas</span>
+                                </button>
+                                <button type="button" class="notifications-toolbar__btn notifications-toolbar__btn--danger" data-bulk-delete>
+                                    <i class="bi bi-trash btn-icon"></i>
+                                    <span class="btn-label">Eliminar</span>
+                                </button>
+                                <button type="button" class="notifications-toolbar__btn notifications-toolbar__btn--outline" data-bulk-cancel>
+                                    <i class="bi bi-x-circle btn-icon"></i>
+                                    <span class="btn-label">Cancelar</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <ul class="notifications-page-list">
@@ -144,14 +166,16 @@
         /* ── Toolbar ───────────────────────────────────────────────────────── */
         var toolbar     = document.querySelector('[data-notif-toolbar]');
         var toolbarCount = document.querySelector('[data-notif-toolbar-count]');
+        var controlsLeft = document.querySelector('.notifications-controls-row__left');
 
         function updateToolbar() {
             var n = selectedIds.size;
             if (n > 0) {
-                toolbar.classList.add('is-active');
                 toolbarCount.textContent = n + (n === 1 ? ' seleccionada' : ' seleccionadas');
+                if (controlsLeft) { controlsLeft.classList.add('show-count'); }
             } else {
-                toolbar.classList.remove('is-active');
+                toolbarCount.textContent = '';
+                if (controlsLeft) { controlsLeft.classList.remove('show-count'); }
             }
         }
 

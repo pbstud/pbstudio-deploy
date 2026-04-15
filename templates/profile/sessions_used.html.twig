@@ -152,7 +152,7 @@
                         {% set can_rate = reservation.isAvailable and session and session.dateStart and session.dateStart >= date('-1 month') %}
                         <div class="reserv_class clearfix">
                             <div class="class disabled">
-                                <span class="icon-{{ session and session.individual ? 'individual' : 'group' }}"></span>
+                                <i class="bi bi-{{ session and session.individual ? 'person' : 'people' }}"></i>
                                 <h6>{{ session and session.discipline ? session.discipline : '-' }}</h6>
                                 <p>{{ session and session.timeStart ? session.timeStart|date('h:i a') : '-' }}</p>
                                 <p>

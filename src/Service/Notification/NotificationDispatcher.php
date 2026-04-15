@@ -8,7 +8,7 @@ use App\Entity\Notification;
 use App\Entity\User;
 use App\Repository\NotificationRepository;
 
-final class NotificationDispatcher
+final class NotificationDispatcher implements NotificationDispatcherInterface
 {
     public function __construct(
         private readonly NotificationRepository $repository,

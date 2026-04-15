@@ -6,12 +6,14 @@ namespace App\Service\Notification;
 
 use App\Entity\Notification;
 use App\Entity\User;
+use App\Repository\ReservationRepository;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
 final readonly class NotificationResolver
 {
     public function __construct(
         private UrlGeneratorInterface $urlGenerator,
+        private ReservationRepository $reservationRepository,
     ) {
     }
 
@@ -32,7 +34,7 @@ final readonly class NotificationResolver
             // Clases
             'session_reminder'         => $this->fallbackTo(route: 'reserved_sessions'),
             'session_updated'          => $this->fallbackTo(route: 'reserved_sessions'),
-            'rating_pending'           => $this->fallbackTo(route: 'sessions_used'),
+            'rating_pending'           => $this->resolveRatingPending($notification, $user),
 
             // Pagos y paquetes
             'payment_confirmed'        => $this->fallbackTo(route: 'sessions_available'),
@@ -55,6 +57,35 @@ final readonly class NotificationResolver
                 message: 'No se pudo abrir el destino de la notificacion. Mostramos tu cuenta general.',
             ),
         };
+    }
+
+    /**
+     * @return array{targetUrl: string, fallback: bool, message: string|null}
+     */
+    private function resolveRatingPending(Notification $notification, User $user): array
+    {
+        $payload = $notification->getPayload();
+        $reservationId = $payload['reservation_id'] ?? null;
+
+        if ($reservationId !== null) {
+            $reservation = $this->reservationRepository->findOneBy([
+                'id'   => $reservationId,
+                'user' => $user,
+            ]);
+
+            if ($reservation !== null) {
+                return $this->fallbackTo(
+                    route: 'session_used_rate',
+                    routeParams: ['id' => $reservation->getId()],
+                );
+            }
+        }
+
+        return $this->fallbackTo(
+            route: 'sessions_used',
+            fallback: true,
+            message: 'No se encontro la clase para calificar. Mostrando el historial de clases.',
+        );
     }
 
     /**

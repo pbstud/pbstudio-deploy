@@ -8,7 +8,7 @@
         <div class="ham_link">
             {% if app.user %}
                 <a href="{{ path('profile') }}" class="link">
-                    <span class="icon-individual"></span>Mi cuenta
+                    <i class="bi bi-person"></i>Mi cuenta
                 </a>
                 <div
                     class="pb-notification-center{% if app.request.attributes.get('_route') == 'notifications' %} is-hidden-on-page{% endif %}"
@@ -74,8 +74,9 @@
                 <a href="#" class="link reserve-class-toggle">Reservar clase</a>
             </div>
             <div class="social">
-                <a href="https://www.facebook.com/pbstudiomx/" target="blank"><span class="icon-fb"></span></a>
-                <a href="https://www.instagram.com/pbstudiomx/" target="blank"><span class="icon-instagram-fill"></span></a>
+                <a href="https://www.facebook.com/pbstudiomx/" target="blank"><i class="bi bi-facebook"></i></a>
+                <a href="https://www.instagram.com/pbstudiomx/" target="blank"><i class="bi bi-instagram"></i></a>
+                <a href="https://wa.me/52552920036" target="blank" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>
             </div>
         </div>
         <ul class="legal">

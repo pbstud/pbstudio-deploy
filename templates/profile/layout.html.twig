@@ -7,7 +7,7 @@
                 <h1><span>¡Hola! </span>{{ app.user.name }}</h1>
                 {% if app.request.get('_route') != 'profile' %}
                     <a href="{{ path('profile') }}" class="link">
-                        <span class="icon-individual"></span>Regresar a mi perfil
+                        <i class="bi bi-person"></i>Regresar a mi perfil
                     </a>
                 {% endif %}
 

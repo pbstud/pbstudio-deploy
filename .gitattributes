@@ -1,0 +1,8 @@
+# Normalizar line endings: LF en el repo para todos los archivos de texto
+* text=auto
+
+# Scripts bash — forzar LF siempre (CRLF rompe bash en Linux)
+*.sh text eol=lf
+
+# Scripts PowerShell — CRLF en Windows está bien, pero LF también funciona
+*.ps1 text eol=lf

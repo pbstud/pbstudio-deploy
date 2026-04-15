@@ -7,7 +7,7 @@ namespace App\Command;
 use App\Entity\Notification;
 use App\Repository\TransactionRepository;
 use App\Service\Mailer\TransactionMailer;
-use App\Service\Notification\NotificationDispatcher;
+use App\Service\Notification\NotificationDispatcherInterface;
 use App\Repository\NotificationRepository;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -23,7 +23,7 @@ class TransactionExpiration24hReminderCommand extends AbstractCommand
     public function __construct(
         private readonly TransactionRepository $transactionRepository,
         private readonly TransactionMailer $transactionMailer,
-        private readonly NotificationDispatcher $notificationDispatcher,
+        private readonly NotificationDispatcherInterface $notificationDispatcher,
         private readonly NotificationRepository $notificationRepository,
     ) {
         parent::__construct();

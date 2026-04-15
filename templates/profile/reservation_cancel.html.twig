@@ -89,7 +89,7 @@
 
             <div class="grid-1-6 right reserve-{{ grid_class }}">
                 <div class="class {{ reserveClass }}">
-                    <span class="icon-{{  session.individual ? 'individual' : 'group' }}"></span>
+                    <i class="bi bi-{{ session.individual ? 'person' : 'people' }}"></i>
                     <h6>{{ discipline }}</h6>
                     <p>{{ session.timeStart|date('h:i a') }}</p>
                     <p><strong>{{ session.instructor.profile.firstname }}</strong></p>

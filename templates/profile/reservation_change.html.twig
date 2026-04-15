@@ -22,7 +22,7 @@
                 {# session \App\Entity\Session #}
                 <div class="reserv_class clearfix">
                     <div class="class {{ session.discipline|replace({' ': '-'})|lower }}">
-                        <span class="icon-{{  session.individual ? 'individual' : 'group' }}"></span>
+                        <i class="bi bi-{{ session.individual ? 'person' : 'people' }}"></i>
                         <h6>{{ session.discipline }}</h6>
                         <p>{{ session.timeStart|date('h:i a') }}</p>
                         <p>{{ session.instructor.profile.firstname }}</p>
@@ -85,7 +85,7 @@
                                        data-type="{{ session.type }}"
                                        data-discipline="{{ session.discipline.id }}"
                                        data-instructor="{{ session.instructor.id }}">
-                                        <span class="icon-{{ session.individual ? 'individual' : 'group' }}"></span>
+                                        <i class="bi bi-{{ session.individual ? 'person' : 'people' }}"></i>
                                         <h6>{{ session.discipline }}</h6>
                                         <p>{{ session.timeStart|date('h:i a') }}</p>
                                         <p>{{ session.instructor.profile.firstname }}</p>

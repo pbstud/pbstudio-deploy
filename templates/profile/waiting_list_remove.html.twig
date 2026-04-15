@@ -13,7 +13,7 @@
             <div class="clearfix class_pop {{ session.type|PackageSessionType|lower }}">
                 <div class="grid-1-6 right reserve-{{ session.discipline|replace({' ': '-'})|lower }}">
                     <div class="class {{ session.discipline|replace({' ': '-'})|lower }}">
-                        <span class="icon-{{ 'i' == session.type ? 'individual' : 'group' }}"></span>
+                        <i class="bi bi-{{ 'i' == session.type ? 'person' : 'people' }}"></i>
                         <h6>{{ session.discipline }}</h6>
                         <p>{{ session.timeStart|date('h:i a') }}</p>
                         <p><strong>{{ session.instructor.profile.firstname }}</strong></p>

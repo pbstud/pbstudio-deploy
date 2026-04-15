@@ -16,21 +16,21 @@
                 <div class="data-group">
                     <h5>Información Personal</h5>
                     <div class="data-field">
-                        <span class="data-icon">🧑</span>
+                        <span class="data-icon"><i class="bi bi-person"></i></span>
                         <div>
                             <label>Nombre</label>
                             <p>{{ user.name }} {{ user.lastname }}</p>
                         </div>
                     </div>
                     <div class="data-field">
-                        <span class="data-icon">📨</span>
+                        <span class="data-icon"><i class="bi bi-envelope"></i></span>
                         <div>
                             <label>Email</label>
                             <p>{{ user.email }}</p>
                         </div>
                     </div>
                     <div class="data-field">
-                        <span class="data-icon">📱</span>
+                        <span class="data-icon"><i class="bi bi-telephone"></i></span>
                         <div>
                             <label>Teléfono</label>
                             <p>{{ user.phone | default('-----') }}</p>
