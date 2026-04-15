@@ -1,0 +1,46 @@
+/*!
+ * 
+ * Super simple wysiwyg editor v0.8.18
+ * https://summernote.org
+ * 
+ * 
+ * Copyright 2013- Alan Hong. and other contributors
+ * summernote may be freely distributed under the MIT license.
+ * 
+ * Date: 2020-05-20T16:47Z
+ * 
+ */
+
+/*!
+ * iCheck v1.0.2, http://git.io/arlzeA
+ * ===================================
+ * Powerful jQuery and Zepto plugin for checkboxes and radio buttons customization
+ *
+ * (c) 2013 Damir Sultanov, http://fronteed.com
+ * MIT Licensed
+ */
+
+/*!
+* Parsley.js
+* Version 2.9.2 - built Tue, Dec 10th 2019, 6:18 pm
+* http://parsleyjs.org
+* Guillaume Potier - <guillaume@wisembly.com>
+* Marc-Andre Lafortune - <petroselinum@marc-andre.ca>
+* MIT Licensed
+*/
+
+/**
+	 * @preserve FastClick: polyfill to remove click delays on browsers with touch UIs.
+	 *
+	 * @codingstandard ftlabs-jsv2
+	 * @copyright The Financial Times Limited [All Rights Reserved]
+	 * @license MIT License (see LICENSE.txt)
+	 */
+
+/**
+ * inputevent - Alleviate browser bugs for input events
+ * https://github.com/marcandre/inputevent
+ * @version v0.0.3 - (built Thu, Apr 14th 2016, 5:58 pm)
+ * @author Marc-Andre Lafortune <github@marc-andre.ca>
+ * @license MIT
+ */
