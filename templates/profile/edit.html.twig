@@ -1,0 +1,139 @@
+{% extends 'profile/layout.html.twig' %}
+
+{% block page_title %}Editar datos de usuario | {% endblock %}
+
+{% block account_content %}
+    <div class="row">
+        <div class="content">
+            <h2 class="profile-edit-title">Editar datos de usuario</h2>
+            <div class="user-data-section user-data-edit-section" id="profile_container">
+                {{ form_start(form, {
+                    'action': path('profile_edit'),
+                    'attr': {
+                        'id': 'profile_form_edit',
+                    }
+                }) }}
+                    {{ form_errors(form) }}
+                    <fieldset class="data-group data-group-form">
+                        <h5>Información Personal</h5>
+                        {{ form_widget(form.name, {
+                            'attr': {
+                                'placeholder': 'Nombre',
+                                'autofocus': 'autofocus'
+                            }
+                        }) }}
+                        {{ form_errors(form.name) }}
+
+                        {{ form_widget(form.lastname, {
+                            'attr': {
+                                'placeholder': 'Apellidos',
+                            }
+                        }) }}
+                        {{ form_errors(form.lastname) }}
+
+                        {{ form_widget(form.email, {
+                            'attr': {
+                                'placeholder': 'Correo',
+                            }
+                        }) }}
+                        {{ form_errors(form.email) }}
+
+                        {{ form_widget(form.phone, {
+                            'attr': {
+                                'placeholder': 'Teléfono',
+                            }
+                        }) }}
+                        {{ form_errors(form.phone) }}
+
+                        {{ form_widget(form.birthday, {
+                            'attr': {
+                                'placeholder': 'Fecha de cumpleaños (dd/mm)',
+                                'maxlength': '5',
+                                'inputmode': 'numeric',
+                                'autocomplete': 'bday',
+                                'class': 'birthday-mask'
+                            }
+                        }) }}
+                        {{ form_errors(form.birthday) }}
+                        <small>Opcional. Formato día/mes: puedes escribir 1205, 12/05 o 12-05.</small>
+                    </fieldset>
+
+                    <fieldset class="data-group data-group-form">
+                        <h5>Contacto de Emergencia</h5>
+
+                        {{ form_widget(form.emergencyContactName, {
+                            'attr': {
+                                'placeholder': 'Nombre',
+                            }
+                        }) }}
+                        {{ form_errors(form.emergencyContactName) }}
+
+                        {{ form_widget(form.emergencyContactPhone, {
+                            'attr': {
+                                'placeholder': 'Teléfono',
+                            }
+                        }) }}
+                        {{ form_errors(form.emergencyContactPhone) }}
+                    </fieldset>
+
+                    <div class="profile-edit-actions">
+                        <button type="submit" class="btn-edit-submit">Actualizar</button>
+                        <a href="{{ path('profile') }}" class="btn-edit-cancel">Cancelar</a>
+                    </div>
+
+                    {{ form_rest(form) }}
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+
+    {{ include('profile/_transactions.html.twig') }}
+
+    {{ include('package/_aside.html.twig') }}
+
+    <script>
+        (function () {
+            const input = document.querySelector('#profile_form_edit .birthday-mask');
+            if (!input) {
+                return;
+            }
+
+            const normalizeLive = (value) => {
+                const digits = (value || '').replace(/\D/g, '').slice(0, 4);
+                if (digits.length <= 2) {
+                    return digits;
+                }
+
+                return digits.slice(0, 2) + '/' + digits.slice(2);
+            };
+
+            const normalizeOnBlur = (value) => {
+                const digits = (value || '').replace(/\D/g, '').slice(0, 4);
+                if (!digits) {
+                    return '';
+                }
+
+                if (digits.length === 3) {
+                    const day = digits.slice(0, 1).padStart(2, '0');
+                    const month = digits.slice(1).padStart(2, '0');
+
+                    return day + '/' + month;
+                }
+
+                if (digits.length === 4) {
+                    return digits.slice(0, 2) + '/' + digits.slice(2);
+                }
+
+                return digits;
+            };
+
+            input.addEventListener('input', function () {
+                this.value = normalizeLive(this.value);
+            });
+
+            input.addEventListener('blur', function () {
+                this.value = normalizeOnBlur(this.value);
+            });
+        })();
+    </script>
+{% endblock account_content %}

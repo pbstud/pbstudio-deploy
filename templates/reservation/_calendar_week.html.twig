@@ -1,0 +1,71 @@
+<div class="date">
+    {% if weekPrev %}
+        <a href="{{ path('reservation_calendar', {
+            'slug': branchOffice.slug,
+            'weekno': weekPrev.weekOfYear,
+            'year': weekPrev.yearIso
+        }) }}" id="lwprev" title="{{ branchOffice.name }} | Semana {{ weekPrev.weekOfYear }} {{ weekPrev.yearIso }}">
+            <span class="icon-flecha-izq"></span>
+        </a>
+    {% endif %}
+
+    <h4>{{ period.start.day }} - {{ period.end.day }} de {{ period.end.monthName }}</h4>
+
+    {% if weekNext %}
+        <a href="{{ path('reservation_calendar', {
+            'slug': branchOffice.slug,
+            'weekno': weekNext.weekOfYear,
+            'year': weekNext.yearIso
+        }) }}" id="lwnext" title="{{ branchOffice.name }} | Semana {{ weekNext.weekOfYear }} {{ weekNext.yearIso }}">
+            <span class="icon-flecha-der"></span>
+        </a>
+    {% endif %}
+</div>
+
+<div class="private-class-warning">
+    <p>Para reservar clases individuales por favor comunicate al tel: 55 5292 0036</p>
+</div>
+
+<hr />
+
+<div class="clearfix" id="day-content">
+    <div class="wrapper">
+        {% for day in period %}
+            <div class="day">
+                <h6><small>{{ day.dayName[:3] ~ ' ' ~ day.day }}</small></h6>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="calendar clearfix">
+    {% for day in period %}
+        {# day \Carbon\Carbon #}
+        <div class="day">
+            <h6><small>{{ day.dayName[:3] ~ ' ' ~ day.day }}</small></h6>
+            {% for session in sessions[day.toDateString] ?? [] %}
+                {# session \App\Entity\Session #}
+                {% set class_full = session.full ? 'disabled' : '' %}
+                {% set class_description = session.information is not null ? session.information|trim : '' %}
+                <a href="#" data-url="{{ path('reservation_confirm', { 'id': session.id }) }}"
+                   class="class {{ class_full }} {{ session.discipline|slug|lower }}{{ class_description != '' ? ' class--with-description' : '' }}"
+                   data-remodal
+                   data-event data-event-type="{{ session.type }}"
+                   data-event-discipline="{{ session.discipline }}"
+                   data-event-instructor="{{ session.instructor.profile.firstname }}">
+
+                    <span class="icon-{{  session.individual ? 'individual' : 'group' }}"></span>
+                    <h6>{{ session.discipline }}</h6>
+                    <p>{{ session.timeStart|date('h:i a') }}</p>
+                    <p>{{ session.instructor.profile.firstname }}</p>
+                    {% if class_description != '' %}
+                        <div class="class-description js-class-description" data-collapsed="1">
+                            <div class="class-description__text js-class-description-text">{{ class_description }}</div>
+                            <span class="class-description__toggle js-class-description-toggle" role="button" tabindex="0" aria-expanded="false">Ver mas</span>
+                        </div>
+                    {% endif %}
+                </a>
+            {% endfor %}
+        </div>
+    {% endfor %}
+</div>

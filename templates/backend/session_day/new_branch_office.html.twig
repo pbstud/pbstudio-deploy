@@ -1,0 +1,38 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% set page_section = 'Clases x día' %}
+{% set page_title = 'Programar día' %}
+{% set return_to = path('backend_session_day') %}
+
+{% block content %}
+    {% embed 'backend/default/embed/form_common.html.twig' with { 'page_section': page_section, 'page_title': page_title } %}
+        {% block body %}
+            <form action="{{ path('backend_session_day_new') }}" method="get" class="form-horizontal">
+                <div class="item form-group">
+                    <label class="col-form-label col-md-2 label-align text-right" for="branch_office">Sucursal:</label>
+                    <div class="col-md-6 col-sm-6">
+                        <select name="branch_office" id="branch_office" class="form-control">
+                            <option value="">Seleccione Sucursal</option>
+                            {% for branchOffice in branchOffices %}
+                                <option value="{{ branchOffice.id }}">{{ branchOffice.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="ln_solid"></div>
+
+                <div class="form-group">
+                    <div class="col-xs-12">
+                        <div class="pull-right">
+                            <button type="submit" class="btn btn-primary">
+                                Continuar
+                            </button>
+                        </div>
+                        <div class="clearfix"></div>
+                    </div>
+                </div>
+            </form>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

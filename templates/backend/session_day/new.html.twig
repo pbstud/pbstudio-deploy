@@ -1,0 +1,1247 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% set page_section = 'Clases x día' %}
+{% set page_title = 'Programar día: ' ~ branchOffice.name %}
+{% set return_to = path('backend_session_day_new_branch_office') %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        #session-date-list .js-date-row {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            border-radius: 4px;
+        }
+
+        #session-date-list .session-date-input-wrap {
+            flex: 1 1 auto;
+            display: flex;
+            align-items: stretch;
+        }
+
+        #session-date-list .js-session-date {
+            flex: 1 1 auto;
+            min-width: 0;
+            padding-right: 10px !important;
+            border-radius: 4px 0 0 4px;
+            border-right: 0;
+        }
+
+        #session-date-list .js-open-date-picker {
+            position: static;
+            width: 32px;
+            min-width: 32px;
+            height: 34px;
+            margin-left: 0;
+            padding: 0;
+            border: 1px solid #ccc;
+            border-left: 1px solid #ddd;
+            border-right: 0;
+            border-radius: 0;
+            background: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            cursor: pointer;
+        }
+
+        #session-date-list .js-remove-date-row {
+            position: static !important;
+            width: 32px;
+            min-width: 32px;
+            height: 34px;
+            margin-left: -6px;
+            padding: 0 !important;
+            border-left: 1px solid #ddd;
+            border-radius: 0 4px 4px 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #session-date-list .js-remove-date-row.is-disabled {
+            opacity: 0.35;
+            pointer-events: none;
+        }
+
+        .session-date-add-wrap {
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        .import-date-block {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .import-date-block label {
+            width: 220px;
+            max-width: 100%;
+            margin-left: auto;
+            margin-bottom: 6px;
+            text-align: left;
+        }
+
+        #import-date-wrap {
+            width: 220px;
+            max-width: 100%;
+            margin-left: auto;
+            display: flex;
+            align-items: stretch;
+        }
+
+        .import-date-actions {
+            width: 220px;
+            max-width: 100%;
+            margin-left: auto;
+            margin-top: 8px;
+            text-align: right;
+        }
+
+        #import-source-date {
+            flex: 1 1 auto;
+            min-width: 0;
+            border-radius: 4px 0 0 4px;
+            border-right: 0;
+        }
+
+        #import-open-date-picker {
+            width: 32px;
+            min-width: 32px;
+            height: 34px;
+            padding: 0;
+            border-left: 1px solid #ddd;
+            border-radius: 0 4px 4px 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #session-day-legacy-tab .session-day-legacy-scroll {
+            max-height: calc(100vh - 330px);
+            overflow-y: scroll;
+            overflow-x: auto;
+            scrollbar-gutter: stable;
+            background-color: #fff;
+        }
+
+        #session-day-legacy-tab #legacy-session-grid {
+            margin-bottom: 0;
+            min-width: 100%;
+        }
+
+        #session-day-legacy-tab #legacy-session-grid th,
+        #session-day-legacy-tab #legacy-session-grid td {
+            min-width: 130px;
+            vertical-align: top;
+        }
+
+        #session-day-legacy-tab #legacy-session-grid th:first-child,
+        #session-day-legacy-tab #legacy-session-grid td:first-child {
+            min-width: 75px;
+            width: 75px;
+        }
+
+        #session-day-legacy-tab #legacy-session-grid thead th,
+        #session-day-modern-tab #modern-session-grid thead th {
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            line-height: 1.3 !important;
+            white-space: nowrap;
+            padding: 9px 10px !important;
+        }
+
+        #session-day-legacy-tab #legacy-session-grid td .form-control,
+        #session-day-modern-tab #modern-session-grid td .form-control {
+            font-size: 14px !important;
+            line-height: 1.35 !important;
+            height: 34px !important;
+            padding: 6px 10px !important;
+        }
+
+        #session-day-legacy-tab #legacy-session-grid td input[type="time"],
+        #session-day-modern-tab #modern-session-grid td input[type="time"] {
+            font-size: 14px !important;
+        }
+
+        #session-day-legacy-tab #legacy-session-grid thead th {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            background-color: #f5f7fa;
+            box-shadow: inset 0 -1px 0 #d5dde6;
+        }
+
+        #session-day-modern-tab .session-day-modern-scroll {
+            height: auto;
+            overflow-y: scroll;
+            overflow-x: auto;
+            scrollbar-gutter: stable;
+            background-color: #fff;
+        }
+
+        #session-day-modern-tab #modern-session-grid {
+            margin-bottom: 0;
+            min-width: 100%;
+        }
+
+        #session-day-modern-tab #modern-session-grid th,
+        #session-day-modern-tab #modern-session-grid td {
+            min-width: 130px;
+            vertical-align: top;
+        }
+
+        #session-day-modern-tab #modern-session-grid th:first-child,
+        #session-day-modern-tab #modern-session-grid td:first-child {
+            min-width: 75px;
+            width: 75px;
+        }
+
+        #session-day-modern-tab #modern-session-grid thead th {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            background-color: #f5f7fa;
+            box-shadow: inset 0 -1px 0 #d5dde6;
+        }
+
+        #session-day-modern-tab #modern-session-grid tfoot td {
+            background-color: #fff;
+            border-top: 1px solid #e6ebf1;
+        }
+
+        #session-day-modern-tab .modern-add-row-wrap {
+            padding: 8px 0 4px;
+            text-align: left;
+        }
+
+        @media (max-width: 991px) {
+            #session-day-legacy-tab .session-day-legacy-scroll {
+                max-height: calc(100vh - 290px);
+            }
+
+            #session-day-modern-tab .session-day-modern-scroll {
+                max-height: calc(100vh - 290px);
+            }
+        }
+
+        @media (max-height: 780px) {
+            #session-day-legacy-tab .session-day-legacy-scroll {
+                max-height: calc(100vh - 250px);
+            }
+
+            #session-day-modern-tab .session-day-modern-scroll {
+                max-height: calc(100vh - 250px);
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    {% embed 'backend/default/embed/form_common.html.twig' with { 'page_section': page_section, 'page_title': page_title } %}
+        {% block body %}
+            <form action="{{ path('backend_session_day_new', {'branch_office': branchOffice.id }) }}" method="post">
+                {% set selectedDates = data.dateStarts is defined and data.dateStarts is iterable ? data.dateStarts : [data.dateStart|default('')] %}
+                <div class="row">
+                    <div class="col-md-4 col-sm-6 col-xs-12 form-group session-date-block">
+                        <label class="required">Fechas:</label>
+                        <div id="session-date-list">
+                            {% for selectedDate in selectedDates %}
+                                <div class="js-date-row">
+                                    <div class="session-date-input-wrap">
+                                        <input type="text" name="session[dateStarts][]" autocomplete="off" value="{{ selectedDate }}" required="required" class="form-control datepicker js-session-date">
+                                        <button type="button" class="btn btn-default js-open-date-picker" title="Seleccionar fecha" aria-label="Seleccionar fecha">
+                                            <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                                        </button>
+                                    </div>
+                                    <button type="button" class="btn btn-default js-remove-date-row {% if loop.first and selectedDates|length == 1 %}is-disabled{% endif %}" title="Quitar fecha" aria-label="Quitar fecha">
+                                        <i class="fa fa-times" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="session-date-add-wrap">
+                            <button type="button" class="btn btn-default btn-sm" id="add-date-row" title="Agregar fecha" aria-label="Agregar fecha">
+                                <i class="fa fa-plus" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 col-md-offset-4 col-sm-6 col-xs-12 form-group import-date-block">
+                        <label>Importar clases desde fecha:</label>
+                        <div class="session-date-input-wrap" id="import-date-wrap">
+                            <input type="text" id="import-source-date" class="form-control datepicker js-session-date" autocomplete="off" placeholder="dd/mm/yyyy">
+                            <button type="button" class="btn btn-default js-open-date-picker" id="import-open-date-picker" title="Seleccionar fecha para importar" aria-label="Seleccionar fecha para importar">
+                                <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                        <div class="import-date-actions">
+                            <button type="button" class="btn btn-primary btn-sm" id="import-classes-button">Importar clases</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-xs-12">
+                        <ul class="nav nav-tabs" role="tablist" style="margin-bottom: 15px;">
+                            <li role="presentation" class="active">
+                                <a href="#session-day-legacy-tab" aria-controls="session-day-legacy-tab" role="tab" data-toggle="tab">Vista clasica</a>
+                            </li>
+                            <li role="presentation">
+                                <a href="#session-day-modern-tab" aria-controls="session-day-modern-tab" role="tab" data-toggle="tab">Vista dinamica</a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="tab-content">
+                    <div role="tabpanel" class="tab-pane active" id="session-day-legacy-tab" data-pane="legacy">
+                        <div class="dataTables_wrapper" data-mode="legacy">
+                            <div class="row">
+                                <div class="col-md-12 col-xs-12">
+                                    <div class="session-day-legacy-scroll" id="legacy-session-grid-scroll">
+                                        <table class="table table-striped" id="legacy-session-grid">
+                                            <thead>
+                                                <tr>
+                                                    <th>Hora (HH:mm)</th>
+                                                    {% for exerciseRoom in exerciseRooms %}
+                                                        <th>{{ exerciseRoom }}</th>
+                                                    {% endfor %}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for schedule in schedules %}
+                                                    <tr>
+                                                        <td>
+                                                            <input type="time" class="form-control" name="session[scheduleTimes][{{ schedule }}]" value="{{ data['scheduleTimes'][schedule]|default(schedule) }}" required>
+                                                        </td>
+                                                        {% for exerciseRoom in exerciseRooms %}
+                                                            <td class="js-instructor-cell">
+                                                                <select class="form-control js-instructor-select js-legacy-instructor" data-room-id="{{ exerciseRoom.id }}" name="session[schedules][{{ schedule }}][{{ exerciseRoom.id }}]"
+                                                                    {% if data['schedules'][schedule][exerciseRoom.id] is defined and (data['schedules'][schedule][exerciseRoom.id]|number_format) > 0 %}data-current="{{ data['schedules'][schedule][exerciseRoom.id] }}"{% endif %}
+                                                                >
+                                                                    <option value="">- Instructor -</option>
+                                                                    {% for instructor in exerciseRoom.discipline.instructors|filter(v=> v.enabled and not v.deleted) %}
+                                                                        <option value="{{ instructor.id }}" data-instructor-id="{{ instructor.id }}" data-instructor-color="{{ instructor.profile.colorHex|default('') }}">
+                                                                            {{ instructor.profile.firstname }}
+                                                                        </option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                                <br>
+                                                                <input type="text" class="form-control js-legacy-information" data-room-id="{{ exerciseRoom.id }}" name="session[information][{{ schedule }}][{{ exerciseRoom.id }}]" placeholder="Información Adicional">
+                                                            </td>
+                                                        {% endfor %}
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div role="tabpanel" class="tab-pane" id="session-day-modern-tab" data-pane="modern">
+                        <div class="session-day-modern-scroll" data-mode="modern" id="modern-session-grid-scroll">
+                            <table class="table table-striped" id="modern-session-grid">
+                                <thead>
+                                    <tr>
+                                        <th style="min-width: 120px;">Hora</th>
+                                        {% for exerciseRoom in exerciseRooms %}
+                                            <th>{{ exerciseRoom }}</th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody id="modern-session-grid-body">
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="{{ exerciseRooms|length + 1 }}">
+                                            <div class="modern-add-row-wrap">
+                                                <button type="button" class="btn btn-default" id="modern-add-row">Agregar otra</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ln_solid"></div>
+
+                <div class="form-group">
+                    <div class="col-xs-12">
+                        <div class="pull-right">
+                            <button type="submit" class="btn btn-primary">
+                                Guardar
+                            </button>
+                        </div>
+                        <div class="clearfix"></div>
+                    </div>
+                </div>
+            </form>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    {{ include('backend/session_day/_instructor_color_script.html.twig') }}
+    <script>
+        (function () {
+            var modernBody = document.getElementById('modern-session-grid-body');
+            var addRowButton = document.getElementById('modern-add-row');
+            var dateList = document.getElementById('session-date-list');
+            var addDateButton = document.getElementById('add-date-row');
+            var importDateInput = document.getElementById('import-source-date');
+            var importOpenDatePickerButton = document.getElementById('import-open-date-picker');
+            var importClassesButton = document.getElementById('import-classes-button');
+            var modernScroll = document.getElementById('modern-session-grid-scroll');
+            var legacyBody = document.querySelector('#legacy-session-grid tbody');
+            var legacyPane = document.querySelector('[data-pane="legacy"]');
+            var modernPane = document.querySelector('[data-pane="modern"]');
+            var formEl = document.querySelector('form[action*="backend_session_day_new"]');
+            var importFromDateUrl = '{{ path('backend_session_day_import_from_date', {'branchOfficeId': branchOffice.id}) }}';
+            var roomIds = [{% for exerciseRoom in exerciseRooms %}{{ exerciseRoom.id }}{% if not loop.last %}, {% endif %}{% endfor %}];
+            var roomOptionsById = {
+                {% for exerciseRoom in exerciseRooms %}
+                '{{ exerciseRoom.id }}': '<option value="">- Instructor -</option>{% for instructor in exerciseRoom.discipline.instructors|filter(v=> v.enabled and not v.deleted) %}<option value="{{ instructor.id }}" data-instructor-id="{{ instructor.id }}" data-instructor-color="{{ instructor.profile.colorHex|default('') }}">{{ instructor.profile.firstname|e('js') }}</option>{% endfor %}'{% if not loop.last %},{% endif %}
+                {% endfor %}
+            };
+            var firstSchedule = '{{ schedules|first }}';
+            var rowIndex = 0;
+            var legacyDynamicIndex = 0;
+
+            function initDatepickerInput(inputEl) {
+                if (!inputEl || !window.jQuery || !window.jQuery.fn || !window.jQuery.fn.daterangepicker) {
+                    return;
+                }
+
+                if (window.jQuery(inputEl).data('daterangepicker')) {
+                    return;
+                }
+
+                window.jQuery(inputEl).daterangepicker(window.datepickeroptions || {
+                    singleDatePicker: true,
+                    autoUpdateInput: false,
+                });
+            }
+
+            function refreshDateRemoveButtons() {
+                if (!dateList) {
+                    return;
+                }
+
+                var rows = dateList.querySelectorAll('.js-date-row');
+                rows.forEach(function (row, idx) {
+                    var removeBtn = row.querySelector('.js-remove-date-row');
+                    if (!removeBtn) {
+                        return;
+                    }
+                    if (rows.length > 1) {
+                        removeBtn.classList.remove('is-disabled');
+                    } else {
+                        removeBtn.classList.add('is-disabled');
+                    }
+
+                    var input = row.querySelector('.js-session-date');
+                    if (input) {
+                        input.required = idx === 0;
+                    }
+                });
+            }
+
+            function addDateRow(defaultValue) {
+                if (!dateList) {
+                    return;
+                }
+
+                var wrapper = document.createElement('div');
+                wrapper.className = 'js-date-row';
+                wrapper.innerHTML =
+                    '<div class="session-date-input-wrap">' +
+                        '<input type="text" name="session[dateStarts][]" autocomplete="off" class="form-control datepicker js-session-date" required="required">' +
+                        '<button type="button" class="btn btn-default js-open-date-picker" title="Seleccionar fecha" aria-label="Seleccionar fecha">' +
+                            '<span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>' +
+                        '</button>' +
+                    '</div>' +
+                    '<button type="button" class="btn btn-default js-remove-date-row" title="Quitar fecha" aria-label="Quitar fecha">' +
+                        '<i class="fa fa-times" aria-hidden="true"></i>' +
+                    '</button>';
+
+                dateList.appendChild(wrapper);
+
+                var input = wrapper.querySelector('.js-session-date');
+                if (input && defaultValue) {
+                    input.value = defaultValue;
+                }
+                initDatepickerInput(input);
+                refreshDateRemoveButtons();
+
+                if (input) {
+                    input.focus();
+                }
+            }
+
+            function initializeDateRows() {
+                if (!dateList) {
+                    return;
+                }
+
+                dateList.querySelectorAll('.js-session-date').forEach(function (input) {
+                    initDatepickerInput(input);
+                });
+                refreshDateRemoveButtons();
+
+                if (addDateButton) {
+                    addDateButton.addEventListener('click', function () {
+                        addDateRow('');
+                    });
+                }
+
+                dateList.addEventListener('click', function (event) {
+                    var openPickerBtn = event.target.closest('.js-open-date-picker');
+                    if (openPickerBtn) {
+                        var row = openPickerBtn.closest('.js-date-row');
+                        var input = row ? row.querySelector('.js-session-date') : null;
+                        if (input) {
+                            if (window.jQuery && window.jQuery(input).data('daterangepicker')) {
+                                window.jQuery(input).trigger('click');
+                            } else {
+                                input.focus();
+                            }
+                        }
+                        return;
+                    }
+
+                    var removeBtn = event.target.closest('.js-remove-date-row');
+                    if (!removeBtn) {
+                        return;
+                    }
+
+                    var rows = dateList.querySelectorAll('.js-date-row');
+                    if (rows.length <= 1) {
+                        return;
+                    }
+
+                    var row = removeBtn.closest('.js-date-row');
+                    if (row) {
+                        row.remove();
+                        refreshDateRemoveButtons();
+                    }
+                });
+            }
+
+            function showClientFlash(type, message) {
+                if (window.jQuery && window.jQuery.flash) {
+                    if (typeof window.jQuery.flash[type] === 'function') {
+                        window.jQuery.flash[type](message);
+                        return;
+                    }
+
+                    if (typeof window.jQuery.flash.danger === 'function') {
+                        window.jQuery.flash.danger(message);
+                        return;
+                    }
+
+                    return;
+                }
+
+                if ('danger' === type) {
+                    alert(message);
+                }
+            }
+
+            function normalizeTimeValue(timeValue) {
+                var value = (timeValue || '').trim();
+                if (/^\d{2}:\d{2}:\d{2}$/.test(value)) {
+                    return value.slice(0, 5);
+                }
+
+                return value;
+            }
+
+            function createLegacyRow(defaultTime) {
+                if (!legacyBody) {
+                    return null;
+                }
+
+                legacyDynamicIndex += 1;
+                var rowKey = 'dynamic_' + legacyDynamicIndex;
+                var row = document.createElement('tr');
+
+                var timeTd = document.createElement('td');
+                timeTd.innerHTML =
+                    '<input type="time" class="form-control" name="session[scheduleTimes][' + rowKey + ']" value="' + defaultTime + '" required>';
+                row.appendChild(timeTd);
+
+                roomIds.forEach(function (roomId) {
+                    var td = document.createElement('td');
+                    td.className = 'js-instructor-cell';
+                    td.innerHTML =
+                        '<select class="form-control js-instructor-select js-legacy-instructor" data-room-id="' + roomId + '" name="session[schedules][' + rowKey + '][' + roomId + ']">' +
+                            (roomOptionsById[String(roomId)] || '<option value="">- Instructor -</option>') +
+                        '</select>' +
+                        '<br>' +
+                        '<input type="text" class="form-control js-legacy-information" data-room-id="' + roomId + '" name="session[information][' + rowKey + '][' + roomId + ']" placeholder="Información Adicional">';
+                    row.appendChild(td);
+                });
+
+                legacyBody.appendChild(row);
+
+                var timeInput = row.querySelector('td:first-child input[type="time"]');
+                if (timeInput) {
+                    timeInput.addEventListener('change', function () {
+                        sortLegacyRowsByTime();
+                    });
+                }
+
+                row.querySelectorAll('.js-instructor-select').forEach(function (selectEl) {
+                    selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+
+                return row;
+            }
+
+            function findLegacyRowByTime(timeValue) {
+                if (!legacyBody) {
+                    return null;
+                }
+
+                var normalized = normalizeTimeValue(timeValue);
+                var rows = legacyBody.querySelectorAll('tr');
+                for (var i = 0; i < rows.length; i++) {
+                    var timeInput = rows[i].querySelector('td:first-child input[type="time"]');
+                    if (timeInput && normalizeTimeValue(timeInput.value) === normalized) {
+                        return rows[i];
+                    }
+                }
+
+                return null;
+            }
+
+            function applyImportedItemsToLegacy(items) {
+                if (!legacyBody) {
+                    return;
+                }
+
+                function ensureInstructorOption(selectEl, item) {
+                    if (!selectEl || !item || !item.instructorId) {
+                        return;
+                    }
+
+                    var instructorId = String(item.instructorId);
+                    var optionExists = false;
+                    for (var i = 0; i < selectEl.options.length; i++) {
+                        if (String(selectEl.options[i].value) === instructorId) {
+                            optionExists = true;
+                            break;
+                        }
+                    }
+
+                    if (optionExists) {
+                        return;
+                    }
+
+                    var optionEl = document.createElement('option');
+                    optionEl.value = instructorId;
+                    optionEl.text = item.instructorName ? (item.instructorName + ' (importado)') : ('Instructor #' + instructorId + ' (importado)');
+                    optionEl.setAttribute('data-instructor-id', instructorId);
+                    optionEl.setAttribute('data-instructor-color', item.instructorColorHex || '');
+                    selectEl.appendChild(optionEl);
+                }
+
+                items.forEach(function (item) {
+                    var timeValue = normalizeTimeValue(item.timeStart || '');
+                    if (!timeValue) {
+                        return;
+                    }
+
+                    var row = findLegacyRowByTime(timeValue);
+                    if (!row) {
+                        row = createLegacyRow(timeValue);
+                    }
+
+                    if (!row) {
+                        return;
+                    }
+
+                    var roomId = String(item.exerciseRoomId || '');
+                    var selectEl = row.querySelector('.js-legacy-instructor[data-room-id="' + roomId + '"]');
+                    var infoEl = row.querySelector('.js-legacy-information[data-room-id="' + roomId + '"]');
+
+                    if (selectEl) {
+                        ensureInstructorOption(selectEl, item);
+                        selectEl.value = item.instructorId ? String(item.instructorId) : '';
+                        selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+
+                    if (infoEl) {
+                        infoEl.value = (item.information || '');
+                    }
+                });
+
+                sortLegacyRowsByTime();
+            }
+
+            function findModernRowByTime(timeValue) {
+                var normalized = normalizeTimeValue(timeValue);
+                var rows = modernBody.querySelectorAll('tr');
+                for (var i = 0; i < rows.length; i++) {
+                    var timeInput = rows[i].querySelector('.js-modern-time');
+                    if (timeInput && normalizeTimeValue(timeInput.value) === normalized) {
+                        return rows[i];
+                    }
+                }
+
+                return null;
+            }
+
+            function applyImportedItemsToModern(items) {
+                function ensureInstructorOption(selectEl, item) {
+                    if (!selectEl || !item || !item.instructorId) {
+                        return;
+                    }
+
+                    var instructorId = String(item.instructorId);
+                    var optionExists = false;
+                    for (var i = 0; i < selectEl.options.length; i++) {
+                        if (String(selectEl.options[i].value) === instructorId) {
+                            optionExists = true;
+                            break;
+                        }
+                    }
+
+                    if (optionExists) {
+                        return;
+                    }
+
+                    var optionEl = document.createElement('option');
+                    optionEl.value = instructorId;
+                    optionEl.text = item.instructorName ? (item.instructorName + ' (importado)') : ('Instructor #' + instructorId + ' (importado)');
+                    optionEl.setAttribute('data-instructor-id', instructorId);
+                    optionEl.setAttribute('data-instructor-color', item.instructorColorHex || '');
+                    selectEl.appendChild(optionEl);
+                }
+
+                items.forEach(function (item) {
+                    var timeValue = normalizeTimeValue(item.timeStart || '');
+                    if (!timeValue) {
+                        return;
+                    }
+
+                    var row = findModernRowByTime(timeValue);
+                    if (!row) {
+                        row = createModernRow(timeValue);
+                    }
+
+                    if (!row) {
+                        return;
+                    }
+
+                    var roomId = String(item.exerciseRoomId || '');
+                    var selectEl = row.querySelector('.js-modern-instructor[data-room-id="' + roomId + '"]');
+                    var infoEl = row.querySelector('.js-modern-information[data-room-id="' + roomId + '"]');
+
+                    if (selectEl) {
+                        ensureInstructorOption(selectEl, item);
+                        selectEl.value = item.instructorId ? String(item.instructorId) : '';
+                        selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+
+                    if (infoEl) {
+                        infoEl.value = (item.information || '');
+                    }
+                });
+
+                sortRowsByTime();
+                updateModernScrollHeight();
+            }
+
+            function initializeImportFromDate() {
+                if (importDateInput) {
+                    initDatepickerInput(importDateInput);
+                }
+
+                if (!importDateInput || !importClassesButton) {
+                    return;
+                }
+
+                function getActivePaneMode() {
+                    var activePane = document.querySelector('.tab-content .tab-pane.active[data-pane]');
+                    if (activePane) {
+                        return activePane.getAttribute('data-pane');
+                    }
+
+                    if (modernPane && modernPane.classList.contains('active')) {
+                        return 'modern';
+                    }
+
+                    return 'legacy';
+                }
+
+                function runImportForSelectedDate() {
+                    var selectedDate = normalizeTimeValue((importDateInput && importDateInput.value) || '');
+                    if (!selectedDate) {
+                        showClientFlash('danger', 'Selecciona una fecha para importar clases.');
+                        if (importDateInput) {
+                            importDateInput.focus();
+                        }
+                        return;
+                    }
+
+                    if (window.jQuery && typeof window.jQuery.blockUI === 'function') {
+                        window.jQuery.blockUI();
+                    }
+
+                    fetch(importFromDateUrl + '?date=' + encodeURIComponent(selectedDate), {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                    })
+                        .then(function (response) {
+                            return response.json().then(function (payload) {
+                                return {
+                                    ok: response.ok,
+                                    payload: payload,
+                                };
+                            });
+                        })
+                        .then(function (result) {
+                            if (!result.ok || !result.payload || !result.payload.success) {
+                                showClientFlash('danger', (result.payload && result.payload.error) ? result.payload.error : 'No fue posible importar las clases.');
+                                return;
+                            }
+
+                            var items = Array.isArray(result.payload.items) ? result.payload.items : [];
+                            if (items.length === 0) {
+                                showClientFlash('warning', 'No hay clases para importar en la fecha seleccionada.');
+                                return;
+                            }
+
+                            var activeMode = getActivePaneMode();
+                            if (activeMode === 'modern') {
+                                applyImportedItemsToModern(items);
+                            } else {
+                                applyImportedItemsToLegacy(items);
+                            }
+
+                            showClientFlash('success', 'Clases importadas correctamente.');
+                        })
+                        .catch(function () {
+                            showClientFlash('danger', 'Ocurrió un error al importar las clases.');
+                        })
+                        .finally(function () {
+                            if (window.jQuery && typeof window.jQuery.unblockUI === 'function') {
+                                window.jQuery.unblockUI();
+                            }
+                        });
+                }
+
+                if (importOpenDatePickerButton) {
+                    importOpenDatePickerButton.addEventListener('click', function () {
+                        if (window.jQuery && window.jQuery(importDateInput).data('daterangepicker')) {
+                            window.jQuery(importDateInput).trigger('click');
+                        } else {
+                            importDateInput.focus();
+                        }
+                    });
+                }
+
+                importClassesButton.addEventListener('click', function () {
+                    runImportForSelectedDate();
+                });
+
+                importDateInput.addEventListener('keyup', function (event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        runImportForSelectedDate();
+                    }
+                });
+            }
+
+            function setPaneEnabled(pane, enabled) {
+                if (!pane) {
+                    return;
+                }
+
+                pane.querySelectorAll('input, select, textarea, button').forEach(function (el) {
+                    if (el.type === 'hidden') {
+                        return;
+                    }
+
+                    el.disabled = !enabled;
+                });
+            }
+
+            function getModernMaxHeight() {
+                var viewportHeight = window.innerHeight || document.documentElement.clientHeight || 900;
+                if (viewportHeight <= 780) {
+                    return Math.max(260, viewportHeight - 250);
+                }
+                if (viewportHeight <= 991) {
+                    return Math.max(280, viewportHeight - 290);
+                }
+
+                return Math.max(320, viewportHeight - 360);
+            }
+
+            function updateModernScrollHeight() {
+                if (!modernScroll) {
+                    return;
+                }
+
+                if (modernPane && !modernPane.classList.contains('active')) {
+                    modernScroll.style.height = 'auto';
+                    return;
+                }
+
+                modernScroll.style.height = 'auto';
+                var naturalHeight = modernScroll.scrollHeight;
+                var maxHeight = getModernMaxHeight();
+
+                if (!naturalHeight || naturalHeight < 80) {
+                    modernScroll.style.maxHeight = maxHeight + 'px';
+                    modernScroll.style.height = 'auto';
+                    return;
+                }
+
+                modernScroll.style.maxHeight = maxHeight + 'px';
+                modernScroll.style.height = Math.min(naturalHeight, maxHeight) + 'px';
+            }
+
+            function scheduleModernHeightUpdate() {
+                window.requestAnimationFrame(function () {
+                    window.requestAnimationFrame(function () {
+                        updateModernScrollHeight();
+                    });
+                });
+            }
+
+            function toMinutes(timeValue) {
+                if (!timeValue || !/^\d{2}:\d{2}$/.test(timeValue)) {
+                    return null;
+                }
+
+                var parts = timeValue.split(':');
+                return (parseInt(parts[0], 10) * 60) + parseInt(parts[1], 10);
+            }
+
+            function addMinutesToTime(timeValue, minutes) {
+                var base = toMinutes(timeValue);
+                if (base === null) {
+                    return firstSchedule || '06:00';
+                }
+
+                var total = base + minutes;
+                var dayMinutes = 24 * 60;
+                if (total >= dayMinutes) {
+                    total = total % dayMinutes;
+                }
+                var hh = String(Math.floor(total / 60)).padStart(2, '0');
+                var mm = String(total % 60).padStart(2, '0');
+
+                return hh + ':' + mm;
+            }
+
+            function sortLegacyRowsByTime() {
+                if (!legacyBody) {
+                    return;
+                }
+
+                var rows = Array.prototype.slice.call(legacyBody.querySelectorAll('tr'));
+                rows.sort(function (a, b) {
+                    var aInput = a.querySelector('td:first-child input[type="time"]');
+                    var bInput = b.querySelector('td:first-child input[type="time"]');
+                    var aTime = toMinutes(aInput ? aInput.value : '');
+                    var bTime = toMinutes(bInput ? bInput.value : '');
+
+                    if (aTime === null && bTime === null) {
+                        return 0;
+                    }
+                    if (aTime === null) {
+                        return 1;
+                    }
+                    if (bTime === null) {
+                        return -1;
+                    }
+
+                    return aTime - bTime;
+                });
+
+                rows.forEach(function (row) {
+                    legacyBody.appendChild(row);
+                });
+            }
+
+            function initializeLegacyGridSorting() {
+                if (!legacyBody) {
+                    return;
+                }
+
+                legacyBody.querySelectorAll('td:first-child input[type="time"]').forEach(function (inputEl) {
+                    inputEl.addEventListener('change', function () {
+                        sortLegacyRowsByTime();
+                    });
+                });
+            }
+
+            function refreshRowIndexes() {
+                var rows = modernBody.querySelectorAll('tr');
+                rows.forEach(function (row, idx) {
+                    row.setAttribute('data-row-index', String(idx));
+
+                    var timeInput = row.querySelector('.js-modern-time');
+                    if (timeInput) {
+                        timeInput.name = 'session[scheduleTimes][' + idx + ']';
+                    }
+
+                    roomIds.forEach(function (roomId) {
+                        var selectEl = row.querySelector('.js-modern-instructor[data-room-id="' + roomId + '"]');
+                        var infoEl = row.querySelector('.js-modern-information[data-room-id="' + roomId + '"]');
+
+                        if (selectEl) {
+                            selectEl.name = 'session[schedules][' + idx + '][' + roomId + ']';
+                        }
+
+                        if (infoEl) {
+                            infoEl.name = 'session[information][' + idx + '][' + roomId + ']';
+                        }
+                    });
+                });
+            }
+
+            function sortRowsByTime() {
+                var rows = Array.prototype.slice.call(modernBody.querySelectorAll('tr'));
+                rows.sort(function (a, b) {
+                    var aTime = toMinutes((a.querySelector('.js-modern-time') || {}).value || '');
+                    var bTime = toMinutes((b.querySelector('.js-modern-time') || {}).value || '');
+
+                    if (aTime === null && bTime === null) {
+                        return 0;
+                    }
+                    if (aTime === null) {
+                        return 1;
+                    }
+                    if (bTime === null) {
+                        return -1;
+                    }
+
+                    return aTime - bTime;
+                });
+
+                rows.forEach(function (row) {
+                    modernBody.appendChild(row);
+                });
+
+                refreshRowIndexes();
+            }
+
+            function createModernRow(defaultTime) {
+                var tr = document.createElement('tr');
+                tr.setAttribute('data-row-index', String(rowIndex++));
+
+                var timeTd = document.createElement('td');
+                timeTd.innerHTML =
+                    '<input type="time" class="form-control js-modern-time" value="' + defaultTime + '" required>' +
+                    '<div style="margin-top: 8px; text-align: right;">' +
+                        '<button type="button" class="btn btn-danger btn-xs js-remove-modern-row" style="min-width: 108px;">' +
+                            '<i class="fa fa-trash-o" aria-hidden="true"></i> Borrar fila' +
+                        '</button>' +
+                    '</div>';
+                tr.appendChild(timeTd);
+
+                roomIds.forEach(function (roomId) {
+                    var td = document.createElement('td');
+                    td.className = 'js-instructor-cell';
+                    td.innerHTML =
+                        '<select class="form-control js-instructor-select js-modern-instructor" data-room-id="' + roomId + '">' +
+                            (roomOptionsById[String(roomId)] || '<option value="">- Instructor -</option>') +
+                        '</select>' +
+                        '<br>' +
+                        '<input type="text" class="form-control js-modern-information" data-room-id="' + roomId + '" placeholder="Información Adicional">';
+                    tr.appendChild(td);
+                });
+
+                modernBody.appendChild(tr);
+                refreshRowIndexes();
+                updateModernScrollHeight();
+
+                tr.querySelector('.js-modern-time').addEventListener('change', function () {
+                    sortRowsByTime();
+                });
+
+                tr.querySelectorAll('.js-instructor-select').forEach(function (selectEl) {
+                    selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+
+                return tr;
+            }
+
+            function getNextRowTime() {
+                var rows = modernBody.querySelectorAll('tr');
+                if (rows.length === 0) {
+                    return firstSchedule || '06:00';
+                }
+
+                var lastRow = rows[rows.length - 1];
+                var lastTime = (lastRow.querySelector('.js-modern-time') || {}).value || firstSchedule;
+
+                return addMinutesToTime(lastTime, 30);
+            }
+
+            function initializeModernGrid() {
+                if (!modernBody || !addRowButton) {
+                    return;
+                }
+
+                createModernRow(firstSchedule || '06:00');
+                updateModernScrollHeight();
+
+                addRowButton.addEventListener('click', function () {
+                    var newRow = createModernRow(getNextRowTime());
+                    sortRowsByTime();
+                    updateModernScrollHeight();
+
+                    if (newRow && modernScroll) {
+                        window.requestAnimationFrame(function () {
+                            modernScroll.scrollTop = modernScroll.scrollHeight;
+                        });
+                    }
+                });
+
+                modernBody.addEventListener('click', function (event) {
+                    var removeBtn = event.target.closest('.js-remove-modern-row');
+                    if (!removeBtn) {
+                        return;
+                    }
+
+                    var row = removeBtn.closest('tr');
+                    if (row && modernBody.querySelectorAll('tr').length > 1) {
+                        row.remove();
+                        refreshRowIndexes();
+                        updateModernScrollHeight();
+                    }
+                });
+
+                window.addEventListener('resize', scheduleModernHeightUpdate);
+                document.querySelectorAll('a[data-toggle="tab"]').forEach(function (tabLink) {
+                    tabLink.addEventListener('click', function () {
+                        scheduleModernHeightUpdate();
+                    });
+                });
+            }
+
+            function wireTabInputState() {
+                if (!legacyPane || !modernPane) {
+                    return;
+                }
+
+                function getCellContext(cell) {
+                    var row = cell.closest('tr');
+                    var table = cell.closest('table');
+                    var cellIndex = cell.cellIndex;
+                    var className = 'Clase';
+                    var timeValue = '';
+
+                    if (table) {
+                        var headerCell = table.querySelector('thead tr th:nth-child(' + (cellIndex + 1) + ')');
+                        if (headerCell) {
+                            className = (headerCell.textContent || '').trim() || className;
+                        }
+                    }
+
+                    if (row) {
+                        var timeInput = row.querySelector('td:first-child input[type="time"]');
+                        if (timeInput) {
+                            timeValue = timeInput.value || '';
+                        }
+                    }
+
+                    return {
+                        className: className,
+                        timeValue: timeValue,
+                    };
+                }
+
+                function validateActivePaneData(activePane) {
+                    if (!activePane) {
+                        return true;
+                    }
+
+                    var cells = activePane.querySelectorAll('.js-instructor-cell');
+                    for (var i = 0; i < cells.length; i++) {
+                        var cell = cells[i];
+                        var selectEl = cell.querySelector('.js-instructor-select');
+                        var infoEl = cell.querySelector('input[name*="[information]"], .js-modern-information');
+
+                        if (!selectEl || !infoEl) {
+                            continue;
+                        }
+
+                        var infoValue = (infoEl.value || '').trim();
+                        var hasInstructor = !!(selectEl.value && parseInt(selectEl.value, 10) > 0);
+
+                        if (infoValue !== '' && !hasInstructor) {
+                            var context = getCellContext(cell);
+                            var timeText = context.timeValue ? (' a las ' + context.timeValue) : '';
+                            alert('Debes seleccionar instructor para la clase "' + context.className + '"' + timeText + ' antes de guardar.');
+                            selectEl.focus();
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+
+                if (formEl) {
+                    formEl.addEventListener('submit', function (event) {
+                        sortLegacyRowsByTime();
+
+                        if (modernPane.classList.contains('active')) {
+                            sortRowsByTime();
+                            refreshRowIndexes();
+                        }
+
+                        var activePane = modernPane.classList.contains('active') ? modernPane : legacyPane;
+                        if (!validateActivePaneData(activePane)) {
+                            event.preventDefault();
+                            return;
+                        }
+
+                        if (modernPane.classList.contains('active')) {
+                            setPaneEnabled(legacyPane, false);
+                            setPaneEnabled(modernPane, true);
+                        } else {
+                            setPaneEnabled(legacyPane, true);
+                            setPaneEnabled(modernPane, false);
+                        }
+                    });
+                }
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function () {
+                    initializeDateRows();
+                    initializeImportFromDate();
+                    initializeLegacyGridSorting();
+                    initializeModernGrid();
+                    wireTabInputState();
+                });
+            } else {
+                initializeDateRows();
+                initializeImportFromDate();
+                initializeLegacyGridSorting();
+                initializeModernGrid();
+                wireTabInputState();
+            }
+        })();
+    </script>
+{% endblock %}

@@ -1,0 +1,48 @@
+{{ form_widget(form.name, {
+    'attr': {
+        'placeholder': 'Nombre',
+    }
+}) }}
+{{ form_errors(form.name) }}
+
+{{ form_widget(form.lastname, {
+    'attr': {
+        'placeholder': 'Apellidos',
+    }
+}) }}
+{{ form_errors(form.lastname) }}
+
+{{ form_widget(form.email, {
+    'attr': {
+        'placeholder': 'Correo',
+    }
+}) }}
+{{ form_errors(form.email) }}
+
+{{ form_widget(form.branchOffice) }}
+{{ form_errors(form.branchOffice) }}
+
+{{ form_widget(form.plainPassword.first, {
+    'attr': {
+        'placeholder': 'Contraseña',
+    }
+}) }}
+{{ form_errors(form.plainPassword.first) }}
+
+{{ form_widget(form.plainPassword.second, {
+    'attr': {
+        'placeholder': 'Confirmar Contraseña',
+    }
+}) }}
+{{ form_errors(form.plainPassword.second) }}
+
+{{ form_widget(form.phone, {
+    'attr': {
+        'placeholder': 'Teléfono',
+    }
+}) }}
+{{ form_errors(form.phone) }}
+
+<button type="submit" class="btn-submit">Registrarme</button>
+
+{{ form_rest(form) }}

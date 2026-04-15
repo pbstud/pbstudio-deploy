@@ -1,0 +1,56 @@
+{% extends 'backend/default/list.html.twig' %}
+
+{% block title %}Listado de Cupones{% endblock %}
+
+{% block actions %}
+    {% if is_allowed_route('backend_coupon_new') %}
+        <div class="col-md-3 col-sm-4 col-xs-8 form-group pull-right top_search text-right">
+            <a href="{{ path('backend_coupon_new') }}" class="btn btn-sm btn-dark">
+                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                {{ 'main.backend_coupon_new'|trans }}
+            </a>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block table_thead %}
+    <tr>
+        <th>{{ knp_pagination_sortable(pagination, 'label.id'|trans, 'c.id') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'label.name'|trans, 'c.name') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'label.code'|trans, 'c.code') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'label.discount'|trans, 'c.discount') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'label.uses_total'|trans, 'c.usesTotal') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'label.date_start'|trans, 'c.dateStart') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'label.date_end'|trans, 'c.dateEnd') }}</th>
+        <th></th>
+    </tr>
+{% endblock %}
+
+{% block table_tbody %}
+    {% set allowEdit = is_allowed_route('backend_coupon_edit') %}
+    {% set allowShow = is_allowed_route('backend_coupon_show') %}
+    {% for coupon in pagination %}
+        {# coupon \App\Entity\Coupon #}
+        <tr>
+            <td>{{ coupon.id }}</td>
+            <td>{{ coupon.name }}</td>
+            <td>{{ coupon.code }}</td>
+            <td>{{ coupon.discount }} %</td>
+            <td>{{ coupon.used}} / {{ coupon.usesTotal }}</td>
+            <td>{{ coupon.dateStart ? coupon.dateStart|date('d/m/Y') }}</td>
+            <td>{{ coupon.dateEnd ? coupon.dateEnd|date('d/m/Y') }}</td>
+            <td>
+                {% if allowShow %}
+                    <a href="{{ path('backend_coupon_show', {'id': coupon.id}) }}" class="btn btn-success btn-xs">
+                        Detalle
+                    </a>
+                {% endif %}
+                {% if allowEdit %}
+                    <a href="{{ path('backend_coupon_edit', {'id': coupon.id}) }}" class="btn btn-primary btn-xs">
+                        Editar
+                    </a>
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+{% endblock %}

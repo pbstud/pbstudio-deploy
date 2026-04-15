@@ -1,0 +1,13 @@
+<div class="row">
+    <div class="col-sm-5">
+        <div class="pagination_info">
+            Mostrando {{ firstItemNumber }} - {{ lastItemNumber }} de {{ totalCount }}
+        </div>
+    </div>
+
+    <div class="col-sm-7">
+        <div class="pagination_numbers pull-right">
+            {{ include('backend/default/pagination/bootstrap_v3_pagination.html.twig') }}
+        </div>
+    </div>
+</div>

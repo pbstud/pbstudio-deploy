@@ -1,0 +1,138 @@
+<section class="pop_box session-rate-modal">
+    <div class="row clearfix">
+        <a data-remodal-action="close" class="nav-toggle close"><span class="iconMenu"></span></a>
+
+        <div class="center session-rate-modal__header">
+            <p class="session-rate-modal__eyebrow">Retroalimentación de la clase</p>
+            <h3>Calificar clase</h3>
+            <small id="session-rate-modal-description">Tu opinión nos ayuda a mejorar la experiencia desde tu perfil.</small>
+        </div>
+
+        {% if is_rateable and session %}
+            <div class="session-rate-modal__summary" role="list" aria-label="Resumen de la clase">
+                <div class="session-rate-modal__summary-item" role="listitem">
+                    <span>Clase</span>
+                    <strong>{{ session.discipline ? session.discipline : '-' }}</strong>
+                </div>
+                <div class="session-rate-modal__summary-item" role="listitem">
+                    <span>Instructor</span>
+                    <strong>
+                        {% if session.instructor and session.instructor.profile and session.instructor.profile.firstname %}
+                            {{ session.instructor.profile.firstname }}
+                        {% elseif session.instructor %}
+                            {{ session.instructor }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </strong>
+                </div>
+                <div class="session-rate-modal__summary-item" role="listitem">
+                    <span>Tipo</span>
+                    <strong>{{ session.type ? (session.type|PackageSessionType) : '-' }}</strong>
+                </div>
+                <div class="session-rate-modal__summary-item" role="listitem">
+                    <span>Día</span>
+                    <strong>{{ session.dateStart ? session.dateStart|format_date(null, "EEEE d 'de' MMMM") : '-' }}</strong>
+                </div>
+            </div>
+
+            <form action="{{ path('session_used_rate', {'id': reservation.id}) }}" method="post" class="session-rating-form" novalidate aria-describedby="session-rate-modal-description session-rating-helper-{{ reservation.id }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('reservation_rate_' ~ reservation.id) }}">
+                <input type="hidden" name="return_to" value="{{ return_to|default('') }}">
+
+                <p class="session-rating-title"><b>Califica esta clase</b></p>
+                <p class="session-rating-helper" id="session-rating-helper-{{ reservation.id }}">Selecciona una o mas categorias (1 a 5 estrellas) para registrar tu calificacion.</p>
+                <div class="session-rating-feedback" aria-live="polite" aria-atomic="true"></div>
+
+                <fieldset class="session-rating-group">
+                    <legend>Ejercicios</legend>
+                    <div class="session-rating-group__body">
+                        <p>Evalúa la calidad y claridad de los ejercicios realizados durante la clase.</p>
+                        <div class="rating-stars" aria-label="Calificar ejercicios">
+                            {% for star in 5..1 %}
+                                {% set inputId = 'modal-rating-exercise-' ~ reservation.id ~ '-' ~ star %}
+                                <input
+                                    type="radio"
+                                    id="{{ inputId }}"
+                                    name="rating_exercise"
+                                    value="{{ star }}"
+                                    aria-label="{{ star }} estrella(s) para ejercicios"
+                                    {% if reservation.ratingExercise == star %}checked{% endif %}
+                                >
+                                <label for="{{ inputId }}" title="{{ star }} estrella(s)">
+                                    <span aria-hidden="true">&#9733;</span>
+                                    <span class="visually-hidden">{{ star }} estrella(s)</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="session-rating-group">
+                    <legend>Instructor</legend>
+                    <div class="session-rating-group__body">
+                        <p>Califica la guía, atención y acompañamiento recibido por parte del instructor.</p>
+                        <div class="rating-stars" aria-label="Calificar instructor">
+                            {% for star in 5..1 %}
+                                {% set inputId = 'modal-rating-instructor-' ~ reservation.id ~ '-' ~ star %}
+                                <input
+                                    type="radio"
+                                    id="{{ inputId }}"
+                                    name="rating_instructor"
+                                    value="{{ star }}"
+                                    aria-label="{{ star }} estrella(s) para instructor"
+                                    {% if reservation.ratingInstructor == star %}checked{% endif %}
+                                >
+                                <label for="{{ inputId }}" title="{{ star }} estrella(s)">
+                                    <span aria-hidden="true">&#9733;</span>
+                                    <span class="visually-hidden">{{ star }} estrella(s)</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="session-rating-group">
+                    <legend>Tipo de clase</legend>
+                    <div class="session-rating-group__body">
+                        <p>Indica qué tan bien se ajustó la modalidad de la clase a tu experiencia esperada.</p>
+                        <div class="rating-stars" aria-label="Calificar tipo de clase">
+                            {% for star in 5..1 %}
+                                {% set inputId = 'modal-rating-class-type-' ~ reservation.id ~ '-' ~ star %}
+                                <input
+                                    type="radio"
+                                    id="{{ inputId }}"
+                                    name="rating_class_type"
+                                    value="{{ star }}"
+                                    aria-label="{{ star }} estrella(s) para tipo de clase"
+                                    {% if reservation.ratingClassType == star %}checked{% endif %}
+                                >
+                                <label for="{{ inputId }}" title="{{ star }} estrella(s)">
+                                    <span aria-hidden="true">&#9733;</span>
+                                    <span class="visually-hidden">{{ star }} estrella(s)</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div class="session-rating-actions">
+                    <button type="submit" class="btn btn-submit session-rating-submit">
+                        {{ reservation.hasRatings ? 'Actualizar calificación' : 'Guardar calificación' }}
+                    </button>
+
+                    {% if reservation.userRatingAverage is not null %}
+                        <p class="session-rating-summary">
+                            <span>Tu promedio actual</span>
+                            <strong>{{ reservation.userRatingAverage|number_format(1, '.', '') }}/5</strong>
+                        </p>
+                    {% endif %}
+                </div>
+            </form>
+        {% else %}
+            <div class="center">
+                <p>Esta clase no está disponible para calificación.</p>
+            </div>
+        {% endif %}
+    </div>
+</section>

@@ -1,0 +1,87 @@
+{% form_theme form with ['backend/default/form/fields.html.twig'] only %}
+
+<div class="row">
+    <div class="col-xs-12">
+        <div class="row">
+            <div class="col-md-6 col-xs-12 form-group has-feedback">
+                {{ form_label(form.dateStart, 'Día:') }}
+
+                {{ form_widget(form.dateStart, {
+                    'attr': {
+                        'class': 'form-control datepicker has-feedback-right',
+                    }
+                }) }}
+                <span class="form-control-feedback right" aria-hidden="true">
+                    <i class="fa fa-calendar" aria-hidden="true"></i>
+                </span>
+            </div>
+
+            <div class="col-md-6 col-xs-12">
+                {{ form_row(form.timeStart, {
+                    'label': 'Hora:',
+                    'attr': {
+                        'class': 'form-control',
+                    }
+                }) }}
+            </div>
+        </div>
+
+        {{ form_row(form.branchOffice, {
+            'label': 'Sucursal:',
+            'attr': {
+                'class': 'form-control',
+                'autocomplete': 'off'
+            }
+        }) }}
+
+        {{ form_row(form.exerciseRoom, {
+            'label': 'Salón:',
+            'attr': {
+                'class': 'form-control',
+            }
+        }) }}
+
+        {{ form_row(form.discipline, {
+            'label': 'Disciplina:',
+            'attr': {
+                'class': 'form-control',
+                'readonly': null,
+            }
+        }) }}
+
+        {{ form_row(form.instructor, {
+            'label': 'Instructor:',
+            'attr': {
+                'class': 'form-control',
+            }
+        }) }}
+
+        {{ form_row(form.information, {
+            'label': 'Información:',
+            'attr': {
+                'class': 'form-control',
+            }
+        }) }}
+
+        {% if form.offsetExists('exerciseRoomCapacity') %}
+            {{ form_row(form.exerciseRoomCapacity, {
+                'label': 'Capacidad:',
+                'attr': {
+                    'class': 'form-control',
+                    'min': 1,
+                    'max': 36,
+                }
+            }) }}
+        {% endif %}
+
+        {% if form.offsetExists('placesNotAvailable') %}
+            {{ form_row(form.placesNotAvailable, {
+                'label': 'Lugares no Disponibles:',
+                'attr': {
+                    'class': 'form-control',
+                    'data-tag-number': form.exerciseRoomCapacity.vars.id,
+                }
+            }) }}
+        {% endif %}
+    </div>
+</div>

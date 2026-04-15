@@ -1,0 +1,61 @@
+{% extends 'form_div_layout.html.twig' %}
+
+{%- block form_row -%}
+    <div class="form-group {% if not form.vars.valid %}has-error{% endif %}">
+        {{- form_label(form) -}}
+        {{- form_widget(form) -}}
+        {{- form_errors(form) -}}
+    </div>
+{%- endblock form_row -%}
+
+{%- block form_errors -%}
+    {%- if errors|length > 0 -%}
+        <ul class="fa-ul">
+            {%- for error in errors -%}
+                <li>
+                    <i class="fa fa-li fa-exclamation-circle"></i>
+                    <span class="text-warning">{{ error.message }}</span>
+                </li>
+            {%- endfor -%}
+        </ul>
+    {%- endif -%}
+{%- endblock form_errors -%}
+
+{%- block choice_widget_expanded -%}
+    <div {{ block('widget_container_attributes') }} class="accordion_choice_expanded">
+        <div class="panel-group" id="accordion">
+            {% for group_label, group in choices %}
+                {%- if group is iterable -%}
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h2 class="panel-title">
+                                <a data-toggle="collapse" data-parent="#accordion" class="collapsed" href="#collapse{{ loop.index }}">
+                                    {{ group_label|trans({}, translation_domain) }}
+                                </a>
+                            </h2>
+                        </div>
+                        <div id="collapse{{ loop.index }}" class="panel-collapse collapse">
+                            <div class="panel-body">
+                                <table class="table">
+                                    {% for key, choice in group %}
+                                        <tr>
+                                            <td valign="middle">
+                                                {{- form_widget(form[key], {
+                                                    'attr': {
+                                                        'class': 'flat',
+                                                    }
+                                                }) -}}
+                                                &nbsp;&nbsp;
+                                                {{- form_label(form[key]) -}}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                {%- endif -%}
+            {% endfor %}
+        </div>
+    </div>
+{%- endblock choice_widget_expanded -%}

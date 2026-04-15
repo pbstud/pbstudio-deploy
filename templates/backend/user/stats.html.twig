@@ -1,0 +1,18 @@
+{% extends 'backend/layout-ajax.html.twig' %}
+
+{% block content %}
+    <table class="table-user-stats">
+        <tr>
+            <td>Disponibles:</td>
+            <td>{{ sessions_available }}</td>
+        </tr>
+        <tr>
+            <td>Tomadas:</td>
+            <td>{{ sessions_used }}</td>
+        </tr>
+        <tr>
+            <td>Proximas:</td>
+            <td>{{ reserved_sessions }}</td>
+        </tr>
+    </table>
+{% endblock %}

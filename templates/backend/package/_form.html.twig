@@ -1,0 +1,42 @@
+{{ form_start(form, {'attr': {'id': 'form-package'}}) }}
+    <div class="row">
+        {{ form_row(form.isUnlimited, {'row_attr': {'class': 'col-md-6'}}) }}
+        {{ form_row(form.totalClasses, {'row_attr': {'class': 'col-md-6'}}) }}
+    </div>
+
+    <div class="row">
+        {{ form_row(form.altText, {'row_attr': {'class': 'col-md-6'}}) }}
+        {{ form_row(form.daysExpiry, {'row_attr': {'class': 'col-md-6'}}) }}
+    </div>
+
+    <div class="row">
+        {{ form_row(form.amount, {'row_attr': {'class': 'col-md-6'}}) }}
+        {{ form_row(form.specialPrice, {'row_attr': {'class': 'col-md-6'}}) }}
+    </div>
+
+    <div class="row">
+        {{ form_row(form.discountInfo, {'row_attr': {'class': 'col-md-6'}}) }}
+        {{ form_row(form.type, {'row_attr': {'class': 'col-md-6 icheck-fields'}}) }}
+    </div>
+
+    <div class="row">
+        {{ form_row(form.newUser, {'row_attr': {'class': 'col-md-6'}}) }}
+        {{ form_row(form.public, {'row_attr': {'class': 'col-md-6'}}) }}
+    </div>
+
+    <div class="row">
+        {{ form_row(form.isActive, {'row_attr': {'class': 'col-md-6'}}) }}
+    </div>
+
+    <div class="ln_solid"></div>
+
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="pull-right">
+                <button type="submit" class="btn btn-primary btn-submit">
+                    {{ (button_label|default('btn.save'))|trans }}
+                </button>
+            </div>
+        </div>
+    </div>
+{{ form_end(form) }}

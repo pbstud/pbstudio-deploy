@@ -1,0 +1,20 @@
+{% extends 'layout.html.twig' %}
+
+{% block page_title %}Gracias por tu compra | {% endblock %}
+
+{% block content %}
+    <section class="page">
+        <div class="row">
+            <div class="content success-page">
+                <div class="text_box">
+                    <h1>Gracias por tu compra</h1>
+                    <div class="checkout-success center">
+                        <h4>Tu compra se ha realizado con éxito<small>¡Comienza ahora!</small></h4>
+                        <a href="{{ path('reservation_calendar') }}" class="btn">Reservar clase</a>
+                        <a href="{{ path('profile') }}" class="btn secondary">Ir a mi cuenta</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

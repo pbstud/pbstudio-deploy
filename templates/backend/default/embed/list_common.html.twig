@@ -1,0 +1,45 @@
+<div class="">
+    <div class="page-title">
+        <div class="title_left">
+            <h3>{{ page_section }}</h3>
+        </div>
+
+        <div class="title_right">
+            {% block actions %}{% endblock %}
+        </div>
+    </div>
+
+    <div class="clearfix"></div>
+
+    {#{ include('backend/default/partials/flash.html.twig') }#}
+
+    <div class="row">
+        <div class="col-md-12 col-sm-12 col-xs-12">
+            {% set _block = block('body_filters') is defined ? block('body_filters') : null %}
+            {% if _block is not empty %}
+                <div class="x_panel x_panel_filters">
+                    <div class="x_content">
+                        {{ _block|raw }}
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="dataTables_wrapper">
+                <div class="x_panel">
+                    <div class="x_title">
+                        <h2>{{ page_title }}</h2>
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        {% block body %}{% endblock %}
+                    </div>
+
+                    <div class="clearfix"></div>
+                    <div class="x_footer">
+                        {% block footer %}{% endblock %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

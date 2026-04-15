@@ -1,0 +1,142 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% set page_section = 'Staff' %}
+
+{% form_theme form with ['backend/default/form/fields.html.twig'] only %}
+
+{% block content %}
+    {{ form_start(form, {
+        'attr': {
+            'class': 'form-horizontal form-label-left',
+            'data-parsley-validate': '',
+        }
+    }) }}
+        <div class="page-title">
+            <div class="title_left">
+                <h3>
+                    <a href="{{ path('backend_staff') }}" class="btn btn-default btn-return-to">
+                        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                    </a>
+                    {{ page_section }}
+                </h3>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-8 col-xs-12">
+                {% embed 'backend/default/embed/form_common.html.twig' with {
+                    'page_title': 'Información',
+                    'form': form
+                } only %}
+                    {% block body %}
+                        <div class="row">
+                            <div class="form-group">
+                                {{ form_label(form.username, 'Usuario:', {
+                                    'label_attr': {
+                                        'class': 'control-label col-md-5 col-sm-5 col-xs-12',
+                                    }
+                                }) }}
+                                <div class="col-md-7 col-sm-7 col-xs-12">
+                                    {{ form_widget(form.username, {
+                                        'attr': {
+                                            'class': 'form-control',
+                                        }
+                                    }) }}
+                                    {{ form_errors(form.username) }}
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                {{ form_label(form.password.first, 'Contraseña:', {
+                                    'label_attr': {
+                                        'class': 'control-label col-md-5 col-sm-5 col-xs-12',
+                                    }
+                                }) }}
+                                <div class="col-md-7 col-sm-7 col-xs-12">
+                                    {{ form_widget(form.password.first, {
+                                        'attr': {
+                                            'class': 'form-control',
+                                        }
+                                    }) }}
+                                    {{ form_errors(form.password.first) }}
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                {{ form_label(form.password.second, 'Repetir contraseña:', {
+                                    'label_attr': {
+                                        'class': 'control-label col-md-5 col-sm-5 col-xs-12',
+                                    }
+                                }) }}
+                                <div class="col-md-7 col-sm-7 col-xs-12">
+                                    {{ form_widget(form.password.second, {
+                                        'attr': {
+                                            'class': 'form-control',
+                                        }
+                                    }) }}
+                                    {{ form_errors(form.password.second) }}
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                {{ form_label(form.roles, 'Rol:', {
+                                    'label_attr': {
+                                        'class': 'control-label col-md-5 col-sm-5 col-xs-12',
+                                    }
+                                }) }}
+                                <div class="col-md-7 col-sm-7 col-xs-12">
+                                    {{ form_widget(form.roles, {
+                                        'attr': {
+                                            'class': 'form-control',
+                                        }
+                                    }) }}
+                                    {{ form_errors(form.roles) }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endblock %}
+                {% endembed %}
+
+                {% embed 'backend/default/embed/form_common.html.twig' with {
+                    'page_title': 'Sucursales',
+                    'form': form,
+                } only %}
+                    {% block body %}
+                        {%- for child in form.branchOffices.children %}
+                            <div class="checkbox list-icheck">
+                                {{ form_widget(child, {'attr': {'class': 'flat'}}) }}
+                                {{ form_label(child) }}
+                            </div>
+                        {% endfor -%}
+                    {% endblock %}
+                {% endembed %}
+            </div>
+
+            <div class="col-md-4 col-xs-12">
+                {% embed 'backend/default/embed/form_common.html.twig' with {
+                    'page_title': 'Permisos',
+                    'form': form,
+                } only %}
+                    {% block body %}
+                        {{ form_row(form.permissions, {
+                            'label': false,
+                        }) }}
+                    {% endblock %}
+                {% endembed %}
+            </div>
+        </div>
+
+        <div class="ln_solid"></div>
+
+        <div class="form-group">
+            <div class="col-xs-12">
+                <div class="pull-right">
+                    <button type="submit" class="btn btn-primary">
+                        Guardar
+                    </button>
+                </div>
+                <div class="clearfix"></div>
+            </div>
+        </div>
+    {{ form_end(form) }}
+{% endblock %}

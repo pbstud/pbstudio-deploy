@@ -1,0 +1,87 @@
+{% extends 'backend/session/profile.html.twig' %}
+
+{% set page_title = 'Editar Clase' %}
+
+{% block subcontent %}
+    {{ form_start(edit_form, {
+        'attr': {
+            'class': 'form-horizontal form-label-left',
+            'id': 'frm-session',
+            'data-parsley-validate': '',
+        }
+    }) }}
+        {% include 'backend/session/_form.html.twig' with { 'form': edit_form } only %}
+
+        <div class="ln_solid"></div>
+
+        {% if session.status in [ constant('App\\Entity\\Session::STATUS_OPEN'), constant('App\\Entity\\Session::STATUS_FULL') ] %}
+            <div class="form-group">
+                <div class="col-xs-12">
+                    <div class="pull-right">
+                        <button type="submit" class="btn btn-primary">
+                            Guardar
+                        </button>
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+            </div>
+        {% endif %}
+    {{ form_end(edit_form) }}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+
+    <script>
+      $(function () {
+        var $branchOffice = $('#session_branchOffice');
+        $branchOffice.change(function() {
+          var $form = $(this).closest('form');
+          var data = {};
+          data[$branchOffice.attr('name')] = $branchOffice.val();
+          $.ajax({
+            url : $form.attr('action'),
+            type: $form.attr('method'),
+            data : data,
+            success: function(html) {
+              $('#session_exerciseRoom').replaceWith(
+                $(html).find('#session_exerciseRoom')
+              );
+
+              $('#session_discipline').replaceWith(
+                $(html).find('#session_discipline')
+              );
+
+              $('#session_instructor').replaceWith(
+                $(html).find('#session_instructor')
+              );
+            }
+          });
+        });
+
+        var $form = $('#frm-session');
+        $form.on('change', '#session_exerciseRoom', function () {
+          var $exerciseRoom = $(this);
+          var data = {};
+
+          data[$branchOffice.attr('name')] = $branchOffice.val();
+          data[$exerciseRoom.attr('name')] = $exerciseRoom.val();
+
+          $.ajax({
+            url : $form.attr('action'),
+            type: $form.attr('method'),
+            data : data,
+            success: function(html) {
+              $('#session_discipline').replaceWith(
+                $(html).find('#session_discipline')
+              );
+
+              $('#session_instructor').replaceWith(
+                $(html).find('#session_instructor')
+              );
+            }
+          });
+        });
+      });
+    </script>
+{% endblock %}

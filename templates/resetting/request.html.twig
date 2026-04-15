@@ -1,0 +1,24 @@
+{% extends 'layout.html.twig' %}
+
+{% block page_title %}Recuperar contraseña | {% endblock %}
+
+{% block content %}
+    <section class="box-form resetting-box">
+        {{ include('resetting/_flash.html.twig') }}
+
+        <div class="gradient">
+            <div class="row">
+                <div class="resetting-panel">
+                    <h3 class="resetting-title">Recuperar contraseña</h3>
+                    <p class="resetting-subtitle">Ingresa el correo con el que te registraste y te enviaremos las instrucciones para restablecer tu contraseña.</p>
+
+                    <form id="resetting-request" action="{{ path('resetting_send_email') }}" method="post" class="resetting-form">
+                        <input type="email" id="username" name="username" required="required" placeholder="Correo electrónico">
+
+                        <button type="submit" class="btn-submit">Restablecer contraseña</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

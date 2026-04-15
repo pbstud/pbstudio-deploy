@@ -1,0 +1,135 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+    {% if stats is defined %}
+        <div class="row tile_count">
+            <div class="col-md-4 col-sm-6 col-xs-6 tile_stats_count">
+                <span class="count_top"><i class="fa fa-user"></i> Total transaccionado</span>
+                <div class="count">${{ stats['totalAmountProcessed']|number_format() }}</div>
+            </div>
+            <div class="col-md-4 col-sm-6 col-xs-6 tile_stats_count">
+                <span class="count_top"><i class="fa fa-user"></i> Total transaccionado en el mes</span>
+                <div class="count">${{ stats['totalAmountInCurrentMonth']|number_format() }}</div>
+            </div>
+            <div class="col-md-4 col-sm-6 col-xs-6 tile_stats_count">
+                <span class="count_top"><i class="fa fa-user"></i> Total de usuarios</span>
+                <div class="count">{{ stats['totalActiveUsers'] }}</div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="row">
+        {% if lastTransactions is defined %}
+            <div class="col-xs-12">
+                <div class="x_panel">
+                    <div class="x_title">
+                        <h2>Últimas transacciones</h2>
+
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        {% if lastTransactions %}
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="thead-dark">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Usuario</th>
+                                        <th>Email</th>
+                                        <th>Paquete</th>
+                                        <th>Modalidad</th>
+                                        <th class="text-right">Monto</th>
+                                        <th>M. de pago</th>
+                                        <th class="text-center">F. registro</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for entity in lastTransactions %}
+                                        {# entity \App\Entity\Transaction #}
+                                        <tr>
+                                            <th scope="row">{{ entity.id }}</th>
+                                            <td>{{ entity.user }}</td>
+                                            <td>{{ entity.user.email }}</td>
+                                            <td>{{ entity.packageTotalClasses }} clase(s)</td>
+                                            <td>{{ entity.packageType|PackageSessionType }}</td>
+                                            <td class="text-right">${{ entity.total|number_format(2) }}</td>
+                                            <td>{{ entity.chargeMethod|ChargeMethodDescription }}</td>
+                                            <td class="text-center">{{ entity.createdAt|date('Y-m-d H:i') }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            {{ include('backend/default/partials/not_records.html.twig') }}
+                        {% endif %}
+                    </div>
+
+                    <div class="clearfix"></div>
+
+                    {% if lastTransactions %}
+                        <div class="x_footer text-center">
+                            <a href="{{ path('backend_transaction') }}" class="btn btn-default btn-sm">Ver todas</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
+        {% if lastUsers is defined %}
+            <div class="col-xs-12">
+                <div class="x_panel">
+                    <div class="x_title">
+                        <h2>Últimos usuarios registrados</h2>
+
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        {% if lastUsers %}
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover">
+                                    <thead class="thead-dark">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Nombre</th>
+                                        <th>Email</th>
+                                        <th>Teléfono</th>
+                                        <th class="text-center">Fecha de registro</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for entity in lastUsers %}
+                                        <tr>
+                                            <th scope="row">{{ entity.id }}</th>
+                                            <td>{{ entity }}</td>
+                                            <td>{{ entity.email }}</td>
+                                            <td>{{ entity.phone|default('-----') }}</td>
+                                            <td class="text-center">{{ entity.createdAt|date('Y-m-d H:i') }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            {{ include('backend/default/partials/not_records.html.twig') }}
+                        {% endif %}
+                    </div>
+
+                    <div class="clearfix"></div>
+
+                    {% if lastUsers %}
+                        <div class="x_footer text-center">
+                            <a href="{{ path('backend_user') }}" class="btn btn-default btn-sm">Ver todos</a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+{% endblock %}

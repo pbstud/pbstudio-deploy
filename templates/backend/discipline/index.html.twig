@@ -1,0 +1,52 @@
+{% extends 'backend/default/list.html.twig' %}
+
+{% block title %}Listado de Disciplinas{% endblock %}
+
+{% block actions %}
+    {% if is_allowed_route('backend_discipline_new') %}
+        <div class="col-md-3 col-sm-4 col-xs-8 form-group pull-right top_search text-right">
+            <a href="{{ path('backend_discipline_new') }}" class="btn btn-dark">
+                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                {{ 'main.backend_discipline_new'|trans }}
+            </a>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block table_thead %}
+    <tr>
+        <th>{{ knp_pagination_sortable(pagination, 'label.id'|trans, 'd.id') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'label.name'|trans, 'd.name') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'label.active'|trans, 'd.isActive') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'label.created_at'|trans, 'd.createdAt') }}</th>
+        <th></th>
+    </tr>
+{% endblock %}
+
+{% block table_tbody %}
+    {% set allowEdit = is_allowed_route('backend_discipline_edit') %}
+
+    {% for discipline in pagination %}
+        {# discipline \App\Entity\Discipline #}
+        <tr>
+            <td>{{ discipline.id }}</td>
+            <td>{{ discipline.name }}</td>
+            <td>
+                {% if discipline.isActive %}
+                    <span class="label label-primary">Sí</span>
+                {% else %}
+                    <span class="label label-danger">No</span>
+                {% endif %}
+            </td>
+            <td>{{ discipline.createdAt ? discipline.createdAt|date('d/m/Y H:i') }}</td>
+            <td>
+                {% if allowEdit %}
+                    <a href="{{ path('backend_discipline_edit', {'id': discipline.id}) }}" class="btn btn-primary btn-xs">
+                        Editar
+                    </a>
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+{% endblock %}
+

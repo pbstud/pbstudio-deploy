@@ -1,0 +1,347 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% block content %}
+    <div class="">
+        <div class="page-title">
+            <div class="title_left">
+                <h3>
+                    <a href="{{ path('backend_transaction') }}" class="btn btn-default btn-return-to">
+                        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                    </a>
+
+                    Transacciones
+                </h3>
+            </div>
+
+            <div class="title_right">
+                <div class="form-group pull-right">
+                    {% if is_allowed_route('backend_transaction_cancel')
+                        and constant('App\\Entity\\Transaction::STATUS_PAID') == transaction.status
+                    %}
+                        <button type="button" class="btn btn-danger" data-loading-text="<i class='fa fa-circle-o-notch fa-spin'></i> Cancelando ..." data-btn-refund disabled>Cancelar la transacción</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="clearfix"></div>
+
+        <div class="row">
+            <div class="col-xs-12 col-md-5">
+
+                <div class="x_panel x_panel_widget">
+                    <div class="x_title">
+                        <h2>Transacción</h2>
+
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        <div class="table-responsive">
+                            <table class="table table_inner">
+                                <tbody>
+                                    <tr>
+                                        <th>#</th>
+                                        <td>{{ transaction.id }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Estado:</th>
+                                        <td>
+                                            <span class="label label-{{ transaction.status|TransactionStatusLabel }}">
+                                                {{ transaction.status|TransactionStatusDescription }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Monto:</th>
+                                        <td>${{ transaction.packageAmount|number_format(2) }}</td>
+                                    </tr>
+                                   {% if transaction.packageSpecialPrice %}
+                                       <tr>
+                                           <th>Precio Especial:</th>
+                                           <td>${{ transaction.packageSpecialPrice|number_format(2) }}</td>
+                                       </tr>
+                                   {% endif %}
+                                    <tr>
+                                        <th>Cupón:</th>
+                                        <td>
+                                            {{ transaction.couponDiscount }}%
+                                            {% if transaction.coupon %}
+                                                (<a href="{{ path('backend_coupon_show', {'id': transaction.coupon.id}) }}" target="_blank">
+                                                    {{ transaction.coupon.code }}
+                                                </a>)
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Descuento:</th>
+                                        <td>{{ transaction.discount }}%</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Total:</th>
+                                        <td>${{ transaction.total|number_format(2) }}</td>
+                                    </tr>
+                                    {% if constant('App\\Entity\\Transaction::STATUS_PAID') == transaction.status %}
+                                        <tr>
+                                            <th>Autorización:</th>
+                                            <td>{{ transaction.chargeAuthCode }}</td>
+                                        </tr>
+                                    {% endif %}
+                                    {% if constant('App\\Entity\\Transaction::STATUS_DENIED') == transaction.status %}
+                                        <tr class="text-warning">
+                                            <th>Error:</th>
+                                            <td>{{ transaction.errorMessage }}</td>
+                                        </tr>
+                                    {% endif %}
+                                    {% if 'payment.card' == transaction.chargeMethod and transaction.chargeId %}
+                                        <tr>
+                                            <th>Conekta ID:</th>
+                                            <td>
+                                                <a href="https://admin.conekta.com/orders/{{ transaction.chargeId }}" target="_blank">
+                                                    {{ transaction.chargeId }}
+                                                    <i class="fa fa-external-link" aria-hidden="true"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                    <tr>
+                                        <th>F. pago:</th>
+                                        <td>{{ transaction.createdAt|date('d/m/Y H:i:s') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>F. expiración:</th>
+                                        <td>
+                                            {{ transaction.expirationAt|date('d/m/Y') }}
+                                            {%  if is_allowed_route('backend_transaction_edit_expiration')
+                                                and not transaction.isExpired
+                                            %}
+                                                <a href="#" id="btn-edit-expiration" data-toggle="tooltip" data-original-title="Editar fecha">
+                                                    <i class="fa fa-edit"></i>
+                                                </a>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% if constant('App\\Entity\\Transaction::STATUS_CANCEL') == transaction.status %}
+                                        <tr>
+                                            <th>F. devolución:</th>
+                                            <td>{{ transaction.refundedAt|date('d/m/Y H:i:s') }}</td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                {% if transaction.chargeMethod in [ 'payment.card','payment.pos', ] %}
+                    <div class="x_panel x_panel_widget">
+                        <div class="x_title">
+                            <h2>Tarjeta</h2>
+
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="x_content">
+                            <div class="table-responsive">
+                                <table class="table table_inner">
+                                    <tbody>
+                                        <tr>
+                                            <th>Nombre:</th>
+                                            <td>{{ transaction.cardName }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Número:</th>
+                                            <td>**** **** **** {{ transaction.cardLast4 }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+            </div>
+
+            <div class="col-xs-12 col-md-7">
+
+                <div class="x_panel x_panel_widget">
+                    <div class="x_title">
+                        <h2>Paquete</h2>
+
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        <div class="table-responsive">
+                            <table class="table table_inner">
+                                <tbody>
+                                    <tr>
+                                        <th>Número de clases:</th>
+                                        <td>{{ transaction.packageTotalClasses }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Costo:</th>
+                                        <td>${{ transaction.packageAmount|number_format }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Descuento:</th>
+                                        <td>{{ transaction.discount }}%</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Total:</th>
+                                        <td>${{ transaction.total|number_format }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Modalidad:</th>
+                                        <td>{{ transaction.packageType|PackageSessionType }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Vigencia:</th>
+                                        <td>{{ transaction.packageDaysExpiry }} días</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="x_panel x_panel_widget">
+                    <div class="x_title">
+                        <h2>Usuario</h2>
+
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        <div class="table-responsive">
+                            <table class="table table_inner">
+                                <tbody>
+                                    <tr>
+                                        <th>Nombre:</th>
+                                        <td>{{ transaction.user }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Email:</th>
+                                        <td>{{ transaction.user.email }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Teléfono:</th>
+                                        <td>{{ transaction.user.phone }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Conekta ID:</th>
+                                        <td>
+                                            <a href="https://admin.conekta.com/customers/{{ transaction.user.conektaId }}" target="_blank">
+                                                {{ transaction.user.conektaId }}
+                                                <i class="fa fa-external-link" aria-hidden="true"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-expiration" tabindex="-1" role="dialog" aria-labelledby="modal-expiration-label">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="modal-expiration-label">Editar Fecha de Expiración</h4>
+                </div>
+                <div class="modal-body">
+                    <form autocomplete="off" action="{{ path('backend_transaction_edit_expiration', { 'id': transaction.id }) }}" method="post">
+                        <div class="form-group">
+                            <label for="expiration-date" class="control-label">Fecha de Expiración:</label>
+                            <div class="date-action-field">
+                                <input type="text" class="form-control datepicker" id="expiration-date" name="expiration_date" value="{{ transaction.expirationAt|date('d/m/Y') }}">
+                                <span class="date-action-icon" aria-hidden="true">
+                                    <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                                </span>
+                                <button type="button" class="btn btn-default date-action-clear" onclick="document.getElementById('expiration-date').value = '';" title="Limpiar fecha" aria-label="Limpiar fecha">
+                                    <i class="fa fa-times" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary btn-save" data-loading-text="Guardando..." autocomplete="off">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+
+    <script type="text/javascript">
+        $(function () {
+            var $modal = $('#modal-expiration');
+
+            $('#btn-edit-expiration').on('click', function (e) {
+                e.preventDefault();
+
+                $modal.modal('toggle')
+            });
+
+            $('.btn-save').on('click', function () {
+                $(this).button('loading');
+
+                $modal.find('form').submit();
+            });
+        });
+
+        {% if is_allowed_route('backend_transaction_cancel')
+            and constant('App\\Entity\\Transaction::STATUS_PAID') == transaction.status
+        %}
+            $(function () {
+                var csrfToken = '{{ csrf_token('backend_transaction_cancel_' ~ transaction.id) }}';
+
+                $('[data-btn-refund]')
+                    .on('click', function (e) {
+                        e.preventDefault();
+
+                        var link = $(this);
+
+                        if (confirm('¿Confirmas que deseas devolver la transacción?')) {
+                            link.button('loading');
+
+                            $.ajax({
+                                'url': '{{ path('backend_transaction_cancel', { 'id': transaction.id }) }}',
+                                'type': 'post',
+                                'dataType': 'json',
+                                'data': {
+                                    '_token': csrfToken,
+                                },
+                                'success': function (response) {
+                                    link.button('reset');
+
+                                    if (response.error) {
+                                        $.flash.danger(response.error.message || 'No se pudo cancelar la transacción.');
+                                    } else {
+                                        if (response.warning && response.warning.message) {
+                                            $.flash.danger(response.warning.message, 'Aviso');
+                                        }
+
+                                        $.flash.success(response.success && response.success.message ? response.success.message : 'La transacción ha sido cancelada.');
+
+                                        window.location.reload();
+                                    }
+                                },
+                                'error': function () {
+                                    link.button('reset');
+                                    $.flash.danger('Ocurrió un error al cancelar la transacción. Intenta nuevamente.');
+                                },
+                            });
+                        }
+                    })
+                    .prop('disabled', false)
+                ;
+            });
+        {% endif %}
+    </script>
+{% endblock %}

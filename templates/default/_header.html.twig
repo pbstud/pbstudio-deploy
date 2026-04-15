@@ -1,0 +1,86 @@
+<header>
+    <div class="row clearfix">
+        <div class="logo">
+            <a href="{{ path('homepage') }}">
+                <img src="{{ asset('images/logo-pbstudio.svg') }}" alt="Logo P&amp;B">
+            </a>
+        </div>
+        <div class="ham_link">
+            {% if app.user %}
+                <a href="{{ path('profile') }}" class="link">
+                    <span class="icon-individual"></span>Mi cuenta
+                </a>
+                <div
+                    class="pb-notification-center{% if app.request.attributes.get('_route') == 'notifications' %} is-hidden-on-page{% endif %}"
+                    data-notification-center
+                    data-list-url="{{ path('api_notifications_list') }}"
+                    data-unread-url="{{ path('api_notifications_unread_count') }}"
+                    data-mark-read-url-template="{{ path('api_notifications_mark_read', { id: '__ID__' }) }}"
+                >
+                    <button type="button" class="pb-notification-bell" data-notification-bell aria-label="Abrir notificaciones" aria-expanded="false">
+                        <span class="pb-notification-bell__icon" aria-hidden="true">&#128276;</span>
+                        <span class="pb-notification-badge" data-notification-badge hidden>0</span>
+                    </button>
+                    <div class="pb-notification-panel" data-notification-panel hidden>
+                        <div class="pb-notification-panel__header">
+                            <strong>Notificaciones</strong>
+                        </div>
+                        <ul class="pb-notification-list" data-notification-list>
+                            <li class="pb-notification-empty">Sin notificaciones por ahora.</li>
+                        </ul>
+                        <div class="pb-notification-panel__footer">
+                            <a href="{{ path('notifications') }}" class="pb-notification-panel__footer-link">
+                                Ver todas las notificaciones
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <a href="#" class="link" data-url="{{ path('app_login') }}" data-remodal>
+                    Iniciar sesión
+                </a>
+                <a href="#" class="link" data-url="{{ path('register') }}" data-remodal>
+                    Registrate
+                </a>
+            {% endif %}
+            <a href="#" onclick="return false;" aria-hidden="false" class="nav-toggle">
+                <span class="iconMenu"></span>
+            </a>
+        </div>
+        <div class="botons">
+            <a href="{{ path('package_index') }}" class="btn little">Paquetes</a>
+        </div>
+    </div>
+    <div class="nav-collapse">
+        <div class="center">
+            <nav>
+                <ul>
+                    <li><a href="{{ path('page', { 'slug': 'quienes-somos' }) }}" title="¿Quiénes somos?">¿Quiénes somos?</a></li>
+                    <li><a href="{{ path('instructors') }}" title="Instructores">Instructores</a></li>
+                    <li><a href="{{ path('class_descriptions_index') }}" title="Clases">Clases</a></li>
+                    <li><a href="{{ path('contact') }}" title="Contacto">Contacto</a></li>
+                    {% if app.user %}
+                        <li><a href="{{ path('profile') }}" title="Mi cuenta">Mi cuenta</a></li>
+                    {% else %}
+                        <li><a href="#login" class="link" data-url="{{ path('app_login') }}" data-remodal>Iniciar sesión</a></li>
+                    {% endif %}
+                    {% if app.user %}
+                        <li><a href="{{ path('app_logout') }}">Cerrar Sesión</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            <div class="clearflix">
+                <a href="{{ path('package_index') }}" class="link">Comprar clases</a>
+                <a href="#" class="link reserve-class-toggle">Reservar clase</a>
+            </div>
+            <div class="social">
+                <a href="https://www.facebook.com/pbstudiomx/" target="blank"><span class="icon-fb"></span></a>
+                <a href="https://www.instagram.com/pbstudiomx/" target="blank"><span class="icon-instagram-fill"></span></a>
+            </div>
+        </div>
+        <ul class="legal">
+            <li><a href="{{ path('page', { 'slug': 'terminos-y-condiciones' }) }}">Términos y condiciones</a></li>
+            <li><a href="{{ path('page', { 'slug': 'aviso-de-privacidad', }) }}">Aviso de privacidad</a></li>
+        </ul>
+    </div>
+</header>

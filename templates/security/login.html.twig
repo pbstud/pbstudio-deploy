@@ -1,0 +1,40 @@
+<section class="box-form">
+    {% if error %}
+        <div class="error">
+            <p>{{ error.messageKey|trans(error.messageData, 'security') }}</p>
+        </div>
+    {% endif %}
+
+    <div class="gradient">
+        <a data-remodal-action="close" class="nav-toggle close"><span class="iconMenu"></span></a>
+        <div class="row">
+            <h3>Iniciar sesión</h3>
+
+            <div>
+                <form action="{{ path("app_login") }}" method="post" class="m-fjx">
+                    <input type="email" class="form-control" id="username" name="username" value="{{ last_username }}" placeholder="Correo" required>
+                    <input type="password" class="form-control" id="password" name="password" placeholder="Contraseña" required>
+
+                    <button type="submit" class="btn-submit">Entrar</button>
+
+                    <div class="remember-me">
+                        <label>
+                            <input type="checkbox" name="_remember_me" checked> Recordarme
+                        </label>
+                    </div>
+
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                </form>
+
+                <br>
+                <br>
+                <br>
+                <a href="#" data-url="{{ path('resetting_request', {'_modaltarget': 1}) }}" data-remodal>¿Olvidaste tu contraseña?</a>
+            </div>
+            <p>
+                ¿Aún no tienes cuenta?
+                <a href="#" data-url="{{ path('register') }}" data-remodal>¡Regístrate ahora!</a>
+            </p>
+        </div>
+    </div>
+</section>

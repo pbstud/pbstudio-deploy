@@ -1,0 +1,46 @@
+{% extends 'mail/layout.html.twig' %}
+
+{% block body %}
+    <tr>
+        <td align="center" style="font-family:arial,sans-serif; color:#67ccbb; font-size:30px; text-align:center; text-transform:uppercase; font-weight:100">
+            Cambio de reservación confirmado
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <table width="600px" style="margin:20px;" class="w320">
+                <tr>
+                    <td class="blockwrap" style="margin-bottom:10px;">
+                        <table width="600px">
+                            <tr>
+                                <td style="font-family:arial,sans-serif; color:#6D6E70; font-size:16px; text-align:center; padding: 10px;">
+                                    <strong>Hola {{ user.name }}</strong>
+                                    <br /><br />
+
+                                    Tu cambio de reservación se realizó correctamente.
+                                    <br /><br />
+
+                                    <strong style="color:#67ccbb;">Cambio realizado:</strong>
+                                    <br />
+                                    <p><strong>De:</strong> {{ sourceDiscipline }} {{ sourceSession.type|PackageSessionType }}</p>
+                                    <p><strong>Fecha origen:</strong> {{ sourceSession.dateStart|format_date(null, "EEEE d 'de' MMMM") }}</p>
+                                    <p><strong>Hora origen:</strong> {{ sourceSession.timeStart|date('h:i a') }}</p>
+                                    <p><strong>Instructor origen:</strong> {{ sourceInstructor.profile.firstname }}</p>
+                                    <p><strong>Camilla/Silla origen:</strong> {{ sourcePlace }}</p>
+
+                                    <br />
+
+                                    <p><strong>A:</strong> {{ targetDiscipline }} {{ targetSession.type|PackageSessionType }}</p>
+                                    <p><strong>Fecha destino:</strong> {{ targetSession.dateStart|format_date(null, "EEEE d 'de' MMMM") }}</p>
+                                    <p><strong>Hora destino:</strong> {{ targetSession.timeStart|date('h:i a') }}</p>
+                                    <p><strong>Instructor destino:</strong> {{ targetInstructor.profile.firstname }}</p>
+                                    <p><strong>Camilla/Silla destino:</strong> {{ targetPlace }}</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+{% endblock %}

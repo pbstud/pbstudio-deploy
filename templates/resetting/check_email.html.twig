@@ -1,0 +1,76 @@
+{% extends 'layout.html.twig' %}
+
+{% block page_title %}Recuperar contraseña | {% endblock %}
+
+{% block content %}
+    {% set cooldownRemaining = (just_sent|default(false)) ? (resend_cooldown_seconds|default(30)) : (resend_cooldown_remaining|default(0)) %}
+
+    <section class="box-form resetting-box">
+        <div class="gradient">
+            <div class="row">
+                <div class="resetting-panel resetting-panel--status">
+                    {% if resent %}
+                        <h3 class="resetting-title">¡Correo reenviado!</h3>
+                        <p class="resetting-subtitle">Enviamos nuevamente el enlace para restablecer tu contraseña.</p>
+                    {% else %}
+                        <h3 class="resetting-title">Revisa tu correo</h3>
+                        <p class="resetting-subtitle">Te enviamos un enlace para restablecer tu contraseña.</p>
+                    {% endif %}
+
+                    <p class="resetting-help-text">Revisa tu bandeja de entrada y también las carpetas de Spam, No deseado o Promociones.</p>
+                    <p class="resetting-help-text">El correo puede tardar de 1 a 5 minutos en llegar.</p>
+
+                    {% if username %}
+                        {% if resent %}
+                            <p class="resetting-help-text resetting-help-text--success">Si aún no aparece, vuelve a revisar en unos minutos.</p>
+                        {% endif %}
+
+                        <form action="{{ path('resetting_resend_email') }}" method="post" class="resetting-form">
+                            <input type="hidden" name="username" value="{{ username }}" />
+                            <button
+                                type="submit"
+                                class="btn-submit js-resetting-resend-btn"
+                                data-cooldown-seconds="{{ resend_cooldown_seconds|default(30) }}"
+                                data-cooldown-remaining="{{ cooldownRemaining }}"
+                                {% if cooldownRemaining > 0 %}disabled{% endif %}
+                            >{% if cooldownRemaining > 0 %}Reenviar en {{ cooldownRemaining }}s{% else %}Click aquí para reenviar{% endif %}</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script type="text/javascript">
+        (function () {
+            var buttons = document.querySelectorAll('.js-resetting-resend-btn');
+
+            buttons.forEach(function (button) {
+                var remaining = parseInt(button.getAttribute('data-cooldown-remaining'), 10) || 0;
+
+                var setState = function (seconds) {
+                    if (seconds > 0) {
+                        button.disabled = true;
+                        button.textContent = 'Reenviar en ' + seconds + 's';
+                    } else {
+                        button.disabled = false;
+                        button.textContent = 'Click aqui para reenviar';
+                    }
+                };
+
+                setState(remaining);
+
+                if (remaining > 0) {
+                    var timer = window.setInterval(function () {
+                        remaining -= 1;
+                        setState(remaining);
+
+                        if (remaining <= 0) {
+                            window.clearInterval(timer);
+                        }
+                    }, 1000);
+                }
+            });
+        })();
+    </script>
+{% endblock %}

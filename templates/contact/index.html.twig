@@ -1,0 +1,71 @@
+{% extends 'layout.html.twig' %}
+
+{% block page_title %}Contáctanos | {% endblock %}
+
+{% block content %}
+    {% form_theme form with ['form_div_layout.html.twig'] only %}
+
+    <section class="page">
+        <div class="row">
+            <div class="content">
+                <div class="title">
+                    <h1>Contáctanos</h1>
+                </div>
+                <div class="clearfix contact">
+                    <div class="info_contact grid-1-6 left">
+                        <div class="clearfix">
+                            <span class="icon-email"></span><p>contacto@pbstudio.mx</p>
+                        </div>
+                        <div class="clearfix">
+                            <span class="icon-location"></span><p>Infiniti Center Santa Fé, Av. Prolongación Paseo de la reforma 215, Paseo de las Lomas, Álvaro Obregón, México, CP 01330</p>
+                        </div>
+                        <div class="clearfix">
+                            <span class="icon-phone"></span><p>Tel: (55) 5292 0036</p>
+                        </div>
+                        <div class="clearfix">
+                            <span class="icon-location"></span><p>Av. Palmas Hills 1-2, Huixquilucan, Estado de México, México. CP 52763</p>
+                        </div>
+                        <div class="clearfix">
+                            <span class="icon-phone"></span><p>Tel: (55) 5087 8039</p>
+                        </div>
+                    </div>
+                    <div class="grid-1-6 left">
+                        {{ include('default/_flash.html.twig') }}
+
+                        {{ form_start(form) }}
+                            {{ form_widget(form.name, {
+                                'attr': {
+                                    'placeholder': 'Nombre',
+                                }
+                            }) }}
+                            {{ form_widget(form.phone, {
+                                'attr': {
+                                    'placeholder': 'Teléfono',
+                                }
+                            }) }}
+                            {{ form_widget(form.email, {
+                                'attr': {
+                                    'placeholder': 'Correo',
+                                }
+                            }) }}
+                            {{ form_widget(form.message, {
+                                'attr': {
+                                    'placeholder': 'Mensaje',
+                                }
+                            }) }}
+
+                            {{ form_widget(form.submit, {
+                                'label': 'Enviar',
+                            }) }}
+                        {{ form_end(form) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div>
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3764.0459954668245!2d-99.26987428510839!3d19.367160986921522!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85d200cff90579b1%3A0x9e1cf9e5d5e1edfe!2sP%26B%20Studio!5e0!3m2!1ses-419!2smx!4v1593362959511!5m2!1ses-419!2smx" width="100%" height="450" frameborder="0" style="border:0;" allowfullscreen="" aria-hidden="false" tabindex="0"></iframe>
+            </div>
+        </div>
+    </section>
+{% endblock %}

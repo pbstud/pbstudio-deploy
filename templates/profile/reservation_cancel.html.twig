@@ -1,0 +1,119 @@
+{% set reserveClass = discipline|replace({' ': '-'})|lower %}
+
+<section class="pop_box">
+    <div class="row clearfix">
+        <a data-remodal-action="close" class="nav-toggle close"><span class="iconMenu"></span></a>
+
+        <div class="center">
+            {% if waiting_list_cancel_status.is_from_waiting_list %}
+                <h3>Cancelación por ventana de lista de espera</h3>
+                {% if waiting_list_cancel_status.is_within_grace_window %}
+                    <small style="display:block; margin-top:8px; color:#0b8457; font-weight:600;">
+                        Esta reservación se asignó desde lista de espera y aún está dentro de la ventana de 1 hora.
+                        Si la cancelas ahora, se devuelve el cupo sin penalizaciones.
+                    </small>
+                {% else %}
+                    <small style="display:block; margin-top:8px; color:#b45309; font-weight:600;">
+                        Esta reservación se asignó desde lista de espera, pero la ventana de 1 hora ya venció.
+                        La cancelación seguirá el modelo de negocio normal.
+                    </small>
+                {% endif %}
+            {% else %}
+                <h3>¿Deseas cancelar esta reservación?</h3>
+                <small>Recuerda cancelar máximo {{ time_to_cancel }} horas antes de la clase reservada.</small>
+            {% endif %}
+        </div>
+
+        <div class="clearfix class_pop {{ session.type|PackageSessionType|lower }}">
+            <div class="grid-1-6 right reserve-{{ grid_class }}">
+                <style>
+                    /*
+                     * Override .pop_box .class_pop .grid-1-6:first-child div { max-width:180px }
+                     * The ID selector wins on specificity (1-0-0 vs 0-4-0).
+                     */
+                    #place_container.seat-map-grid {
+                        display: grid;
+                        grid-template-columns: repeat(6, 40px);
+                        gap: 4px;
+                        max-width: none;
+                        width: max-content;
+                        margin: 0 auto;
+                    }
+                    /*
+                     * Override .place:nth-child(8n/9n/10n) { display:inline-block }
+                     * which breaks CSS grid item flow.
+                     */
+                    #place_container.seat-map-grid .place,
+                    #place_container.seat-map-grid .seat-slot-empty {
+                        display: block !important;
+                        margin-top: 0 !important;
+                        margin-right: 0 !important;
+                    }
+                    #place_container.seat-map-grid .seat-slot-empty {
+                        width: 40px;
+                        height: 40px;
+                    }
+                </style>
+
+                {% if slot_to_seat is not empty %}
+                    <div id="place_container" class="seat-map-grid">
+                        {% for slot in 1..36 %}
+                            {% if slot_to_seat[slot] is defined %}
+                                {% set place = slot_to_seat[slot] %}
+                                {% set class_active = reservation.placeNumber == place ? 'active' : '' %}
+                                {% set class_engaged = reservations[place] is defined and reservation.placeNumber != place ? 'engaged' : '' %}
+                                {% set class_not_available = place in (session.placesNotAvailable ?? []) ? 'not-available' : '' %}
+
+                                <span class="place {{ class_active }} {{ class_engaged }} {{ class_not_available }}" data-place="{{ place }}">
+                                    <p>{{ place }}</p>
+                                </span>
+                            {% else %}
+                                <span class="seat-slot-empty"></span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div id="place_container">
+                        {% for place in 1..capacity %}
+                            {% set class_active = reservation.placeNumber == place ? 'active' : '' %}
+                            {% set class_engaged = reservations[place] is defined and reservation.placeNumber != place ? 'engaged' : '' %}
+                            {% set class_not_available = place in (session.placesNotAvailable ?? []) ? 'not-available' : '' %}
+
+                            <span class="place {{ class_active }} {{ class_engaged }} {{ class_not_available }}" data-place="{{ place }}">
+                                <p>{{ place }}</p>
+                            </span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="grid-1-6 right reserve-{{ grid_class }}">
+                <div class="class {{ reserveClass }}">
+                    <span class="icon-{{  session.individual ? 'individual' : 'group' }}"></span>
+                    <h6>{{ discipline }}</h6>
+                    <p>{{ session.timeStart|date('h:i a') }}</p>
+                    <p><strong>{{ session.instructor.profile.firstname }}</strong></p>
+                </div>
+                <p><small><b>Día:</b> {{ session.dateStart|date('d/m/y') }}</small></p>
+                {% set branch_label = session.branchOffice.name %}
+                {% if session.branchOffice.plaza %}
+                    {% set branch_label = branch_label ~ ' - ' ~ session.branchOffice.plaza %}
+                {% elseif session.branchOffice.zone %}
+                    {% set branch_label = branch_label ~ ' - ' ~ session.branchOffice.zone %}
+                {% endif %}
+                <p><small><b>Sucursal:</b> {{ branch_label }}</small></p>
+            </div>
+        </div>
+
+        <form id="frmReservationCancel" action="{{ path('reservation_cancel', { 'id': reservation.id }) }}" method="post" class="m-fjx" style="display:none;">
+            <input type="hidden" name="_token" value="{{ csrf_token('reservation_cancel') }}" />
+        </form>
+        <div class="modal-actions">
+            <a id="btn-reservation-cancel" href="#" data-url="{{ path('reservation_cancel', { 'id': reservation.id }) }}" class="btn btn-submit">Cancelar reservación</a>
+        </div>
+    </div>
+</section>
+
+<script>
+    reservationCancelInit();
+</script>

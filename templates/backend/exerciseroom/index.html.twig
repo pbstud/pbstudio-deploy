@@ -1,0 +1,60 @@
+{% extends 'backend/default/list.html.twig' %}
+
+{% block title %}Listado de Salones{% endblock %}
+
+{% block actions %}
+    {% if is_allowed_route('backend_exerciseroom_new') %}
+        <div class="col-md-3 col-sm-4 col-xs-8 form-group pull-right top_search text-right">
+            <a href="{{ path('backend_exerciseroom_new') }}" class="btn btn-dark">
+                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                {{ 'main.backend_exerciseroom_new'|trans }}
+            </a>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block table_thead %}
+    <tr>
+        <th>#</th>
+        <th>Nombre</th>
+        <th class="text-center">Capacidad</th>
+        <th>Disciplina</th>
+        <th>Modalidad</th>
+        <th>Sucursal</th>
+        <th>Estado</th>
+    </tr>
+{% endblock %}
+
+{% block table_tbody %}
+    {% for exerciseRoom in pagination %}
+        {# exerciseRoom \App\Entity\ExerciseRoom #}
+        <tr>
+            <td>
+                <a href="{{ path('backend_exerciseroom_edit', { 'id': exerciseRoom.id }) }}" class="link-edit">
+                    <u>{{ exerciseRoom.id }}</u>
+                    <i class="fa fa-pencil" aria-hidden="true"></i>
+                </a>
+            </td>
+            <td>
+                {{ exerciseRoom }}
+            </td>
+            <td class="text-center">
+                {{ exerciseRoom.capacity }}
+            </td>
+            <td>
+                {{ exerciseRoom.discipline }}
+            </td>
+            <td>
+                {{ exerciseRoom.type|PackageSessionType }}
+            </td>
+            <td>{{ exerciseRoom.branchOffice }}</td>
+            <td>
+                {% if exerciseRoom.isActive %}
+                    <span class="label label-primary">Activo</span>
+                {% else %}
+                    <span class="label label-danger">Inactivo</span>
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+{% endblock %}

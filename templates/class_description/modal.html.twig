@@ -1,0 +1,64 @@
+<section class="pop_box class-detail-modal">
+    <div class="row clearfix">
+        <a data-remodal-action="close" class="nav-toggle close" aria-label="Cerrar">
+            <span class="iconMenu"></span>
+        </a>
+
+        <div class="center class-detail-modal__hero">
+            <h3>{{ classDescription.name }}</h3>
+            <small>{{ classDescription.focus }}</small>
+            <p>{{ classDescription.description }}</p>
+        </div>
+
+        <div class="class-detail-modal__chips">
+            <span>{{ classDescription.audience }}</span>
+            <span>{{ classDescription.duration }}</span>
+            <span>Intensidad {{ classDescription.intensity }}</span>
+        </div>
+
+        <div class="class-detail-modal__content">
+            <div class="class-detail-modal__column">
+                <h5>Ideal para ti si...</h5>
+                <ul>
+                    {% for item in classDescription.bestFor %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+
+                <h5>Posturas y guias clave</h5>
+                <ul>
+                    {% for item in classDescription.keyPostures %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="class-detail-modal__column">
+                <h5>Como se estructura la clase</h5>
+                <ul>
+                    {% for item in classDescription.guidedFlow %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+
+                <h5>Beneficios esperados</h5>
+                <ul>
+                    {% for item in classDescription.benefits %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+
+                <h5>Recomendaciones previas</h5>
+                <ul>
+                    {% for item in classDescription.tips %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="modal-actions class-detail-modal__actions">
+            <a href="#" class="btn reserve-class-toggle" data-remodal-action="close">Reservar clase</a>
+        </div>
+    </div>
+</section>

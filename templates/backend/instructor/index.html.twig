@@ -1,0 +1,109 @@
+{% extends 'backend/default/list.html.twig' %}
+
+{% block title %}Listado de Instructores{% endblock %}
+{% set allowDelete = is_allowed_route('backend_instructor_delete') %}
+
+{% block actions %}
+    {% if is_allowed_route('backend_instructor_new') %}
+        <div class="col-md-3 col-sm-4 col-xs-8 form-group pull-right top_search text-right">
+            <a href="{{ path('backend_instructor_new') }}" class="btn btn-dark">
+                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                {{ 'main.backend_instructor_new'|trans }}
+            </a>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block table_thead %}
+    <tr>
+        <th>#</th>
+        <th>Foto</th>
+        <th>Nombre</th>
+        <th>Email</th>
+        <th>Teléfono</th>
+        <th>Disciplinas</th>
+        <th>Estado</th>
+        {% if allowDelete %}
+            <th></th>
+        {% endif %}
+    </tr>
+{% endblock %}
+
+{% block table_tbody %}
+    {% for instructor in pagination %}
+        {% set defaultInstructorPhoto = asset('images/home/instructor1.jpg') %}
+        {% set hasPhoto = instructorPhotoAvailable[instructor.id]|default(false) %}
+        <tr>
+            <td>
+                <a href="{{ path('backend_instructor_edit', { 'id': instructor.id }) }}" class="link-edit">
+                    <u>{{ instructor.id }}</u>
+                    <i class="fa fa-pencil" aria-hidden="true"></i>
+                </a>
+            </td>
+            <td>
+                <img
+                    src="{{ hasPhoto ? vich_uploader_asset(instructor.profile) : defaultInstructorPhoto }}"
+                    alt="{{ instructor }}"
+                    class="instructor-avatar instructor-avatar--table"
+                    width="46"
+                    height="46"
+                    onerror="this.onerror=null;this.src='{{ defaultInstructorPhoto }}';"
+                >
+            </td>
+            <td>
+                {{ instructor }}
+            </td>
+            <td>
+                {{ instructor.email }}
+            </td>
+            <td>
+                {{ instructor.profile.telephone }}
+            </td>
+            <td>
+                {% for discipline in instructor.disciplines %}
+                    {{ discipline }}{{ loop.last ? '' : ',' }}
+                {% endfor %}
+            </td>
+            <td>
+                {% if instructor.isActive %}
+                    <span class="label label-primary">Activo</span>
+                {% else %}
+                    <span class="label label-danger">Inactivo</span>
+                {% endif %}
+            </td>
+            {% if allowDelete %}
+                <td>
+                    <a href="{{ path('backend_instructor_delete', {'id': instructor.id}) }}" data-token="{{ csrf_token('delete' ~ instructor.id) }}" class="btn btn-danger btn-xs btn-delete">
+                        <i class="fa fa-trash-o"></i> Borrar
+                    </a>
+                </td>
+            {% endif %}
+        </tr>
+    {% endfor %}
+{% endblock %}
+
+{% block footer %}
+    {{ include('backend/instructor/_delete_form.html.twig') }}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+
+    <script>
+        $(function () {
+            const $frmDelete = $('#frm-delete');
+
+            $('.btn-delete').on('click', function (event) {
+                event.preventDefault();
+                let $el = $(this);
+
+                if (confirm('¿Confirmas que deseas borrar el instructor?')) {
+                    $frmDelete.attr('action', $el.attr('href'));
+                    $frmDelete.find('input[name="_token"]').val($el.data('token'));
+
+                    $frmDelete.submit();
+                }
+            });
+        });
+    </script>
+{% endblock %}

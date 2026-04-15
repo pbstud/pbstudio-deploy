@@ -1,0 +1,43 @@
+<div class="row">
+    <div class="content">
+        <h2>Últimas transacciones</h2>
+        <div class="contained_table">
+            <table>
+                <thead>
+                <tr>
+                    <td>Paquete</td>
+                    <td>Modalidad</td>
+                    <td>Costo</td>
+                    <td>Método de pago</td>
+                    <td>Fecha</td>
+                </tr>
+                </thead>
+                <tbody>
+                {% for entity in lastTransactions %}
+                    <tr>
+                        <td>
+                            {% if entity.packageIsUnlimited %}
+                                {{ entity.package.altText }}
+                            {% else %}
+                                {{ entity.packageTotalClasses }} clases
+                            {% endif %}
+                        </td>
+                        <td>{{ entity.packageType|PackageSessionType }}</td>
+                        <td>${{ entity.total|number_format }}</td>
+                        <td>{{ entity.chargeMethod|ChargeMethodDescription }}{{ entity.cardLast4 ? '-' ~ entity.cardLast4 : '' }}</td>
+                        <td>{{ entity.createdAt | date('d/m/Y h:i') }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6">
+                            Sin registros por mostrar
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <a href="{{ path('transaction', {'_fragment': 'section-content'}) }}" class="btn">Ver todas las transacciones</a>
+    </div>
+</div>

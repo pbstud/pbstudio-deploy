@@ -1,0 +1,488 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% block content %}
+    <div class="row tile_count">
+        <div class="col-md-3 col-sm-6 tile_stats_count">
+            <span class="count_top"><i class="fa fa-money"></i> Total facturación</span>
+            <div class="count">
+                <a href="{{ path('backend_transaction', {
+                    'filter_date_start': transactionDateStart|date('d/m/Y'),
+                    'filter_status': constant('App\\Entity\\Transaction::STATUS_PAID')
+                }) }}">
+                    ${{ amountProcessed|number_format }}
+                </a>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 tile_stats_count">
+            <span class="count_top"><i class="fa fa-money"></i> Facturación anual</span>
+            <div class="count">
+                <a href="{{ path('backend_transaction', {
+                    'filter_date_start': currentYear|date('d/m/Y'),
+                    'filter_status': constant('App\\Entity\\Transaction::STATUS_PAID')
+                }) }}">
+                    ${{ amountAnnually|number_format }}
+                </a>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-6 col-xs-6 tile_stats_count">
+            <span class="count_top"><i class="fa fa-money"></i> Facturación mensual</span>
+            <div class="count">
+                <a href="{{ path('backend_transaction', {
+                    'filter_date_start': currentMonth|date('d/m/Y'),
+                    'filter_status': constant('App\\Entity\\Transaction::STATUS_PAID')
+                }) }}">
+                    ${{ amountMonthly|number_format }}
+                </a>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-6 tile_stats_count">
+            <span class="count_top"><i class="fa fa-money"></i> Facturación semanal</span>
+            <div class="count">
+                <a href="{{ path('backend_transaction', {
+                    'filter_date_start': currentWeek|date('d/m/Y'),
+                    'filter_status': constant('App\\Entity\\Transaction::STATUS_PAID')
+                }) }}">
+                    ${{ amountWeekly|number_format }}
+                </a>
+            </div>
+        </div>
+        <div class="col-md-2 col-sm-6 tile_stats_count">
+            <span class="count_top"><i class="fa fa-money"></i> Facturación diaria</span>
+            <div class="count">
+                <a href="{{ path('backend_transaction', {'filter_date_start': 'now'|date('d/m/Y')}) }}">
+                    ${{ amountDaily|number_format }}
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-3 col-sm-12">
+            <div class="x_panel x_panel_detail">
+                <div class="x_title">
+                    <h2>Usuarios</h2>
+                    <div class="clearfix"></div>
+                </div>
+                <div class="x_content">
+                    <div class="table-responsive">
+                        <table class="table">
+                            <tbody>
+                            <tr>
+                                <th><i class="fa fa-user"></i> Totales</th>
+                                <td>
+                                    <a href="{{ path('backend_user') }}">
+                                        {{ totalUsers|number_format }}
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th><i class="fa fa-user"></i> Nuevos del mes</th>
+                                <td>
+                                    <a href="{{ path('backend_user', {
+                                        'filters[date_start]': currentMonth|date('d/m/Y'),
+                                    }) }}">
+                                        {{ totalUsersMonthly|number_format }}
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th><i class="fa fa-user"></i> Activos</th>
+                                <td>
+                                    <a href="{{ path('backend_user', {
+                                        'filters[enabled]': 1,
+                                        'filters[package_enabled]': 1
+                                    }) }}">
+                                        {{ totalUsersActive|number_format }}
+                                    </a>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="clearfix"></div>
+            </div>
+        </div>
+
+        <div class="col-md-9 col-sm-12">
+            <div class="x_panel">
+                <div class="x_title">
+                    <h2>Instructores</h2>
+
+                    <div class="clearfix"></div>
+                </div>
+                <div class="x_content">
+                    <div class="row">
+                        {% for studioInstructor in studioInstructors.data %}
+                            <div class="col-md-6 col-sm-12">
+                                <p>{{ studioInstructor.studio }}</p>
+
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover">
+                                        <thead class="thead-dark">
+                                        <tr>
+                                            <th>Instructor</th>
+                                            <th>Mes</th>
+                                            <th>Catorcena</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for instructor in studioInstructor.instructors %}
+                                            <tr>
+                                                <td>
+                                                    {{ instructor.firstname }}
+                                                    {{ instructor.paternalSurname }}
+                                                    {{ instructor.maternalSurname }}
+                                                </td>
+                                                <td>
+                                                    <a href="{{ path('backend_session', {
+                                                        'filters[instructor]': instructor.instructorId,
+                                                        'filters[status]': 0,
+                                                        'filters[date_start]': studioInstructors.startMonth|date('d/m/Y'),
+                                                        'filters[date_end]': studioInstructors.endMonth|date('d/m/Y'),
+                                                        'filters[branchOffice]': instructor.studioId
+                                                    }) }}">
+                                                        {{ instructor.monthly|default(0) }}
+                                                    </a>
+                                                </td>
+                                                <td>
+                                                    <a href="{{ path('backend_session', {
+                                                        'filters[instructor]': instructor.instructorId,
+                                                        'filters[status]': 0,
+                                                        'filters[date_start]': studioInstructors.startWeekly|date('d/m/Y'),
+                                                        'filters[date_end]': studioInstructors.endWeekly|date('d/m/Y'),
+                                                        'filters[branchOffice]': instructor.studioId
+                                                    }) }}">
+                                                        {{ instructor.weekly|default(0) }}
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="clearfix"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="x_panel">
+                <div class="x_title">
+                    <h2>Clases</h2>
+
+                    <div class="clearfix"></div>
+                </div>
+                <div class="x_content">
+                    <div class="row">
+                        {% for studioId, studioExerciseRoom in studioExerciseRooms %}
+                            <div class="col-md-6 col-sm-12">
+                                <p>{{ studioExerciseRoom.studio }}</p>
+
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover">
+                                        <thead class="thead-dark">
+                                        <tr>
+                                            <th>Clases</th>
+                                            <th>Mes</th>
+                                            <th>Semana</th>
+                                            <th>Día</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for exerciseRoomId, exerciseRoom in studioExerciseRoom.exerciseRooms %}
+                                            <tr>
+                                                <td>{{ exerciseRoom.name }}</td>
+                                                <td>
+                                                    <a href="{{ path('backend_session', {
+                                                        'filters[status]': constant('App\\Entity\\Session::STATUS_NOT_CANCELED'),
+                                                        'filters[branchOffice]': studioId,
+                                                        'filters[exerciseRoom]': exerciseRoomId,
+                                                        'filters[date_start]': currentMonth|date('d/m/Y')
+                                                    }) }}">
+                                                        {{ exerciseRoom.monthly }}
+                                                    </a>
+                                                </td>
+                                                <td>
+                                                    <a href="{{ path('backend_session', {
+                                                        'filters[status]': constant('App\\Entity\\Session::STATUS_NOT_CANCELED'),
+                                                        'filters[branchOffice]': studioId,
+                                                        'filters[exerciseRoom]': exerciseRoomId,
+                                                        'filters[date_start]': currentWeek|date('d/m/Y')
+                                                    }) }}">
+                                                        {{ exerciseRoom.weekly }}
+                                                    </a>
+                                                </td>
+                                                <td>
+                                                    <a href="{{ path('backend_session', {
+                                                        'filters[status]': constant('App\\Entity\\Session::STATUS_NOT_CANCELED'),
+                                                        'filters[branchOffice]': studioId,
+                                                        'filters[exerciseRoom]': exerciseRoomId,
+                                                        'filters[date_start]': 'now'|date('d/m/Y')
+                                                    }) }}">
+                                                        {{ exerciseRoom.daily }}
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="clearfix"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 col-sm-12">
+            <div class="x_panel">
+                <div class="x_title">
+                    <h2>Ranking</h2>
+
+                    <div class="clearfix"></div>
+                </div>
+                <div class="x_content">
+                    <div class="row">
+                        {% for studioId, rankingStudio in ranking.data %}
+                            <div class="col-md-12">
+                                <p>{{ rankingStudio.studio }}</p>
+
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover">
+                                        <thead class="thead-dark">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Día</th>
+                                            <th>Horario</th>
+                                            <th>Paquete</th>
+                                            <th>Cliente Favorito</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for i in 0..4 %}
+                                            <tr>
+                                                <td>{{ i + 1 }}</td>
+                                                <td>{{ rankingStudio.day[i]|default('') }}</td>
+                                                <td>
+                                                    {% if rankingStudio.schedule[i] is defined %}
+                                                        <a href="{{ path('backend_session', {
+                                                            'filters[branchOffice]': studioId,
+                                                            'filters[date_start]': ranking.dateStart|date('d/m/Y'),
+                                                            'filters[schedule]': rankingStudio.schedule[i][:5]
+                                                        }) }}">
+                                                            {{ rankingStudio.schedule[i][:5] }}
+                                                        </a>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if rankingStudio.package[i] is defined %}
+                                                        {{ rankingStudio.package[i] }} clase(s)
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if rankingStudio.customer[i] is defined %}
+                                                        <a href="{{ path('backend_transaction', {
+                                                            'filter_search': rankingStudio.customer[i].email,
+                                                            'filter_date_start': ranking.dateStart|date('d/m/Y'),
+                                                        }) }}">
+                                                            {{ rankingStudio.customer[i].customer }}
+                                                        </a>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="clearfix"></div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-sm-12">
+            <div class="x_panel">
+                <div class="x_title">
+                    <h2>Descuentos</h2>
+
+                    <div class="clearfix"></div>
+                </div>
+                <div class="x_content">
+                    <h2 class="text-center">Año</h2>
+                    <div class="row">
+                        <div class="col-md-6 col-sm-12 text-center">
+                            <p>Sin descuento</p>
+                            <h4>
+                                <a href="{{ path('backend_transaction', {
+                                    'filter_date_start': currentYear|date('d/m/Y'),
+                                    'filter_status': constant('App\\Entity\\Transaction::STATUS_PAID'),
+                                    'filter_discount': constant('App\\Entity\\Transaction::WITHOUT_DISCOUNT'),
+                                }) }}">
+                                    <strong>${{ totalNoDiscountAnnually|number_format }}</strong>
+                                </a>
+                            </h4>
+                        </div>
+
+                        <div class="col-md-6 col-sm-12 text-center">
+                            <p>Con descuento</p>
+                            <h4>
+                                <a href="{{ path('backend_transaction', {
+                                    'filter_date_start': currentYear|date('d/m/Y'),
+                                    'filter_status': constant('App\\Entity\\Transaction::STATUS_PAID'),
+                                    'filter_discount': constant('App\\Entity\\Transaction::WITH_DISCOUNT'),
+                                }) }}">
+                                    <strong>${{ totalDiscountAnnually|number_format }}</strong>
+                                </a>
+                            </h4>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h2 class="text-center">Mes</h2>
+                    <div class="row">
+                        <div class="col-md-6 col-sm-12 text-center">
+                            <p>Sin descuento</p>
+                            <h4>
+                                <a href="{{ path('backend_transaction', {
+                                    'filter_date_start': currentMonth|date('d/m/Y'),
+                                    'filter_status': constant('App\\Entity\\Transaction::STATUS_PAID'),
+                                    'filter_discount': constant('App\\Entity\\Transaction::WITHOUT_DISCOUNT'),
+                                }) }}">
+                                    <strong>${{ totalNoDiscountMonthly|number_format }}</strong>
+                                </a>
+                            </h4>
+                        </div>
+
+                        <div class="col-md-6 col-sm-12 text-center">
+                            <p>Con descuento</p>
+                            <h4>
+                                <a href="{{ path('backend_transaction', {
+                                    'filter_date_start': currentMonth|date('d/m/Y'),
+                                    'filter_status': constant('App\\Entity\\Transaction::STATUS_PAID'),
+                                    'filter_discount': constant('App\\Entity\\Transaction::WITH_DISCOUNT'),
+                                }) }}">
+                                    <strong>${{ totalDiscountMonthly|number_format }}</strong>
+                                </a>
+                            </h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="clearfix"></div>
+            </div>
+
+            <div class="x_panel">
+                <div class="x_title">
+                    <h2>Formas de pago</h2>
+
+                    <div class="clearfix"></div>
+                </div>
+                <div class="x_content">
+                    <h2 class="text-center">Año</h2>
+                    <div class="row">
+                        <div class="col-md-4 col-sm-12 text-center">
+                            <p>Efectivo</p>
+                            <h4>
+                                <a href="{{ path('backend_transaction', {
+                                    'filter_date_start': currentYear|date('d/m/Y'),
+                                    'filter_status': constant('App\\Entity\\Transaction::STATUS_PAID'),
+                                    'filter_charge_method': constant('App\\Entity\\Transaction::CHARGE_METHOD_CASH'),
+                                }) }}">
+                                    <strong>${{ totalCashAnnually|number_format }}</strong>
+                                </a>
+                            </h4>
+                        </div>
+
+                        <div class="col-md-4 col-sm-12 text-center">
+                            <p>Tarjeta</p>
+                            <h4>
+                                <a href="{{ path('backend_transaction', {
+                                    'filter_date_start': currentYear|date('d/m/Y'),
+                                    'filter_status': constant('App\\Entity\\Transaction::STATUS_PAID'),
+                                    'filter_charge_method': constant('App\\Entity\\Transaction::CHARGE_METHOD_CARD'),
+                                }) }}">
+                                    <strong>${{ totalCardAnnually|number_format }}</strong>
+                                </a>
+                            </h4>
+                        </div>
+
+                        <div class="col-md-4 col-sm-12 text-center">
+                            <p>Terminal</p>
+                            <h4>
+                                <a href="{{ path('backend_transaction', {
+                                    'filter_date_start': currentYear|date('d/m/Y'),
+                                    'filter_status': constant('App\\Entity\\Transaction::STATUS_PAID'),
+                                    'filter_charge_method': constant('App\\Entity\\Transaction::CHARGE_METHOD_POS'),
+                                }) }}">
+                                    <strong>${{ totalTerminalAnnually|number_format }}</strong>
+                                </a>
+                            </h4>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h2 class="text-center">Mes</h2>
+                    <div class="row">
+                        <div class="col-md-4 col-sm-12 text-center">
+                            <p>Efectivo</p>
+                            <h4>
+                                <a href="{{ path('backend_transaction', {
+                                    'filter_date_start': currentMonth|date('d/m/Y'),
+                                    'filter_status': constant('App\\Entity\\Transaction::STATUS_PAID'),
+                                    'filter_charge_method': constant('App\\Entity\\Transaction::CHARGE_METHOD_CASH'),
+                                }) }}">
+                                    <strong>${{ totalCashMonthly|number_format }}</strong>
+                                </a>
+                            </h4>
+                        </div>
+
+                        <div class="col-md-4 col-sm-12 text-center">
+                            <p>Tarjeta</p>
+                            <h4>
+                                <a href="{{ path('backend_transaction', {
+                                    'filter_date_start': currentMonth|date('d/m/Y'),
+                                    'filter_status': constant('App\\Entity\\Transaction::STATUS_PAID'),
+                                    'filter_charge_method': constant('App\\Entity\\Transaction::CHARGE_METHOD_CARD'),
+                                }) }}">
+                                    <strong>${{ totalCardMonthly|number_format }}</strong>
+                                </a>
+                            </h4>
+                        </div>
+
+                        <div class="col-md-4 col-sm-12 text-center">
+                            <p>Terminal</p>
+                            <h4>
+                                <a href="{{ path('backend_transaction', {
+                                    'filter_date_start': currentMonth|date('d/m/Y'),
+                                    'filter_status': constant('App\\Entity\\Transaction::STATUS_PAID'),
+                                    'filter_charge_method': constant('App\\Entity\\Transaction::CHARGE_METHOD_POS'),
+                                }) }}">
+                                    <strong>${{ totalTerminalMonthly|number_format }}</strong>
+                                </a>
+                            </h4>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="clearfix"></div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

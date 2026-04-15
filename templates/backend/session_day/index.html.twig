@@ -1,0 +1,50 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% set page_section = 'Clases x día' %}
+{% set page_title = 'Listado de días' %}
+
+{% block content %}
+    {% embed 'backend/default/embed/list_common.html.twig' with { 'page_section': page_section, 'page_title': page_title } %}
+        {% block actions %}
+            {% if is_allowed_route('backend_session_day_new') %}
+                <div class="col-md-3 col-sm-4 col-xs-8 form-group pull-right top_search">
+                    <div class="input-group">
+                        <a href="{{ path('backend_session_day_new_branch_office') }}" class="btn btn-default">Programar día</a>
+                    </div>
+                </div>
+            {% endif %}
+        {% endblock %}
+
+        {% block body %}
+            {% if sessions | length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Día</th>
+                                <th class="text-center">Sucursal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for session in sessions %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ path('backend_session_day_edit', { 'editDate': session.dateStart|date('d-m-Y'), 'branchOfficeId': session.branchOfficeId }) }}" class="link-edit">
+                                            <u>{{ session.dateStart|date('d-m-Y') }}</u>
+                                            <i class="fa fa-pencil" aria-hidden="true"></i>
+                                        </a>
+                                    </td>
+                                    <td class="text-center">
+                                        {{ session.branchOffice }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                {{ include('backend/default/partials/not_records.html.twig') }}
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

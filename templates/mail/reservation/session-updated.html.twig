@@ -1,0 +1,57 @@
+{% extends 'mail/layout.html.twig' %}
+
+{% block body %}
+    <tr>
+        <td align="center" style="font-family:arial,sans-serif; color:#67ccbb; font-size:30px; text-align:center; text-transform:uppercase; font-weight:100">
+            Cambios en tu clase reservada
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <table width="600px" style="margin:20px;" class="w320">
+                <tr>
+                    <td class="blockwrap" style="margin-bottom:10px;">
+                        <table width="600px">
+                            <tr>
+                                <td style="font-family:arial,sans-serif; color:#6D6E70; font-size:16px; text-align:center; padding: 10px;">
+                                    <strong>Hola {{ user.name }}</strong>
+                                    <br /><br />
+
+                                    Te informamos que la clase que reservaste tuvo cambios.
+                                    <br /><br />
+
+                                    <strong style="color:#67ccbb;">Que se cambio en especifico:</strong>
+                                    {% if changeDetails is defined and changeDetails is not empty %}
+                                        <table width="100%" cellpadding="6" cellspacing="0" style="border-collapse:collapse; margin-top:10px; margin-bottom:10px;">
+                                            <tr>
+                                                <th style="border:1px solid #d9d9d9; font-family:arial,sans-serif; font-size:13px; color:#6D6E70;">Campo</th>
+                                                <th style="border:1px solid #d9d9d9; font-family:arial,sans-serif; font-size:13px; color:#6D6E70;">Antes</th>
+                                                <th style="border:1px solid #d9d9d9; font-family:arial,sans-serif; font-size:13px; color:#6D6E70;">Despues</th>
+                                            </tr>
+                                            {% for change in changeDetails %}
+                                                <tr>
+                                                    <td style="border:1px solid #d9d9d9; font-family:arial,sans-serif; font-size:13px; color:#6D6E70;">{{ change.field }}</td>
+                                                    <td style="border:1px solid #d9d9d9; font-family:arial,sans-serif; font-size:13px; color:#6D6E70;">{{ change.before }}</td>
+                                                    <td style="border:1px solid #d9d9d9; font-family:arial,sans-serif; font-size:13px; color:#6D6E70;">{{ change.after }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </table>
+                                    {% else %}
+                                        <p>{{ changes|join(', ') }}</p>
+                                    {% endif %}
+
+                                    <strong style="color:#67ccbb;">Asi quedo tu clase:</strong>
+                                    <p><strong>Clase:</strong> {{ discipline }}</p>
+                                    <p><strong>Hora:</strong> {{ session.timeStart|date('h:i a') }}</p>
+                                    <p><strong>Fecha:</strong> {{ session.dateStart|format_date(null, "EEEE d 'de' MMMM") }}</p>
+                                    <p><strong>Instructor:</strong> {{ instructor.profile.firstname }}</p>
+                                    <p><strong>Asiento:</strong> {{ reservation.placeNumber }}</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+{% endblock %}

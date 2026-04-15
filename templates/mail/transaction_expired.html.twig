@@ -1,0 +1,39 @@
+{% extends 'mail/layout.html.twig' %}
+
+{% block body %}
+    <tr>
+        <td align="center" style="font-family:arial,sans-serif; color:#67ccbb; font-size:30px; text-align:center; text-transform:uppercase; font-weight:100">
+            Tu transacción ha expirado
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <table width="600px" style="margin:20px;" class="w320">
+                <tr>
+                    <td class="blockwrap" style="margin-bottom:10px;">
+                        <table>
+                            <tr>
+                                <td style="font-family:arial,sans-serif; color:#6D6E70; font-size:16px; text-align:center; padding: 10px;">
+                                    <strong>Hola {{ user.name }}</strong>
+                                    <br /><br />
+
+                                    Lamentamos informarte que tu compra ha expirado y ya no podrás hacer uso de las clases que tenías disponibles.
+                                    <br><br><br><br>
+
+                                    <strong style="color:#67ccbb;">Información de la compra:</strong>
+
+                                    <br />
+
+                                    <p><strong>Fecha de realización:</strong> {{ transaction.createdAt|date('d/m/Y') }}</p>
+                                    <p><strong>Producto:</strong> Paquete {{ transaction.packageTotalClasses }} clase(s) {{ transaction.packageType|PackageSessionType|lower }}(es)</p>
+                                    <p><strong>Monto:</strong> ${{ transaction.total|number_format }}</p>
+                                    <p><strong>Fecha de expiración:</strong> {{ transaction.expirationAt|date('d/m/Y') }}</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+{% endblock %}

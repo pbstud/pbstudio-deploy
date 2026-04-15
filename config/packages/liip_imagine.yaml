@@ -1,0 +1,26 @@
+liip_imagine:
+    driver: "gd"
+    twig:
+        mode: lazy
+
+    loaders:
+        default:
+            filesystem:
+                data_root:
+                    - "%kernel.project_dir%/../../shared/public" # Deployer
+                    - "%kernel.project_dir%/public"
+                allow_unresolvable_data_roots: true
+
+    filter_sets:
+        backend_instructor_thumb:
+            filters:
+                thumbnail: { size: [200, 200], mode: outbound }
+        frontend_instructor:
+            filters:
+                thumbnail: { size: [249, 265], mode: outbound }
+
+        small:
+            quality: 90
+            filters:
+                scale:
+                    dim: [120, 120]

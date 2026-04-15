@@ -1,0 +1,27 @@
+{% extends 'layout.html.twig' %}
+
+{% block content %}
+    <section class="profile">
+        <div class="row">
+            <div class="content">
+                <h1><span>¡Hola! </span>{{ app.user.name }}</h1>
+                {% if app.request.get('_route') != 'profile' %}
+                    <a href="{{ path('profile') }}" class="link">
+                        <span class="icon-individual"></span>Regresar a mi perfil
+                    </a>
+                {% endif %}
+
+                {{ render(controller('App\\Controller\\ProfileController::resume')) }}
+
+                <a href="{{ path('reservation_calendar') }}" class="btn reserve-class-toggle">Reservar clase</a>
+                <a id="section-content" class="hidden">{{ block('page_title') }}</a>
+            </div>
+        </div>
+
+        {% block account_content %}
+        {% endblock %}
+    </section>
+
+    {% block account_aside_content %}
+    {% endblock %}
+{% endblock %}

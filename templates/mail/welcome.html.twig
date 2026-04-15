@@ -1,0 +1,30 @@
+{% extends 'mail/layout.html.twig' %}
+
+{% block body %}
+    <tr>
+        <td align="center" style="font-family:arial,sans-serif; color:#67ccbb; font-size:30px; text-align:center; text-transform:uppercase; font-weight:100">
+            Bienvenido a P&B Studio
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <table width="600px" style="margin:20px;" class="w320">
+                <tr>
+                    <td class="blockwrap" style="margin-bottom:10px;">
+                        <table>
+                            <tr>
+                                <td style="font-family:arial,sans-serif; color:#6D6E70; font-size:16px; text-align:center; padding: 10px;">
+                                    Hola <strong>{{ user }}</strong>,
+                                    <br /><br />
+
+                                    ¡Gracias por registrarte con P&B Studio!
+                                    <br /><br />
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+{% endblock %}

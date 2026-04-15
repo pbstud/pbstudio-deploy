@@ -1,0 +1,9 @@
+<script type="text/javascript">
+    $(function () {
+        {%- for label, messages in app.flashes(['success', 'danger']) -%}
+            {% for message in messages -%}
+                $.flash.{{ label }}('{{ message }}');
+            {%- endfor -%}
+        {% endfor %}
+    });
+</script>

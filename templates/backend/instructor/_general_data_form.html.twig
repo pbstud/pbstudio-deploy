@@ -1,0 +1,39 @@
+<div class="row">
+    {{ form_row(form.profile.firstname, {'row_attr': {'class': 'col-md-6'}}) }}
+    {{ form_row(form.profile.paternalSurname, {'row_attr': {'class': 'col-md-6'}}) }}
+</div>
+
+<div class="row">
+    {{ form_row(form.profile.maternalSurname, {'row_attr': {'class': 'col-md-6'}}) }}
+    {{ form_row(form.email, {'row_attr': {'class': 'col-md-6'}}) }}
+</div>
+
+<div class="row">
+    {{ form_row(form.profile.telephone, {'row_attr': {'class': 'col-md-6'}}) }}
+    {{ form_row(form.profile.admissionAt, {'row_attr': {'class': 'col-md-6'}}) }}
+</div>
+
+<div class="row">
+    {{ form_row(form.disciplines, {'row_attr': {'class': 'col-md-6'}}) }}
+    {{ form_row(form.profile.photoFile, {'row_attr': {'class': 'col-md-6'}}) }}
+</div>
+
+<div class="row">
+    {{ form_row(form.profile.description, {'row_attr': {'class': 'col-md-6'}}) }}
+    {{ form_row(form.profile.address, {'row_attr': {'class': 'col-md-6'}}) }}
+</div>
+
+<div class="row">
+    <div class="col-md-12 col-xs-12 form-group">
+        {{ form_label(form.profile.colorHex) }}
+        <div class="instructor-color-square-field" style="display: flex; align-items: center; gap: 10px;">
+            {{ form_widget(form.profile.colorHex) }}
+            <span class="text-muted" style="font-size: 12px;">Color de sombreado en la grilla de clases</span>
+        </div>
+        {{ form_errors(form.profile.colorHex) }}
+    </div>
+</div>
+
+<div class="row">
+    {{ form_row(form.isActive, {'row_attr': {'class': 'col-md-6'}}) }}
+</div>

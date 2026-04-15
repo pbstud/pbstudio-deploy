@@ -1,0 +1,60 @@
+{% extends 'profile/layout.html.twig' %}
+
+{% block page_title %}Clases en lista de espera | {% endblock %}
+
+{% block account_content %}
+    <div class="row">
+        <div class="content wait">
+            <h2>Clases en lista de espera</h2>
+
+            <div class="profile-classes-grid">
+                {% for entity in waitingList %}
+                    {# entity \App\Entity\WaitingList #}
+                    {% set session = entity.session %}
+                    {% set branch_label = session.branchOffice.name %}
+                    {% if session.branchOffice.plaza %}
+                        {% set branch_label = branch_label ~ ' - ' ~ session.branchOffice.plaza %}
+                    {% elseif session.branchOffice.zone %}
+                        {% set branch_label = branch_label ~ ' - ' ~ session.branchOffice.zone %}
+                    {% endif %}
+
+                    <div class="reserv_class reserv_class--waiting clearfix">
+                        <div class="class {{ session.discipline|replace({' ': '-'})|lower }}">
+                            <span class="icon-{{  'i' == session.type ? 'individual' : 'group' }}"></span>
+                            <h6>{{ session.discipline }}</h6>
+                            <p>{{ session.timeStart|date('h:i a') }}</p>
+                            <p>{{ session.instructor.profile.firstname }}</p>
+                            {% set class_description = session.information is not null ? session.information|trim : '' %}
+                            {% if class_description != '' %}
+                                <div class="class-description js-class-description" data-collapsed="1">
+                                    <div class="class-description__text js-class-description-text">{{ class_description }}</div>
+                                    <button type="button" class="class-description__toggle js-class-description-toggle" aria-expanded="false">Ver mas</button>
+                                </div>
+                            {% endif %}
+                            <p><strong>En lista de espera</strong></p>
+                        </div>
+                        <div class="detail">
+                            <p><b>Día: </b>{{ session.dateStart()|format_date(null, "EEEE d 'de' MMMM") }}</p>
+                            <p><b>Sucursal: </b>{{ branch_label }}</p>
+                            <p><b>Salón: </b>{{ session.exerciseRoom }}</p>
+                            <p><b>Instructor: </b>{{ session.instructor.profile.firstname }}</p>
+                            <a href="#"
+                               data-url="{{ path('waiting_list_remove', { 'sessionId': session.id }) }}"
+                               class="link"
+                               data-remodal>
+                                Cancelar lista de espera
+                            </a>
+                        </div>
+                    </div>
+
+                {% else %}
+                    <div class="reserv_class reserv_class--empty clearfix">
+                        <p>Sin registros por mostrar</p>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <a href="{{ path('reservation_calendar') }}" class="btn reserve-class-toggle">Reservar clase</a>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{{ form_start(form, {'attr': {'id': 'form-instructor'}}) }}
+    <div class="row">
+        <div class="col-md-12">
+            <h4 class="x_subtitle">Información de acceso</h4>
+        </div>
+    </div>
+
+    <div class="row">
+        {{ form_row(form.username, {'row_attr': {'class': 'col-md-6'}}) }}
+    </div>
+
+    <div class="row">
+        {{ form_row(form.password.first, {'row_attr': {'class': 'col-md-6'}}) }}
+        {{ form_row(form.password.second, {'row_attr': {'class': 'col-md-6'}}) }}
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <h4 class="x_subtitle">Información general</h4>
+        </div>
+    </div>
+
+    {{ include('backend/instructor/_general_data_form.html.twig') }}
+
+    <div class="ln_solid"></div>
+
+    {{ include('backend/default/_btn_save.html.twig') }}
+{{ form_end(form) }}

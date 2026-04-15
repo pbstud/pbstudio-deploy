@@ -1,0 +1,12 @@
+{% extends '@KnpMenu/menu.html.twig' %}
+
+{% block label %}
+    {%- set icon = item.extra('icon', false) -%}
+    {% if icon -%}
+        <i class="fa fa-{{ icon }}"></i>
+    {%- endif -%}
+    {{- parent() -}}
+    {% if item.hasChildren and item.displayChildren -%}
+        <span class="fa fa-chevron-down"></span>
+    {%- endif -%}
+{%- endblock %}

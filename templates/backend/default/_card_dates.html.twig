@@ -1,0 +1,12 @@
+{% embed 'backend/default/_card_table.html.twig' with {'title': 'Fechas', 'col': col|default(null)} %}
+    {% block tbody %}
+        <tr>
+            <th>{{ 'label.created_at'|trans }}</th>
+            <td>{{ object.createdAt ? object.createdAt|date('d/m/Y H:i:s') : '--' }}</td>
+        </tr>
+        <tr>
+            <th>{{ 'label.updated_at'|trans }}</th>
+            <td>{{ object.updatedAt ? object.updatedAt|date('d/m/Y H:i:s') : '--' }}</td>
+        </tr>
+    {% endblock %}
+{% endembed %}

@@ -1,0 +1,50 @@
+{% extends 'layout.html.twig' %}
+
+{% block page_title %}Instructores | {% endblock %}
+
+{% block content %}
+    <section class="page">
+        <div class="row">
+            <div class="content">
+                <div class="title">
+                    <h1>Instructores</h1>
+                </div>
+                <div class="coach">
+                    {% for instructor in instructors %}
+                        {% set hasProfile = instructor.profile is not null %}
+                        {% set hasPhoto = instructorPhotoAvailable[instructor.id]|default(false) %}
+                        {% set instructorName = hasProfile ? [instructor.profile.firstname, instructor.profile.paternalSurname]|filter(v => v)|join(' ') : instructor.username %}
+                        {% set instructorDescription = hasProfile and instructor.profile.description ? instructor.profile.description : 'Conoce a nuestros instructores y reserva tu próxima clase.' %}
+                        <div class="clearfix">
+                            <div class="grid-1-4 left">
+                                <div>
+                                    <img
+                                        src="{{ hasPhoto ? vich_uploader_asset(instructor.profile) : asset('images/home/instructor1.jpg') }}"
+                                        alt="{{ instructorName }} - Instructor P&amp;B"
+                                        class="instructor-avatar instructor-avatar--public"
+                                        width="249"
+                                        height="249"
+                                        onerror="this.onerror=null;this.src='{{ asset('images/home/instructor1.jpg') }}';"
+                                    >
+                                </div>
+                            </div>
+                            <div class="grid-1-8 left">
+                                <h3 class="coach__name">{{ instructorName }}</h3>
+
+                                <p>{{ instructorDescription }}</p>
+
+                                <a href="#" class="btn reserve-class-toggle">Reservar clase</a>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="clearfix">
+                            <div class="grid-1-8 left">
+                                <p>Por el momento no hay instructores disponibles.</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

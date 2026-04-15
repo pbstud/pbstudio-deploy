@@ -1,0 +1,18 @@
+<div class="{{ col|default('col-xs-12 col-md-6') }}">
+    <div class="x_panel x_panel_widget">
+        <div class="x_title">
+            <h2>{{ title }}</h2>
+            <div class="clearfix"></div>
+        </div>
+
+        <div class="x_content">
+            <div class="table-responsive">
+                <table class="table table_inner table-striped">
+                    <tbody>
+                    {% block tbody %}{% endblock %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

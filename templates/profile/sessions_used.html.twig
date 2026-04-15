@@ -1,0 +1,320 @@
+{% extends 'profile/layout.html.twig' %}
+
+{% block page_title %}Clases tomadas | {% endblock %}
+
+{% block account_content %}
+    <div class="row">
+        <div class="content">
+            {{ include('default/_flash.html.twig') }}
+
+            {% set is_history_mode = history_mode|default(false) %}
+            {% set history = history_filters|default({
+                history_date_start: '',
+                history_date_end: '',
+                history_discipline: '',
+                history_instructor: ''
+            }) %}
+
+            <div class="sessions-used-header">
+                <h2>Clases tomadas</h2>
+                {% if is_history_mode %}
+                    <a href="{{ path('sessions_used', {'_fragment': 'section-content'}) }}" class="link">Ver tarjetas (último mes)</a>
+                {% else %}
+                    <a href="{{ path('sessions_used', {'history': 1, '_fragment': 'section-content'}) }}" class="link">Ver historial</a>
+                {% endif %}
+            </div>
+
+            {% if is_history_mode %}
+                <form method="get" action="{{ path('sessions_used') }}" class="sessions-used-history-filters">
+                    <input type="hidden" name="history" value="1">
+
+                    <div class="history-filter-grid">
+                        <div>
+                            <label for="history_date_start">Fecha inicio</label>
+                            <input type="text" id="history_date_start" name="history_date_start" value="{{ history.history_date_start|default('') }}" class="form-control history-datepicker" placeholder="dd/mm/aaaa" autocomplete="off" readonly inputmode="none">
+                        </div>
+                        <div>
+                            <label for="history_date_end">Fecha final</label>
+                            <input type="text" id="history_date_end" name="history_date_end" value="{{ history.history_date_end|default('') }}" class="form-control history-datepicker" placeholder="dd/mm/aaaa" autocomplete="off" readonly inputmode="none">
+                            <p class="history-filter-validation js-history-filter-validation" data-server-message="{{ history_validation_message|default('')|e('html_attr') }}" aria-live="polite"></p>
+                        </div>
+                        <div>
+                            <label for="history_discipline">Clase / disciplina</label>
+                            <select id="history_discipline" name="history_discipline_id" class="form-control">
+                                <option value="">Todas</option>
+                                {% set selected_discipline = history.history_discipline_id|default('') ~ '' %}
+                                {% set has_beast = false %}
+                                {% set has_dual = false %}
+                                {% set has_reformer = false %}
+                                <option value="private:any" {% if selected_discipline == 'private:any' %}selected{% endif %}>Privado</option>
+
+                                {% for discipline in disciplines %}
+                                    {% set discipline_name = discipline.name|lower %}
+
+                                    {% if not has_beast and 'beast' in discipline_name %}
+                                        {% set beast_value = discipline.id ~ ':' ~ constant('App\\Util\\PackageSessionType::TYPE_GROUP') %}
+                                        <option value="{{ beast_value }}" {% if selected_discipline == beast_value %}selected{% endif %}>BeastReformer</option>
+                                        {% set has_beast = true %}
+                                    {% endif %}
+
+                                    {% if not has_dual and 'dual' in discipline_name %}
+                                        {% set dual_value = discipline.id ~ '' %}
+                                        <option value="{{ dual_value }}" {% if selected_discipline == dual_value %}selected{% endif %}>Dual Pilates</option>
+                                        {% set has_dual = true %}
+                                    {% endif %}
+
+                                    {% if not has_reformer and 'reformer' in discipline_name and 'beast' not in discipline_name and 'privad' not in discipline_name and 'private' not in discipline_name %}
+                                        {% set reformer_value = discipline.id ~ ':' ~ constant('App\\Util\\PackageSessionType::TYPE_GROUP') %}
+                                        <option value="{{ reformer_value }}" {% if selected_discipline == reformer_value %}selected{% endif %}>Pilates Reformer</option>
+                                        {% set has_reformer = true %}
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label for="history_instructor">Instructor</label>
+                            <select id="history_instructor" name="history_instructor_id" class="form-control">
+                                <option value="">Todos</option>
+                                {% for instructor in instructors %}
+                                    <option value="{{ instructor.id }}" {% if history.history_instructor_id|default('') == instructor.id %}selected{% endif %}>{{ instructor }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="history-filter-actions">
+                        <button type="submit" class="btn btn-primary history-filter-apply">Aplicar filtros</button>
+                        <a href="{{ path('sessions_used', {'history': 1, '_fragment': 'section-content'}) }}" class="btn btn-default history-filter-clear">Limpiar</a>
+                    </div>
+                </form>
+
+                <div class="sessions-used-history-results">
+                    <div class="table-responsive sessions-used-history-table">
+                        <table class="table">
+                            <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Hora</th>
+                                <th>Clase</th>
+                                <th>Tipo</th>
+                                <th>Instructor</th>
+                                <th>Salón</th>
+                                <th>Acción</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for reservation in reservations %}
+                                {% set session = reservation.session %}
+                                {% set can_rate = reservation.isAvailable and session and session.dateStart and session.dateStart >= date('-1 month') %}
+                                <tr>
+                                    <td>{{ session and session.dateStart ? session.dateStart|date('d/m/Y') : '-' }}</td>
+                                    <td>{{ session and session.timeStart ? session.timeStart|date('h:i a') : '-' }}</td>
+                                    <td>{{ session and session.discipline ? session.discipline : '-' }}</td>
+                                    <td>{{ session and session.individual ? 'Individual' : 'Grupal' }}</td>
+                                    <td>{{ session and session.instructor ? session.instructor : '-' }}</td>
+                                    <td>{{ session and session.exerciseRoom ? session.exerciseRoom : '-' }}</td>
+                                    <td>
+                                        {% if can_rate %}
+                                            <a href="#"
+                                               data-url="{{ path('session_used_rate', {'id': reservation.id, 'return_to': app.request.requestUri}) }}"
+                                               data-remodal
+                                               class="link session-rating-link">
+                                                {% if reservation.hasRatings and reservation.userRatingAverage is not null %}
+                                                    {{ reservation.userRatingAverage|number_format(1, '.', '') }}/5
+                                                {% else %}
+                                                    Calificar clase
+                                                {% endif %}
+                                            </a>
+                                        {% else %}
+                                            <span class="sessions-used-action-disabled">No disponible</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="7">Sin registros en el histórico para los filtros seleccionados.</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="sessions-used-history-footer">
+                        <div class="sessions-used-pagination">
+                            {{ knp_pagination_render(reservations) }}
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="profile-classes-grid">
+                    {% for reservation in reservations %}
+                        {% set session = reservation.session %}
+                        {% set can_rate = reservation.isAvailable and session and session.dateStart and session.dateStart >= date('-1 month') %}
+                        <div class="reserv_class clearfix">
+                            <div class="class disabled">
+                                <span class="icon-{{ session and session.individual ? 'individual' : 'group' }}"></span>
+                                <h6>{{ session and session.discipline ? session.discipline : '-' }}</h6>
+                                <p>{{ session and session.timeStart ? session.timeStart|date('h:i a') : '-' }}</p>
+                                <p>
+                                    {% if session and session.instructor and session.instructor.profile and session.instructor.profile.firstname %}
+                                        {{ session.instructor.profile.firstname }}
+                                    {% elseif session and session.instructor %}
+                                        {{ session.instructor }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </p>
+                                {% set class_description = session and session.information ? session.information|trim : '' %}
+                                {% if class_description != '' %}
+                                    <div class="class-description js-class-description" data-collapsed="1">
+                                        <div class="class-description__text js-class-description-text">{{ class_description }}</div>
+                                        <button type="button" class="class-description__toggle js-class-description-toggle" aria-expanded="false">Ver mas</button>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="detail">
+                                <p><b>Día: </b>{{ session and session.dateStart ? session.dateStart|format_date(null, "EEEE d 'de' MMMM") : '-' }}</p>
+                                <p><b>Salón: </b>{{ session and session.exerciseRoom ? session.exerciseRoom : '-' }}</p>
+                                <p><b>Instructor: </b>{{ session and session.instructor ? session.instructor : '-' }}</p>
+                                {% if session and not session.individual %}
+                                    <p><b>Camilla/Silla: </b>{{ reservation.placeNumber }}</p>
+                                {% endif %}
+
+                                {% if can_rate %}
+                                    <a href="#"
+                                       data-url="{{ path('session_used_rate', {'id': reservation.id}) }}"
+                                       data-remodal
+                                       class="link session-rating-link">
+                                        {% if reservation.hasRatings and reservation.userRatingAverage is not null %}
+                                            {{ reservation.userRatingAverage|number_format(1, '.', '') }}/5
+                                        {% else %}
+                                            Calificar clase
+                                        {% endif %}
+                                    </a>
+                                {% else %}
+                                    <p class="sessions-used-action-disabled"><i>*Calificación disponible solo durante 1 mes.</i></p>
+                                {% endif %}
+
+                                {% if not reservation.isAvailable %}
+                                    <p><i>*Clase cancelada: {{ reservation.cancellationAt|date('d/m/Y h.i a') }}</i></p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="reserv_class reserv_class--empty clearfix">
+                            <p>Sin registros por mostrar en el último mes.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <a href="{{ path('reservation_calendar') }}" class="btn reserve-class-toggle">Reservar clase</a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block account_aside_content %}
+    {{ include('package/_aside.html.twig') }}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+
+    <script>
+        (function () {
+            function initHistoryDateFilters() {
+                var jq = window.jQuery || window.$;
+
+                if (!jq || !jq.fn || !jq.fn.daterangepicker) {
+                    return;
+                }
+
+                jq('.history-datepicker').daterangepicker({
+                    autoUpdateInput: false,
+                    autoApply: true,
+                    singleDatePicker: true,
+                    showDropdowns: true,
+                    minYear: 2016,
+                    maxYear: new Date().getFullYear(),
+                    maxDate: new Date(),
+                    locale: {
+                        format: 'DD/MM/YYYY',
+                        applyLabel: 'Aplicar',
+                        cancelLabel: 'Cancelar',
+                        daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+                        monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
+                        firstDay: 1,
+                    },
+                });
+
+                var $form = jq('.sessions-used-history-filters');
+                var $start = jq('#history_date_start');
+                var $end = jq('#history_date_end');
+                var $submit = $form.find('.history-filter-apply');
+                var $error = $form.find('.js-history-filter-validation');
+                var initialServerMessage = ($error.data('server-message') || '').toString();
+
+                function updateEndMinDate() {
+                    var startPicker = $start.data('daterangepicker');
+                    var endPicker = $end.data('daterangepicker');
+                    var startValue = ($start.val() || '').trim();
+
+                    if (!startPicker || !endPicker) {
+                        return;
+                    }
+
+                    if (!startValue) {
+                        endPicker.minDate = false;
+
+                        return;
+                    }
+
+                    endPicker.minDate = startPicker.startDate.clone().startOf('day');
+
+                    if ($end.val() && endPicker.startDate.isBefore(startPicker.startDate, 'day')) {
+                        $end.val(startPicker.startDate.format('DD/MM/YYYY'));
+                        endPicker.setStartDate(startPicker.startDate.clone());
+                        endPicker.setEndDate(startPicker.startDate.clone());
+                    }
+                }
+
+                function openPicker($input) {
+                    var picker = $input.data('daterangepicker');
+                    if (picker) {
+                        picker.show();
+                    }
+                }
+
+                jq('body').on('apply.daterangepicker', '.history-datepicker', function (ev, picker) {
+                    jq(this).val(picker.startDate.format('DD/MM/YYYY'));
+
+                    if ('history_date_start' === this.id) {
+                        updateEndMinDate();
+                    }
+
+                    $error.text('');
+                    $submit.prop('disabled', false);
+                });
+
+                jq('body').on('focus click', '.history-datepicker', function () {
+                    openPicker(jq(this));
+                });
+
+                if (initialServerMessage) {
+                    $error.text(initialServerMessage);
+                    $submit.prop('disabled', true);
+                }
+
+                updateEndMinDate();
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initHistoryDateFilters);
+
+                return;
+            }
+
+            initHistoryDateFilters();
+        })();
+    </script>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends app.request.xmlHttpRequest
+    ? 'backend/layout-ajax.html.twig'
+    : 'backend/layout.html.twig' %}
+
+{% form_theme form with ['backend/default/form/fields.html.twig'] only %}
+
+{% set page_section = 'Páginas' %}
+{% set page_title = 'Nueva Página' %}
+{% set return_to = path('backend_page') %}
+
+{% block content %}
+    {% embed 'backend/default/embed/form_common.html.twig' with { 'page_section': page_section, 'page_title': page_title } %}
+        {% block body %}
+            {{ form_start(form, {
+                'attr': {
+                    'class': 'form-horizontal form-label-left',
+                    'data-parsley-validate': '',
+                }
+            }) }}
+                <div class="form-group">
+                    {{ form_label(form.title, 'Titulo:', {
+                        'label_attr': {
+                            'class': 'control-label col-md-3 col-sm-3 col-xs-12',
+                        }
+                    }) }}
+                    <div class="col-md-9 col-sm-9 col-xs-12">
+                        {{ form_widget(form.title, {
+                            'attr': {
+                                'class': 'form-control col-md-7 col-xs-12',
+                            }
+                        }) }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    {{ form_label(form.content, 'Contenido:', {
+                        'label_attr': {
+                            'class': 'control-label col-md-3 col-sm-3 col-xs-12',
+                        }
+                    }) }}
+                    <div class="col-md-9 col-sm-9 col-xs-12">
+                        {{ form_widget(form.content, {
+                            'attr': {
+                                'rows': 25,
+                                'data-redactor': '',
+                                'class': 'form-control col-md-7 col-xs-12',
+                            }
+                        }) }}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    {{ form_label(form.isActive, 'Activo:', {
+                        'label_attr': {
+                            'class': 'control-label col-md-3 col-sm-3 col-xs-12',
+                        }
+                    }) }}
+                    <div class="col-md-6 col-sm-6 col-xs-12">
+                        <div class="checkbox">
+                            {{ form_widget(form.isActive, {
+                                'attr': {
+                                    'class': 'js-switch',
+                                }
+                            }) }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ln_solid"></div>
+
+                <div class="form-group">
+                    <div class="col-xs-12">
+                        <div class="pull-right">
+                            <button type="submit" class="btn btn-primary">
+                                Guardar
+                            </button>
+                        </div>
+                        <div class="clearfix"></div>
+                    </div>
+                </div>
+            {{ form_end(form) }}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

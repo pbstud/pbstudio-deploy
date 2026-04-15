@@ -1,0 +1,36 @@
+{% extends 'mail/layout.html.twig' %}
+
+{% block body %}
+    <tr>
+        <td align="center" style="font-family:arial,sans-serif; color:#67ccbb; font-size:30px; text-align:center; text-transform:uppercase; font-weight:100">
+            Tu paquete esta por expirar
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <table width="600px" style="margin:20px;" class="w320">
+                <tr>
+                    <td style="font-family:arial,sans-serif; color:#6D6E70; font-size:16px; text-align:center; padding:10px;">
+                        <strong>Hola {{ user.name }}</strong>
+                        <br /><br />
+                        Te recordamos que tu paquete expira en aproximadamente 24 horas.
+                        <br /><br />
+                        <strong>Fecha de expiracion:</strong> {{ transaction.expirationAt|format_datetime('full', 'short') }}
+                        <br /><br />
+                        {% if package %}
+                            <strong>Paquete:</strong>
+                            {% if package.isUnlimited %}
+                                Paquete de clases &infin;
+                            {% else %}
+                                {{ transaction.packageTotalClasses }} clase(s)
+                            {% endif %}
+                            ({{ transaction.packageType|PackageSessionType|lower }})
+                        {% endif %}
+                        <br /><br />
+                        Si deseas aprovechar tus clases disponibles, te recomendamos reservar hoy mismo.
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+{% endblock %}

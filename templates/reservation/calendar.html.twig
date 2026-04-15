@@ -1,0 +1,43 @@
+{% extends 'layout.html.twig' %}
+
+{% block page_title %}{{ branchOffice.name }} | Semana {{ period.start.weekOfYear }} {{ period.start.yearIso }} - Reservación de clases de pilates y barra | {% endblock %}
+
+{% block content %}
+    <section id="calendar" class="reservations">
+        <div class="row">
+            <div class="content">
+                <h1>Reservar clase</h1>
+                <ul class="branch-office">
+                    {% for studio in filter.branchOffices %}
+                        <li><a href="{{ path('reservation_calendar', {'slug': studio.slug}) }}" class="btn little {{ (studio.slug == branchOffice.slug ? 'active') }}">{{ studio.name }}</a></li>
+                    {% endfor %}
+                </ul>
+                <form class="filters">
+                    <select data-event-filter="type">
+                        <option value="">- Tipo -</option>
+                        <option value="g">Grupal</option>
+                        <option value="i">Individual</option>
+                    </select>
+                    <select data-event-filter="discipline">
+                        <option value="">- Disciplina -</option>
+                        {% for entity in filter.disciplines %}
+                            <option value="{{ entity }}">{{ entity }}</option>
+                        {% endfor %}
+                    </select>
+                    <select data-event-filter="instructor">
+                        <option value="">- Instructor -</option>
+                        {% for entity in filter.instructors %}
+                            <option value="{{ entity.profile.firstname }}">{{ entity.profile.firstname }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+
+                <div class="week">
+                    <div id="calendar-container">
+                        {{ include('reservation/_calendar_week.html.twig') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

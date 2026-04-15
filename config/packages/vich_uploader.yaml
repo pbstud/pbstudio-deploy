@@ -1,0 +1,13 @@
+vich_uploader:
+    db_driver: orm
+
+    mappings:
+        staff_profile:
+            uri_prefix: /media/uploads/instructors
+            upload_destination: '%kernel.project_dir%/public/media/uploads/instructors'
+            namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
+
+        config:
+            uri_prefix: /media/uploads/site
+            upload_destination: '%kernel.project_dir%/public/media/uploads/site'
+            namer: Vich\UploaderBundle\Naming\SmartUniqueNamer

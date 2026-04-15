@@ -1,0 +1,70 @@
+{% use 'bootstrap_3_layout.html.twig' %}
+
+{%- block form_start -%}
+    {% set attr = attr|merge({'data-parsley-validate': true}) %}
+    {{- parent() -}}
+{% endblock form_start %}
+
+{% block switch_row -%}
+    {{- block('form_row') -}}
+{% endblock %}
+
+{% block switch_label -%}
+    {{- block('form_label') -}}
+{% endblock %}
+
+{% block switch_widget -%}
+    {%- set attr = attr|merge({switch: attr.switch|default('success')}) -%}
+    <div class="form-switch">
+        <input type="checkbox" {{ block('widget_attributes') }}{% if value is defined %} value="{{ value }}"{% endif %}{% if checked %} checked="checked"{% endif %} />
+        <label for="{{ id }}" data-on-label="{{ 'label.yes'|trans }}" data-off-label="{{ 'label.no'|trans }}"></label>
+    </div>
+{%- endblock %}
+
+{% block money_int_row -%}
+    {% set row_attr = row_attr|merge({class: (row_attr.class|default('') ~ ' has-feedback')}) %}
+    {{- block('form_row') -}}
+{% endblock %}
+
+{% block money_int_widget -%}
+    {%- set attr = attr|merge({class: (attr.class|default('') ~ ' has-feedback-left has-feedback-right')|trim}) -%}
+    <span class="form-control-feedback left" aria-hidden="true">$</span>
+    {{- block('form_widget_simple') -}}
+    <span class="form-control-feedback right" aria-hidden="true">.00</span>
+{%- endblock %}
+
+{% block datepicker_row -%}
+    {% set row_attr = row_attr|merge({class: (row_attr.class|default('') ~ ' has-feedback')}) %}
+    {{- block('form_row') -}}
+{% endblock %}
+
+{% block datepicker_widget -%}
+    {%- set attr = attr|merge({class: (attr.class|default('') ~ ' datepicker has-feedback-right')|trim}) -%}
+    {{- block('form_widget_simple') -}}
+    <span class="form-control-feedback right" aria-hidden="true">
+        <i class="fa fa-calendar" aria-hidden="true"></i>
+    </span>
+{%- endblock %}
+
+{% block percent_row -%}
+    {% set row_attr = row_attr|merge({class: (row_attr.class|default('') ~ ' has-feedback')}) %}
+    {{- block('form_row') -}}
+{% endblock %}
+
+{% block percent_widget -%}
+    {%- set attr = attr|merge({class: (attr.class|default('') ~ ' has-feedback-right')|trim}) -%}
+    {{- block('form_widget_simple') -}}
+    <span class="form-control-feedback right" aria-hidden="true">%</span>
+{%- endblock %}
+
+{# Custom espcific fields #}
+{% block _package_daysExpiry_row -%}
+    {% set row_attr = row_attr|merge({class: (row_attr.class|default('') ~ ' has-feedback')}) %}
+    {{- block('form_row') -}}
+{% endblock %}
+
+{% block _package_daysExpiry_widget -%}
+    {%- set attr = attr|merge({class: (attr.class|default('') ~ ' has-feedback-right')|trim}) -%}
+    {{- block('integer_widget') -}}
+    <span class="form-control-feedback right" aria-hidden="true">días</span>
+{% endblock %}

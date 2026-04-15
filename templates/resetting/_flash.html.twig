@@ -1,0 +1,5 @@
+{% for flash_message in app.flashes('danger') %}
+    <div class="error">
+        <p>{{ flash_message }}</p>
+    </div>
+{% endfor %}

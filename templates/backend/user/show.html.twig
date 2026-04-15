@@ -1,0 +1,229 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% set page_section = 'Usuarios' %}
+{% set page_title = 'Perfil del Usuario' %}
+
+{% block content %}
+    <div class="">
+        <div class="page-title">
+            <div class="title_left">
+                <h3>
+                    <a href="{{ path('backend_user') }}" class="btn btn-default btn-return-to">
+                        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                    </a>
+                    {{ page_section }}
+                </h3>
+            </div>
+        </div>
+
+        <div class="clearfix"></div>
+
+        <div class="row">
+            <div class="col-md-12 col-sm-12 col-xs-12">
+                <div class="x_panel">
+                    <div class="x_title">
+                        <h2>Perfil del usuario</h2>
+
+                        <div class="pull-right">
+                            {% if is_allowed_route('backend_user_reset_password') %}
+                                <button type="button" class="btn btn-xs btn-danger btn-reset-password" data-url="{{ path('backend_user_reset_password', {'id': user.id}) }}">
+                                    <i class="fa fa-refresh"></i>
+                                    Restablecer Contraseña
+                                </button>
+                            {% endif %}
+
+                            {% if is_allowed_route('backend_user_toggle_enable') %}
+                                {% if user.enabled %}
+                                    <button type="button" class="btn btn-xs btn-warning btn-toggle-enable" data-action="deshabilitar">
+                                        <i class="fa fa-ban"></i>
+                                        Deshabilitar
+                                    </button>
+                                {% else %}
+                                    <button type="button" class="btn btn-xs btn-success btn-toggle-enable" data-action="habilitar">
+                                        <i class="fa fa-check-circle-o"></i>
+                                        Habilitar
+                                    </button>
+                                {% endif %}
+                                {{ form(toggle_enable_form, {'attr': {'id': 'frm-toggle-enable'}}) }}
+                            {% endif %}
+                        </div>
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        <div class="col-md-3 col-sm-3 col-xs-12 profile_left">
+                            <h3 class="mtop0">{{ user }}</h3>
+
+                            <ul class="list-unstyled user_data">
+                                <li>
+                                    <i class="fa fa-at user-profile-icon"></i> {{ user.email }}
+                                </li>
+                                <li>
+                                    <i class="fa fa-phone user-profile-icon"></i> {{ user.phone }}
+                                </li>
+                                <li>
+                                    <i class="fa fa-birthday-cake user-profile-icon"></i>
+                                    {{ user.birthday ? user.birthday|date('d/m') : '-----' }}
+                                </li>
+                                {% if user.conektaId %}
+                                    <li class="m-top-xs">
+                                        <i class="fa fa-external-link user-profile-icon"></i>
+                                        <a href="https://admin.conekta.com/customers/{{ user.conektaId }}" target="_blank">
+                                            Ver en Conekta
+                                        </a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+
+                            <br />
+                            <h4>Contacto de emergencia</h4>
+
+                            <ul class="list-unstyled user_data">
+                                <li>
+                                    <i class="fa fa-user user-profile-icon"></i> {{ user.emergencyContactName|default('-----') }}
+                                </li>
+                                <li>
+                                    <i class="fa fa-phone user-profile-icon"></i> {{ user.emergencyContactPhone|default('-----') }}
+                                </li>
+                            </ul>
+
+                            <br />
+                            <h4>Clases</h4>
+
+                            <div id="userStatsContent">
+                                <table class="table-user-stats">
+                                    <tr>
+                                        <td>Disponibles:</td>
+                                        <td>. . .</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Tomadas:</td>
+                                        <td>. . .</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Próximas:</td>
+                                        <td>. . .</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <!-- / Stats -->
+                        </div>
+                        <!-- / General information -->
+
+                        <div class="col-md-9 col-sm-9 col-xs-12">
+                            <div class="" role="tabpanel" data-example-id="togglable-tabs">
+                                <ul id="userTab" class="nav nav-tabs nav-tabs-custom" role="tablist">
+                                    <li role="presentation">
+                                        <a href="{{ path('backend_user_transactions', { 'id': user.id }) }}">Transacciones</a>
+                                    </li>
+                                    <li role="presentation">
+                                        <a href="{{ path('backend_user_reservations', { 'id': user.id }) }}">Reservaciones</a>
+                                    </li>
+                                </ul>
+                                <div id="userTabContent" class="tab-content">
+                                </div>
+                            </div>
+                            <!-- / Tabs -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-reset-password" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title">Restablecer Contraseña</h4>
+                </div>
+                <div class="modal-body" data-loading="Cargando..."></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+
+    <script>
+        $(function () {
+            load_user_stats();
+
+            $('#userTab li a').on('click', function (e) {
+                e.preventDefault();
+
+                var target = $(e.target);
+                var url = target.prop('href');
+
+                target.trigger('blur');
+
+                if (target.parent().hasClass('active')) {
+                    return;
+                }
+
+                $.loader.show('#userTabContent');
+
+                target.closest('#userTab').find('li').removeClass('active');
+                target.parent().addClass('active');
+
+                $('#userTabContent').load(url);
+            });
+
+            $('#userTab li:first-child a').trigger('click');
+
+            //////////////////////////////////
+            // Enable / Disable
+            $('.btn-toggle-enable').on('click', function () {
+                if (confirm('¿Confirmas que deseas ' + $(this).data('action')  + ' el usuario?')) {
+                    $('#frm-toggle-enable').submit();
+                }
+            });
+
+            //////////////////////////////////
+            // Reset password
+            const $modalReset = $('#modal-reset-password').modal({show: false});
+            const $modalBodyReset = $modalReset.find('.modal-body');
+
+            $('.btn-reset-password').on('click', function () {
+                if (!confirm('¿Confirmas que deseas restablecer la contraseña del usuario?')) {
+                    return;
+                }
+
+                $modalBodyReset.text($modalBodyReset.data('loading'))
+                $modalReset.modal('show');
+
+                let csrfToken = $('meta[name="csrf-token"]').attr('content');
+                let url = $(this).data('url');
+
+                $.ajax({
+                    url: url,
+                    type: 'post',
+                    data: {
+                        _token: csrfToken
+                    },
+                    dataType: 'json',
+                    success: function(data) {
+                        $modalBodyReset.empty();
+                        $('<a/>', {
+                            'target': '_blank',
+                            'href': data.url,
+                            'text': data.url
+                        }).appendTo($modalBodyReset);
+                    }
+                });
+            });
+        });
+
+        function load_user_stats () {
+            $.ajax({
+                url: '{{ path('backend_user_stats', { 'id': user.id }) }}'
+            }).always(function (response) {
+                $('#userStatsContent').replaceWith(response);
+            });
+        }
+    </script>
+{% endblock %}

@@ -1,0 +1,3 @@
+user:
+    password:
+        mismatch: Las dos contraseñas no coinciden.

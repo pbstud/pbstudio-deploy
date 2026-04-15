@@ -1,0 +1,52 @@
+{% extends 'backend/session/profile.html.twig' %}
+
+{% set page_title = 'Listado de reservaciones' %}
+{% set active_tab = 'tab_reservations' %}
+
+{% block subcontent %}
+    {% if reservations | length > 0 %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th class="text-center">Camilla/Silla</th>
+                        <th class="text-center">F. de reservación</th>
+                        <th>Asistencia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reservation in reservations %}
+                        <tr>
+                            <td>
+                                <a href="{{ path('backend_user_show', { 'id': reservation.user.id }) }}" class="link-edit">
+                                    <u>{{ reservation.user }}</u>
+                                    <i class="fa fa-eye" aria-hidden="true"></i>
+                                </a>
+                            </td>
+                            <td class="text-center">{{ reservation.placeNumber }}</td>
+                            <td class="text-center">{{ reservation.createdAt | date('d/m/Y H:i') }}</td>
+                            <td>
+                                <div class="form-switch">
+                                    <input
+                                        type="checkbox"
+                                        class="attended"
+                                        data-url="{{ path('backend_reservation_attended', {'id': reservation.id}) }}"
+                                        data-csrf-token="{{ csrf_token('backend_reservation_attended_' ~ reservation.id) }}"
+                                        id="attended_{{ reservation.id }}"
+                                        name="attended[{{ reservation.id }}]"
+                                        switch="success"
+                                        value="1"
+                                        {% if reservation.attended %}checked="checked"{% endif %} />
+                                    <label for="attended_{{ reservation.id }}" data-on-label="Si" data-off-label="No"></label>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        {{ include('backend/default/partials/not_records.html.twig') }}
+    {% endif %}
+{% endblock %}

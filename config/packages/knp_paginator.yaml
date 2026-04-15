@@ -1,0 +1,5 @@
+knp_paginator:
+    template:
+        pagination: 'backend/default/partials/pagination.html.twig'
+        sortable: 'backend/default/pagination/bootstrap_v3_sortable_link.html.twig'
+        filtration: 'backend/default/filtration.html.twig'

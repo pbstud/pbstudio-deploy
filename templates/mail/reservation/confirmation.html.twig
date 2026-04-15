@@ -1,0 +1,46 @@
+{% extends 'mail/layout.html.twig' %}
+
+{% block body %}
+    <tr>
+        <td align="center" style="font-family:arial,sans-serif; color:#67ccbb; font-size:30px; text-align:center; text-transform:uppercase; font-weight:100">
+            Confirmación de reservación
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <table width="600px" style="margin:20px;" class="w320">
+                <tr>
+                    <td class="blockwrap" style="margin-bottom:10px;">
+                        <table width="600px">
+                            <tr>
+                                <td style="font-family:arial,sans-serif; color:#6D6E70; font-size:16px; text-align:center; padding: 10px;">
+                                    <strong>Hola {{ user.name }}</strong>
+                                    <br /><br />
+
+                                    Tu reservación ha sido registrada correctamente. ¡Ve por más!
+                                    <br /><br />
+
+                                    <p style="color:#AFAFB1; font-size: 0.85em; margin: 0;">
+                                        *Recuerda que podrás cancelar máximo 12 horas antes de la clase reservada si es
+                                        grupal o cancelar máximo 24 horas antes de la clase reservada si es privada.
+                                    </p>
+                                    <br /><br /><br />
+
+                                    <strong style="color:#67ccbb;">Detalles de operación:</strong>
+
+                                    <br />
+
+                                    <p><strong>Clase:</strong> {{ discipline }} {{ session.type|PackageSessionType }}</p>
+                                    <p><strong>Hora:</strong> {{ session.timeStart|date('h:i a') }}</p>
+                                    <p><strong>Fecha:</strong> {{ session.dateStart|format_date(null, "EEEE d 'de' MMMM") }}</p>
+                                    <p><strong>Instructor:</strong> {{ instructor.profile.firstname }}</p>
+                                    <p><strong>Camilla/Silla:</strong> {{ reservation.placeNumber }}</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+{% endblock %}

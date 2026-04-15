@@ -1,0 +1,3 @@
+{% for entity in individual_packages %}
+    {{ include('package/_package.html.twig', { 'package': entity }) }}
+{% endfor %}

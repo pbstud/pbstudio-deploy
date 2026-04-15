@@ -1,0 +1,168 @@
+{% extends 'backend/default/list.html.twig' %}
+
+{% block title %}Listado de Usuarios{% endblock %}
+
+{% block filters %}
+    <form action="{{ path('backend_user') }}" method="get">
+        <div class="row">
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="filters_id">ID:</label>
+                    <input type="number" value="{{ filters['id'] ?? '' }}" name="filters[id]" id="filters_id" class="form-control">
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="filters_name">Nombre:</label>
+                    <input type="text" value="{{ filters['name'] ?? '' }}" name="filters[name]" id="filters_name" class="form-control">
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="filters_lastname">Apellidos:</label>
+                    <input type="text" value="{{ filters['lastname'] ?? '' }}" name="filters[lastname]" id="filters_lastname" class="form-control">
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="filters_email">Correo:</label>
+                    <input type="email" value="{{ filters['email'] ?? '' }}" name="filters[email]" id="filters_email" class="form-control">
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="filters_date_start">Fecha inicio:</label>
+                    <div class="date-action-field">
+                        <input type="text" value="{{ filters['date_start'] ?? '' }}" name="filters[date_start]" id="filters_date_start" class="form-control datepicker" placeholder="dd/mm/aa">
+                        <span class="date-action-icon" aria-hidden="true">
+                            <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                        </span>
+                        <button type="button" class="btn btn-default date-action-clear" onclick="document.getElementById('filters_date_start').value = '';" title="Limpiar fecha" aria-label="Limpiar fecha">
+                            <i class="fa fa-times" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="filters_date_end">Fecha de término:</label>
+                    <div class="date-action-field">
+                        <input type="text" value="{{ filters['date_end'] ?? '' }}" name="filters[date_end]" id="filters_date_end" class="form-control datepicker" placeholder="dd/mm/aa">
+                        <span class="date-action-icon" aria-hidden="true">
+                            <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                        </span>
+                        <button type="button" class="btn btn-default date-action-clear" onclick="document.getElementById('filters_date_end').value = '';" title="Limpiar fecha" aria-label="Limpiar fecha">
+                            <i class="fa fa-times" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-3 col-sm-6 col-xs-12">
+                <div class="form-group">
+                    <label for="filters_enabled">Estado:</label>
+                    <select id="filters_enabled" name="filters[enabled]" class="form-control" data-current="{{ filters['enabled'] ?? '' }}">
+                        <option value="">- Todos -</option>
+                        {% for type, label in filter_enabled %}
+                            <option value="{{ type }}">{{ label|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-sm-6 col-xs-12">
+                <div class="form-group">
+                    <label for="filters_branch_office">Sucursal:</label>
+                    <select id="filters_branch_office" name="filters[branch_office]" class="form-control" data-current="{{ filters['branch_office'] ?? '' }}">
+                        <option value="">- Todas -</option>
+                        {% for branch_office in branch_offices %}
+                            <option value="{{ branch_office.id }}">{{ branch_office.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-sm-6 col-xs-12">
+                <div class="form-group">
+                    <label for="filters_package_enabled">Paquete activo:</label>
+                    <div class="form-switch">
+                        <input type="checkbox" id="filters_package_enabled" name="filters[package_enabled]" switch="success" value="1" {% if (filters['package_enabled'] ?? '') %}checked="checked"{% endif %} />
+                        <label for="filters_package_enabled" data-on-label="Si" data-off-label="No"></label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 col-sm-6 col-xs-12">
+                <label>&nbsp;</label>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <button type="submit" class="btn btn-primary">Buscar</button>
+
+                    {% if is_allowed_route('backend_user_export') %}
+                        <a href="{{ path('backend_user_export', {'filters': filters}) }}" class="btn btn-success">
+                            <i class="fa fa-file-excel-o" aria-hidden="true"></i> Exportar
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </form>
+{% endblock %}
+
+{% block table_thead %}
+    <tr>
+        <th>#</th>
+        <th>Nombre</th>
+        <th>Email</th>
+        <th>Teléfono</th>
+        <th>Sucursal</th>
+        <th>Estado</th>
+        <th class="text-center">F. creación</th>
+        <th></th>
+    </tr>
+{% endblock %}
+
+{% block table_tbody %}
+    {% set allowEdit = is_allowed_route('backend_user_edit') %}
+
+    {% for user in pagination %}
+        {# user \App\Entity\User #}
+        <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.phone }}</td>
+            <td>{{ user.branchOffice }}</td>
+            <td>
+                {% if user.enabled %}
+                    <span class="label label-primary">Activo</span>
+                {% else %}
+                    <span class="label label-default">Inactivo</span>
+                {% endif %}
+            </td>
+            <td class="text-center">
+                {% if user.createdAt %}
+                    {{ user.createdAt|date('Y-m-d H:i:s') }}
+                {% endif %}
+            </td>
+            <td>
+                <a href="{{ path('backend_user_show', {'id': user.id}) }}" class="btn btn-success btn-xs">
+                    Detalle
+                </a>
+                {% if allowEdit %}
+                    <a href="{{ path('backend_user_edit', {'id': user.id}) }}" class="btn btn-primary btn-xs">
+                        Editar
+                    </a>
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+{% endblock %}

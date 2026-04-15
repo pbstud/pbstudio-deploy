@@ -1,0 +1,156 @@
+btn:
+    save: Guardar
+    update: Guardar Cambios
+
+error:
+    invalid_coupon: El cupón es inválido.
+    coupon_expired: El cupón ha expirado.
+    coupon_not_active: El cupón aún no está activo.
+    coupon_limit_exceeded: El cupón ha alcanzado su límite de usos disponibles.
+    coupon_not_valid_for_package: El cupón no es válido para este paquete.
+
+filter:
+    title: Buscar
+    name: Buscar por Nombre
+    name_code: Buscar por Nombre, Código
+    transaction_discount:
+        1: Con Descuento
+        2: Sin Descuento
+
+help:
+    days_expiry: Vigencia en días
+    instructor_photo: >
+        Formatos permitidos: <strong>JPG/PNG</strong> (máximo <strong>%max_size%</strong>).<br>
+        Resolución permitida: de <strong>%min_width%x%min_height%</strong> a <strong>%max_width%x%max_height%</strong> px.<br>
+        Para dejar al instructor sin foto, activa <strong>Quitar foto actual</strong> y guarda.
+
+label:
+    active: Activo
+    additional_discount: Descuento Adicional
+    admission_at: Fecha de ingreso
+    address: Dirección
+    alt_text: Descripción
+    amount: Precio
+    apply_special_price: Aplicar a precio especial
+    birthday: Fecha de cumpleaños (dd/mm)
+    branch_office: Sucursal
+    capacity: Capacidad
+    card_last4: Últimos 4 dígitos
+    charge_auth_code: Código de autorización
+    charge_method: Tipo de pago
+    code: Código
+    coupon: Cupón de Descuento
+    created_at: F. Creación
+    date_end: Fecha de Término
+    date_start: Fecha de Inicio
+    days_expiry: Vigencia
+    description: Descripción
+    discipline: Disciplina
+    disciplines: Disciplinas
+    discount: Descuento
+    discount_info: Información del Descuento
+    email: Correo
+    emergency_contact_name: Nombre Contacto Emergencia
+    emergency_contact_phone: Teléfono Contacto Emergencia
+    firstname: Nombre
+    id: ID
+    inactive: Inactivo
+    is_active: Activo
+    is_unlimited: Ilimitado
+    lastname: Apellidos
+    maternal_surname: Apellido materno
+    modality: Modalidad
+    name: Nombre
+    new_user: Aplica para nuevo usuario
+    no: No
+    package: Paquete
+    packages: Paquetes
+    password: Contraseña
+    paternal_surname: Apellido paterno
+    phone: Teléfono
+    photo_file: Imagen para perfil
+    place: Lugar
+    places_not_available: Lugares no Disponibles
+    public: Público
+    repeat_password: Repetir contraseña
+    remove_photo: Quitar foto actual
+    special_price: Precio Especial
+    telephone: Teléfono
+    total_classes: Número de clases
+    type: Tipo
+    updated_at: F. Actualización
+    user: Usuario
+    username: Usuario
+    used: Usados
+    uses_total: Total de Usos
+    yes: Si
+
+main:
+    backend_branchoffice: Sucursales
+    backend_branchoffice_edit: Editar Sucursal
+    backend_branchoffice_new: Nueva Sucursal
+    backend_coupon: Cupones
+    backend_coupon_edit: Editar Cupón
+    backend_coupon_new: Nuevo Cupón
+    backend_coupon_show: Detalle de Cupón
+    backend_configuration: Configuración
+    backend_discipline: Disciplinas
+    backend_discipline_edit: Editar Disciplina
+    backend_discipline_new: Nueva Disciplina
+    backend_exerciseroom: Salones
+    backend_exerciseroom_edit: Editar Salón
+    backend_exerciseroom_new: Nuevo Salón
+    backend_instructor: Instructores
+    backend_instructor_edit: Datos Generales
+    backend_instructor_new: Nuevo Instructor
+    backend_package: Paquetes
+    backend_package_edit: Editar Paquete
+    backend_package_new: Nuevo Paquete
+    backend_page: Páginas
+    backend_page_edit: Editar Página
+    backend_page_new: Nueva Página
+    backend_session: Clases
+    backend_session_day: Clases x día
+    backend_session_day_edit: Editar clases x día programadas
+    backend_session_day_new: Programar clases x día
+    backend_session_edit: Editar Clase
+    backend_session_new: Nueva Clase
+    backend_session_reservations: Listado de Reservaciones
+    backend_session_waitinglist: Lista de Espera
+    backend_staff: Staff
+    backend_staff_edit: Editar Staff
+    backend_staff_new: Nuevo Staff
+    backend_stats: Estadísticas
+    backend_stats_ratings: Calificaciones
+    backend_transaction: Transacciones
+    backend_transaction_new: Caja
+    backend_transaction_show: Detalle Transacciones
+    backend_user: Listado
+    backend_user_edit: Editar Usuario
+    backend_user_show: Perfil del usuario
+    backend_user_new: Nuevo registro
+    catalog: Catálogos
+    dashboard: Dashboard
+    payment: Pagos
+    report: Reportes
+    system: Sistema
+    user: Usuarios
+
+package_type:
+    group: Grupal
+    individual: Individual
+
+payment:
+    free: Gratis
+    cash: Pago en caja
+    card: Pago con tarjeta
+    pos: Pago con terminal
+
+placeholder:
+    select: '- Seleccionar -'
+
+resetting:
+    check_email: "Un email ha sido enviado a tu correo electrónico. Haz clic en el enlace de activación para restablecer tu contraseña.\nNota: El enlace solo estará activado %tokenLifetime% horas. Si no recibes el correo electrónico, revisa tu carpeta de correo no deseado o inténtalo de nuevo."
+    flash:
+        error:
+            active_request: "Un email ya ha sido enviado a tu correo electrónico. Haz clic en el enlace de activación para restablecer tu contraseña.\nNota: El enlace solo estará activado %tokenLifetime% horas. Si no recibes el correo electrónico, revisa tu carpeta de correo no deseado o inténtalo de nuevo."

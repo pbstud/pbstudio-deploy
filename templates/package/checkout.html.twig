@@ -1,0 +1,73 @@
+<section class="pop_box">
+    <div class="row clearfix">
+        <a data-remodal-action="close" class="nav-toggle close"><span class="iconMenu"></span></a>
+
+        <div class="grid-1-8 right right-container">
+            {% if restrictNewUser %}
+                <div class="alert error">
+                    <p>El paquete seleccionado sólo aplica para nuevos usuarios</p>
+                </div>
+            {% else %}
+                <div class="checkout-form">
+                    <p>Información de pago</p>
+                    <form id="checkout-form" action="{{ path('package_checkout', { 'id': package.id }) }}" method="POST">
+                        <input type="text" size="20" data-conekta="card[name]" placeholder="Nombre del titular de la tarjeta" required="required">
+                        <input type="number" size="20" data-conekta="card[number]" placeholder="Número de tarjeta" required="required">
+                        <div>
+                            <label>Vigencia</label>
+                            <select data-conekta="card[exp_month]" required="required">
+                                <option>Mes</option>
+                                {% for i in 1..12 %}
+                                    <option value="{{ '%02d'|format(i) }}">{{ '%02d'|format(i) }}</option>
+                                {% endfor %}
+                            </select>
+                            <span class="line">/</span>
+                            <select data-conekta="card[exp_year]" required="required">
+                                <option>Año</option>
+                                {% set startYear = 'now'|date('Y') %}
+                                {% set endYear = startYear + 10 %}
+                                {% for i in startYear..endYear %}
+                                    <option value="{{ i }}">{{ i }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label>Código de seguridad</label>
+                            <input type="password" size="4" data-conekta="card[cvc]" placeholder="***" required="required">
+                        </div>
+                        <div id="frm-coupon">
+                            <input type="text" id="coupon-field" size="20" placeholder="Cupón de descuento">
+                            <button type="button" id="btn-coupon" data-url="{{ path('coupon_validate', {'id': package.id}) }}">
+                                Aplicar
+                            </button>
+                        </div>
+                        <div id="coupon-valid">
+                            <p>
+                                Descuento: <span id="coupon-discount"></span>
+                            </p>
+                            <p>
+                                Importe: <span id="coupon-total"></span>
+                            </p>
+                            <input type="hidden" id="coupon-validated">
+                        </div>
+                        <button type="submit" class="btn-submit">Comprar</button>
+                    </form>
+                </div>
+
+                <div class="checkout-success center" style="display:none;">
+                    <h3>Tu compra ha sido exitosa<small>¡Comienza ahora!</small></h3>
+
+                    <a href="{{ path('reservation_calendar') }}" class="btn">Reservar clase</a>
+
+                    <a href="{{ path('profile') }}" class="btn secondary">Ir a mi cuenta</a>
+                </div>
+            {% endif %}
+        </div>
+
+        {{ include('package/_checkout_detail.html.twig') }}
+    </div>
+</section>
+
+<script type="text/javascript">
+    checkoutHandler('{{ conektaPublicKey }}');
+</script>

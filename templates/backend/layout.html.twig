@@ -1,0 +1,87 @@
+{% extends 'backend/base.html.twig' %}
+
+{% set current_menu = knp_menu_get_current_item('backend_sidebar') %}
+{% set body_class = 'nav-md' %}
+{% block title %}{{ current_menu.label|trans }}{% endblock %}
+
+{% block body %}
+    <div class="container body">
+        <div class="main_container">
+
+            <div class="col-md-3 left_col">
+                <div class="left_col scroll-view">
+                    <div class="navbar nav_title" style="border: 0;">
+                        <a href="{{ path('backend_dashboard') }}" class="site_title">
+                            <i class="fa fa-paw"></i> <span>P&B Studio</span>
+                        </a>
+                    </div>
+
+                    <div class="clearfix"></div>
+
+                    <div id="sidebar-menu" class="main_menu_side hidden-print main_menu">
+                        <div class="menu_section active">
+                            {{ knp_menu_render('backend_sidebar') }}
+                        </div>
+                    </div>
+
+                    <div class="sidebar-footer hidden-small">
+                        <a data-toggle="tooltip" data-placement="top" title="Página de inicio"
+                           href="#" target="_blank">
+                            <span class="glyphicon glyphicon-home" aria-hidden="true"></span>
+                        </a>
+                        <a data-toggle="tooltip" data-placement="top" title="Logout"
+                           href="#">
+                            <span class="glyphicon glyphicon-off" aria-hidden="true"></span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            {{ include('backend/default/partials/header.html.twig') }}
+
+            <div class="right_col" role="main">
+                {% block content %}
+                    <div>
+                        <div class="page-title">
+                            <div class="title_left">
+                                <h3>
+                                    {%- if current_menu.getExtra('last_child') or return_to is defined -%}
+                                        <a href="{{ return_to is defined ? return_to : current_menu.parent.uri }}" class="btn btn-default btn-return-to">
+                                            <i class="fa fa-arrow-left" aria-hidden="true"></i>
+                                        </a>
+                                        {{ page_section is defined ? page_section : current_menu.parent.label|trans }}
+                                    {%- else -%}
+                                        {{ current_menu.label|trans }}
+                                    {%- endif -%}
+                                </h3>
+                            </div>
+
+                            <div class="title_right">
+                                {% block actions %}{% endblock %}
+                                {% block pagination_filter %}{% endblock %}
+                            </div>
+                        </div>
+
+                        <div class="clearfix"></div>
+
+                        {% block section %}{% endblock %}
+                    </div>
+                {% endblock %}
+            </div>
+
+            {{ include('backend/default/partials/footer.html.twig') }}
+        </div>
+    </div>
+
+    <div class="hidden" id="loader">
+        <div class="processing"><img src="{{ asset('images/loader.gif') }}" alt="Procesando"></div>
+    </div>
+
+    {% block footer %}{% endblock %}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+
+    {{ include('backend/default/partials/flash.html.twig') }}
+{% endblock %}

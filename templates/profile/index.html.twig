@@ -1,0 +1,63 @@
+{% extends 'profile/layout.html.twig' %}
+
+{% block page_title %}Datos de usuario | {% endblock %}
+
+{% block account_content %}
+    {# user \App\Entity\User #}
+
+    {{ include('package/_aside.html.twig') }}
+
+    {{ include('profile/_transactions.html.twig') }}
+
+    <div class="row">
+        <div class="content">
+            <h2 id="perfil">Datos de usuario</h2>
+            <div class="user-data-section">
+                <div class="data-group">
+                    <h5>Información Personal</h5>
+                    <div class="data-field">
+                        <span class="data-icon">🧑</span>
+                        <div>
+                            <label>Nombre</label>
+                            <p>{{ user.name }} {{ user.lastname }}</p>
+                        </div>
+                    </div>
+                    <div class="data-field">
+                        <span class="data-icon">📨</span>
+                        <div>
+                            <label>Email</label>
+                            <p>{{ user.email }}</p>
+                        </div>
+                    </div>
+                    <div class="data-field">
+                        <span class="data-icon">📱</span>
+                        <div>
+                            <label>Teléfono</label>
+                            <p>{{ user.phone | default('-----') }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-group">
+                    <h5>Contacto de Emergencia</h5>
+                    <div class="data-field">
+                        <div>
+                            <label>Nombre</label>
+                            <p>{{ user.emergencyContactName | default('-----') }}</p>
+                        </div>
+                    </div>
+                    <div class="data-field">
+                        <div>
+                            <label>Teléfono</label>
+                            <p>{{ user.emergencyContactPhone | default('-----') }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <a href="{{ path('profile_edit', {'_fragment': 'section-content'}) }}" class="btn-edit-profile">
+                    Editar datos
+                </a>
+            </div>
+        </div>
+    </div>
+{% endblock account_content %}

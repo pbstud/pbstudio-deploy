@@ -1,0 +1,13 @@
+<div class="remodal remodal-notice" data-remodal-id="modal-notice" data-notice-id="{{ notice_id|default('') }}" data-remodal-options="hashTracking:false,closeOnEscape:false,closeOnOutsideClick:false">
+    <section class="pop_box">
+        <a data-remodal-action="close" class="notice-close-btn" aria-label="Cerrar">&times;</a>
+        {% if url %}
+            <a href="{{ url }}" class="notice-media"><img src="{{ asset(vich_uploader_asset(image, 'file')) }}" alt="Aviso"></a>
+        {% else %}
+            <div class="notice-media"><img src="{{ asset(vich_uploader_asset(image, 'file')) }}" alt="Aviso"></div>
+        {% endif %}
+    </section>
+    <div class="notice-actions">
+        <button type="button" class="notice-no-show js-notice-no-show">No mostrar este aviso de nuevo</button>
+    </div>
+</div>

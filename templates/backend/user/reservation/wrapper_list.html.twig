@@ -1,0 +1,160 @@
+{% extends 'backend/layout-ajax.html.twig' %}
+
+{% block content %}
+    <ul class="nav navbar-right panel_toolbox">
+        {% if is_allowed_route('backend_user_reservation_new') %}
+            <li>
+                <button href="{{ path('backend_user_reservation_new', { 'id': user.id }) }}" class="btn btn-default" data-toggle="modal" data-target="#reservationDetailModal">
+                    Nueva reservación
+                </button>
+            </li>
+        {% endif %}
+    </ul>
+
+    <div class="x_panel x_panel_filters">
+        <div class="x_content">
+            <form id="form_filter" action="{{ path('backend_user_reservations', { 'id': user.id }) }}" method="get">
+                <div class="row">
+                    <div class="col-md-4 col-sm-4 col-xs-12">
+                        <div class="form-group">
+                            <label for="filter_status">Estado:</label>
+                            <select id="filter_status" name="filter_status" class="form-control" data-current="{{ filter_status }}">
+                                <option value="">- Todos -</option>
+                                <option value="1">{{ '1'|ReservationStatusDescription }}</option>
+                                <option value="0">{{ '0'|ReservationStatusDescription }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 col-sm-4 col-xs-12">
+                        <div class="form-group">
+                            <label for="filter_session_date_start">Fecha inicio:</label>
+                            <div class="date-action-field">
+                                <input type="text" id="filter_session_date_start" name="filter_session_date_start" class="form-control datepicker" value="{{ filter_session_date_start }}" />
+                                <span class="date-action-icon" aria-hidden="true">
+                                    <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                                </span>
+                                <button type="button" class="btn btn-default date-action-clear" onclick="document.getElementById('filter_session_date_start').value = '';" title="Limpiar fecha" aria-label="Limpiar fecha">
+                                    <i class="fa fa-times" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 col-sm-4 col-xs-12">
+                        <div class="form-group">
+                            <label for="filter_session_date_end">Fecha de término:</label>
+                            <div class="date-action-field">
+                                <input type="text" id="filter_session_date_end" name="filter_session_date_end" class="form-control datepicker" value="{{ filter_session_date_end }}" />
+                                <span class="date-action-icon" aria-hidden="true">
+                                    <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                                </span>
+                                <button type="button" class="btn btn-default date-action-clear" onclick="document.getElementById('filter_session_date_end').value = '';" title="Limpiar fecha" aria-label="Limpiar fecha">
+                                    <i class="fa fa-times" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 col-sm-4 col-xs-12">
+                        <div class="form-group">
+                            <label for="filter_branch_office">Sucursal</label>
+                            <select id="filter_branch_office" name="filter_branch_office" class="form-control">
+                                <option value="">- Todos -</option>
+                                {% for branch_office in branch_offices %}
+                                    <option value="{{ branch_office.id }}">{{ branch_office.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 col-sm-4 col-xs-12">
+                        <div class="form-group">
+                            <label for="filter_exercise_room">Salón</label>
+                            <select id="filter_exercise_room" name="filter_exercise_room" class="form-control">
+                                <option value="">- Todos -</option>
+                                {% for branch_office, rooms in exercise_rooms %}
+                                    <optgroup label="{{ branch_office }}">
+                                        {% for exercise_room in rooms %}
+                                            <option value="{{ exercise_room.id }}">{{ exercise_room.name }}</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 col-sm-4 col-xs-12">
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-dark">Buscar</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="wrapper_list">
+    </div>
+
+    <div id="reservationDetailModal" class="modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(".datepicker").daterangepicker(datepickeroptions);
+
+        var List = {
+            url: null,
+
+            filter: function () {
+                var form = $('#form_filter');
+                var url = form.prop('action') + '?' + form.serialize();
+
+                this.load(url);
+            },
+
+            reload: function () {
+                this.load();
+            },
+
+            load: function (url) {
+                $.loader.show('#wrapper_list');
+
+                this.url = url || this.url;
+
+                $('#wrapper_list').load(this.url);
+            },
+
+            init: function () {
+                var _self = this;
+
+                $('#form_filter').on('submit', function () {
+                    _self.filter();
+
+                    return false;
+                }).trigger('submit');
+
+                $('body').on('click', '.pagination a', function (e) {
+                    e.preventDefault();
+
+                    _self.load($(e.target).prop('href'));
+                });
+
+                return _self;
+            },
+        };
+
+        $('#reservationDetailModal').on('hidden.bs.modal', function () {
+            $(this).removeData('bs.modal');
+            $(this).find('.modal-content').empty();
+        });
+
+        List.init();
+    </script>
+{% endblock %}

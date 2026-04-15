@@ -1,0 +1,17 @@
+{% form_theme form with ['form_div_layout.html.twig'] only %}
+
+<section class="box-form">
+    <div class="gradient">
+        <a data-remodal-action="close" class="nav-toggle close"><span class="iconMenu"></span></a>
+        <div class="row">
+            <h3>Regístrate</h3>
+            <div>
+                <form action="{{ path('register') }}" method="post" class="m-fjx">
+                    {{ include('registration/_fields.html.twig') }}
+                </form>
+            </div>
+
+            <p>¿Ya tienes cuenta? <a href="#login" data-url="{{ path('app_login') }}" data-remodal>¡Inicia sesión!</a></p>
+        </div>
+    </div>
+</section>

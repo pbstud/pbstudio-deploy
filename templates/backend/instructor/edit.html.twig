@@ -1,0 +1,13 @@
+{% extends 'backend/instructor/profile.html.twig' %}
+
+{% set page_title = 'Datos Generales' %}
+
+{% block subcontent %}
+    {{ form_start(form, {'attr': {'id': 'form-instructor'}}) }}
+        {{ include('backend/instructor/_general_data_form.html.twig') }}
+
+        <div class="ln_solid"></div>
+
+        {{ include('backend/default/_btn_save.html.twig', {'button_label': 'btn.update'}) }}
+    {{ form_end(form) }}
+{% endblock %}

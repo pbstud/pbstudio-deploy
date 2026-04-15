@@ -1,0 +1,146 @@
+{% extends 'backend/default/list.html.twig' %}
+
+{% block title %}Listado de Paquetes{% endblock %}
+
+{% block actions %}
+    {% if is_allowed_route('backend_package_new') %}
+        <div class="col-md-3 col-sm-4 col-xs-8 form-group pull-right top_search text-right">
+            <a href="{{ path('backend_package_new') }}" class="btn btn-dark">
+                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                Nuevo paquete
+            </a>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block filters %}
+    <form action="{{ path('backend_package') }}" method="get">
+        <div class="row">
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="filters_total_classes">Núm. de clases:</label>
+                    <input type="number" value="{{ filters['total_classes'] ?? '' }}" name="filters[total_classes]" id="filters_total_classes" class="form-control">
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="filters_type">Modalidad:</label>
+                    <select id="filters_type" name="filters[type]" class="form-control" data-current="{{ filters['type'] ?? '' }}">
+                        <option value="">- Todos -</option>
+                        {% for type, label in filter_types %}
+                            <option value="{{ type }}">{{ label|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="filters_status">Estado:</label>
+                    <select id="filters_status" name="filters[status]" class="form-control" data-current="{{ filters['status'] ?? '' }}">
+                        <option value="">- Todos -</option>
+                        {% for type, label in filter_status %}
+                            <option value="{{ type }}">{{ label|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="filters_public">Público:</label>
+                    <select id="filters_public" name="filters[public]" class="form-control" data-current="{{ filters['public'] ?? '' }}">
+                        <option value="">- Todos -</option>
+                        {% for type, label in filter_public %}
+                            <option value="{{ type }}">{{ label|trans }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <label>&nbsp;</label>
+                <div>
+                    <button type="submit" class="btn btn-primary">Buscar</button>
+                </div>
+            </div>
+        </div>
+    </form>
+{% endblock %}
+
+{% block table_thead %}
+    <tr>
+        <th>#</th>
+        <th>Núm. de clases</th>
+        <th>Descripción</th>
+        <th>Precio</th>
+        <th>Precio Espcial</th>
+        <th>Modalidad</th>
+        <th>Vigencia</th>
+        <th>Nuevo usuario</th>
+        <th>Público</th>
+        <th>Estado</th>
+    </tr>
+{% endblock %}
+
+{% block table_tbody %}
+    {% for package in pagination %}
+        {# package \App\Entity\Package #}
+        <tr>
+            <td>
+                <a href="{{ path('backend_package_edit', { 'id': package.id }) }}" class="link-edit">
+                    <u>{{ package.id }}</u>
+                    <i class="fa fa-pencil" aria-hidden="true"></i>
+                </a>
+            </td>
+            <td>
+                {% if package.isUnlimited %}
+                    (&infin;) Ilimitadas
+                {% else %}
+                    {{ package.totalClasses }} clase(s)
+                {% endif %}
+            </td>
+            <td>{{ package.altText }}</td>
+            <td>
+                ${{ package.amount | number_format(2) }}
+            </td>
+            <td>
+                {% if package.specialPrice %}
+                    ${{ package.specialPrice|number_format(2) }}
+                {% else %}
+                    --
+                {% endif %}
+            </td>
+            <td>
+                {{ 'i' == package.type ? 'Individual' : 'Grupal' }}
+            </td>
+            <td>
+                {{ package.daysExpiry }} días
+            </td>
+            <td>
+                {% if package.newUser %}
+                    <span class="label label-primary">Sí</span>
+                {% else %}
+                    <span class="label label-danger">No</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if package.public %}
+                    <span class="label label-primary">Sí</span>
+                {% else %}
+                    <span class="label label-danger">No</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if package.isActive %}
+                    <span class="label label-primary">Activo</span>
+                {% else %}
+                    <span class="label label-danger">Inactivo</span>
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+{% endblock %}

@@ -1,0 +1,41 @@
+/*
+ * Remodal mobile/touch overrides.
+ * This file is imported AFTER remodal CSS to win cascade.
+ */
+
+html.remodal-is-locked {
+  -ms-touch-action: auto;
+  touch-action: auto;
+}
+
+.remodal-wrapper {
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+.remodal-wrapper [data-remodal-id="modal"] {
+  max-height: calc(100vh - 20px);
+}
+
+.remodal-wrapper [data-remodal-id="modal"] .rating-breakdown-modal {
+  max-height: 86vh;
+  overflow-y: auto;
+}
+
+@media (max-width: 767px) {
+  .remodal-wrapper {
+    padding: 8px 8px 0;
+  }
+
+  .remodal-wrapper [data-remodal-id="modal"] {
+    margin-bottom: 8px;
+    max-height: calc(100vh - 16px);
+    width: 100%;
+  }
+
+  .remodal-wrapper [data-remodal-id="modal"] .rating-breakdown-modal {
+    max-height: 84vh;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+}

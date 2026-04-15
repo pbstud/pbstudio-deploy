@@ -1,0 +1,129 @@
+<div class="modal-header">
+    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+    <h4 class="modal-title" id="myModalLabel2">Detalle de la reservación</h4>
+</div>
+<div class="modal-body">
+    <div class="table-responsive">
+        <p class="h5"><strong>DATOS DE LA CLASE</strong></p>
+        <table class="table table-bordered table-striped">
+            <tbody>
+                <tr>
+                    <th width="150px">Fecha de inicio</th>
+                    <td>{{ session.dateStart | date('d-m-Y') ~ ' ' ~ session.timeStart | date('H:i') }}</td>
+                </tr>
+                <tr>
+                    <th>Sucursal</th>
+                    <td>{{ session.branchOffice }}</td>
+                </tr>
+                <tr>
+                    <th>Salón</th>
+                    <td>{{ session.exerciseRoom }}</td>
+                </tr>
+                <tr>
+                    <th>Modalidad</th>
+                    <td>{{ session.type|PackageSessionType }}</td>
+                </tr>
+                <tr>
+                    <th>Disciplina</th>
+                    <td>{{ session.discipline }}</td>
+                </tr>
+                <tr>
+                    <th>Instructor</th>
+                    <td>{{ session.instructor }}</td>
+                </tr>
+                <tr>
+                    <th>Estado</th>
+                    <td>
+                        <span class="label label-{{ session.status|SessionStatusLabel }}">
+                            {{ session.status|SessionStatusDescription }}
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p class="h5"><strong>DATOS DE LA RESERVACIÓN</strong></p>
+        <table class="table table-bordered table-striped">
+            <tbody>
+                <tr>
+                    <th width="150px">#</th>
+                    <td>{{ reservation.id }}</td>
+                </tr>
+                <tr>
+                    <th>Usuario</th>
+                    <td>{{ user }}</td>
+                </tr>
+                <tr>
+                    <th>Camilla/Silla</th>
+                    <td>{{ reservation.placeNumber }}</td>
+                </tr>
+                <tr>
+                    <th>F. de reservación</th>
+                    <td>{{ reservation.createdAt|date }}</td>
+                </tr>
+                {% if not reservation.isAvailable %}
+                    <tr>
+                        <th>F. de cancelación</th>
+                        <td>{{ reservation.cancellationAt|date }}</td>
+                    </tr>
+                {% endif %}
+                <tr>
+                    <th>Estado</th>
+                    <td>
+                        <span class="label label-{{ reservation.isAvailable|ReservationStatusLabel }}">
+                            {{ reservation.isAvailable|ReservationStatusDescription }}
+                        </span>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal-footer">
+    <div id="flash_container" class="text-left"></div>
+
+    <button type="button" class="btn btn-default pull-left" data-dismiss="modal">Cerrar detalle</button>
+
+    {% if
+        is_allowed_route('backend_user_reservation_cancel') and
+        reservation.isAvailable and
+        session.status in [ constant('App\\Entity\\Session::STATUS_OPEN'), constant('App\\Entity\\Session::STATUS_FULL'), constant('App\\Entity\\Session::STATUS_CLOSED') ]
+    %}
+        {{ form_start(cancel_form, {
+            'attr': {
+                'id': 'frmCancel',
+            }
+        }) }}
+            <button type="submit" class="btn btn-danger" data-loading-text="Cancelando...">Cancelar reservación</button>
+        {{ form_end(cancel_form) }}
+
+        <script>
+            $('#frmCancel').on('submit', function () {
+                var form = $(this);
+                var btn = form.find('button[type="submit"]').button('loading');
+
+                $.ajax({
+                    url: form.prop('action'),
+                    type: 'post',
+                    data: form.serialize(),
+                    success: function(response) {
+                        if (response.error) {
+                            $.flash.error(response.error);
+
+                            btn.button('reset');
+                        } else {
+                            $.flash.success('¡La reservación ha sido cancelada de forma correcta!');
+
+                            List.reload();
+
+                            btn.remove();
+                        }
+                    }
+                });
+
+                return false;
+            });
+        </script>
+    {% endif %}
+</div>

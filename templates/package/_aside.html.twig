@@ -1,0 +1,29 @@
+<aside id="packages">
+    <div class="row">
+        <div class="content">
+            <div class="title clearfix center">
+                <h3>Paquetes y costos</h3>
+            </div>
+            <div class="center">
+                <h4>Clases grupales</h4>
+                <div class="price">
+                    {{ render(controller('App\\Controller\\PackageController::groupPackages')) }}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="content">
+            <div class="center">
+                <h4>Clases individuales</h4>
+                <div class="price">
+                    {{ render(controller('App\\Controller\\PackageController::individualPackages')) }}
+                </div>
+
+                <a href="{{ path('reservation_calendar') }}" class="btn reserve-class-toggle">
+                    Consulta el calendario
+                </a>
+            </div>
+        </div>
+    </div>
+</aside>

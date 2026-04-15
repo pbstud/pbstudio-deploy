@@ -1,0 +1,173 @@
+<section class="pop_box">
+    <div class="row clearfix">
+        <a data-remodal-action="close" class="nav-toggle close"><span class="iconMenu"></span></a>
+
+        <div class="center">
+            {% if not userReservations and session.open %}
+                <h3>¡Tu clase te espera!</h3>
+                <small>Selecciona un lugar</small>
+            {% elseif userReservations %}
+                <h3>¡Ya estás suscrito a esta clase!</h3>
+                <small>Tu lugar seleccionado</small>
+            {% elseif on_waitinglist %}
+                <h3>¡Ya estás en la lista de espera!</h3>
+                <small>
+                    Si se libera un lugar, te lo asignaremos automáticamente para esta clase.
+                </small>
+            {% elseif waiting_list_closed %}
+                <h3>¡Ya no hay lugares disponibles!</h3>
+                <small>
+                    Esta clase ya está llena y la lista de espera cierra 2 horas antes del inicio.
+                </small>
+            {% elseif show_waitinglist %}
+                <h3>¡Ya no hay lugares disponibles!</h3>
+                <small>
+                    Pero no te preocupes, regístrate en la lista de espera y si se libera un lugar se te asignará a ti automáticamente.
+                </small>
+            {% elseif msg_no_classes_available %}
+                <h3>¡Ya no hay lugares disponibles!</h3>
+                <small>
+                    No cuentas con clases disponibles para registrarte en la lista de espera.
+                </small>
+            {% endif %}
+        </div>
+
+        <div class="clearfix class_pop {{ session.type|PackageSessionType|lower }}">
+            <div class="grid-1-6 right reserve-{{ grid_class }}">
+                {% if slot_to_seat is not empty %}
+                    {# Render 6x6 grid respecting the saved seat layout (slot_to_seat: slot -> seat number) #}
+                    <style>
+                        /*
+                         * Override .pop_box .class_pop .grid-1-6:first-child div { max-width:180px }
+                         * The ID selector wins on specificity (1-0-0 vs 0-4-0).
+                         */
+                        #place_container.seat-map-grid {
+                            display: grid;
+                            grid-template-columns: repeat(6, 40px);
+                            gap: 4px;
+                            max-width: none;      /* remove 180px cap */
+                            width: max-content;   /* shrink-wrap to actual grid size */
+                            margin: 0 auto;
+                        }
+                        /*
+                         * Override .place:nth-child(8n/9n/10n) { display:inline-block }
+                         * which breaks CSS grid item flow.
+                         */
+                        #place_container.seat-map-grid .place,
+                        #place_container.seat-map-grid .seat-slot-empty {
+                            display: block !important;
+                            margin-top: 0 !important;
+                            margin-right: 0 !important;
+                        }
+                        #place_container.seat-map-grid .seat-slot-empty {
+                            width: 40px;
+                            height: 40px;
+                        }
+                    </style>
+                    <div id="place_container" class="seat-map-grid">
+                        {% for slot in 1..36 %}
+                            {% if slot_to_seat[slot] is defined %}
+                                {% set place = slot_to_seat[slot] %}
+                                {% set place_not_available = place in (session.placesNotAvailable ?? []) %}
+                                {% set user_reserved_place = place in userReservations %}
+                                {% set is_reserved = reservations[place] is defined %}
+                                {% set html_element = is_reserved or place_not_available ? 'span' : 'a' %}
+                                {% set class_active = user_reserved_place ? 'active' : '' %}
+                                {% set class_engaged = is_reserved and not user_reserved_place ? 'engaged' : '' %}
+                                {% set class_not_available = place_not_available ? 'not-available' : '' %}
+                                <{{ html_element }} class="place {{ class_active }} {{ class_engaged }} {{ class_not_available }}" data-place="{{ place }}">
+                                    <p>{{ place }}</p>
+                                </{{ html_element }}>
+                            {% else %}
+                                <span class="seat-slot-empty"></span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {# Fallback: no layout saved, show sequential list #}
+                    <div id="place_container">
+                        {% for place in 1..capacity %}
+                            {% set place_not_available = place in (session.placesNotAvailable ?? []) %}
+                            {% set user_reserved_place = place in userReservations %}
+                            {% set is_reserved = reservations[place] is defined %}
+                            {% set html_element = is_reserved or place_not_available ? 'span' : 'a' %}
+                            {% set class_active = user_reserved_place ? 'active' : '' %}
+                            {% set class_engaged = is_reserved and not user_reserved_place ? 'engaged' : '' %}
+                            {% set class_not_available = place_not_available ? 'not-available' : '' %}
+                            <{{ html_element }} class="place {{ class_active }} {{ class_engaged }} {{ class_not_available }}" data-place="{{ place }}">
+                                <p>{{ place }}</p>
+                            </{{ html_element }}>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="grid-1-6 right reserve-{{ grid_class }}">
+                <div class="class {{ discipline|replace({' ': '-'})|lower }}">
+                    <span class="icon-{{  session.individual ? 'individual' : 'group' }}"></span>
+                    <h6>{{ discipline }}</h6>
+                    <p>{{ session.timeStart|date('h:i a') }}</p>
+                    <p><strong>{{ session.instructor.profile.firstname }}</strong></p>
+                </div>
+                <p>
+                    <small><b>Día:</b> {{ session.dateStart|date('d/m/y') }}</small>
+                </p>
+                {% set branch_label = session.branchOffice.name %}
+                {% if session.branchOffice.plaza %}
+                    {% set branch_label = branch_label ~ ' - ' ~ session.branchOffice.plaza %}
+                {% elseif session.branchOffice.zone %}
+                    {% set branch_label = branch_label ~ ' - ' ~ session.branchOffice.zone %}
+                {% endif %}
+                <p>
+                    <small><b>Sucursal:</b> {{ branch_label }}</small>
+                </p>
+            </div>
+        </div>
+
+        {% if session.open %}
+            {% if consumption_options.unlimitedDailyLimitNotice %}
+                <div class="consumption-source-box">
+                    <small><strong>Aviso:</strong> {{ consumption_options.unlimitedDailyLimitNotice }}</small>
+                </div>
+            {% elseif consumption_options.forcedPackageNotice %}
+                <div class="consumption-source-box">
+                    <small><strong>Aviso:</strong> {{ consumption_options.forcedPackageNotice }}</small>
+                </div>
+            {% endif %}
+
+            {% if consumption_options.hasBothSources %}
+                <div class="consumption-source-box">
+                    <label for="consumption_source_selector"><strong>¿Con qué paquete deseas reservar?</strong></label>
+                    <select id="consumption_source_selector" class="consumption-source-selector">
+                        <option value="unlimited">Paquete ilimitado</option>
+                        <option value="package">Paquetes por clase activos</option>
+                    </select>
+                    <small>Elige cómo deseas consumir tu reserva.</small>
+                </div>
+            {% endif %}
+
+            <div class="modal-actions">
+                <a href="#" class="btn btn-confirm btn-submit">Confirmar reservación</a>
+            </div>
+
+            <form id="frmReservation" action="{{ path('reservation_confirm', { 'id': session.id }) }}" method="post" class="m-fjx">
+                <input type="hidden" name="place_number" value="" />
+                <input type="hidden" name="consumption_source" value="auto" />
+            </form>
+        {% elseif not userReservations and show_waitinglist and not on_waitinglist %}
+            <div class="modal-actions">
+                <a href="#" class="btn btn-waitinglist btn-submit">Suscribirme a la lista de espera</a>
+            </div>
+
+            <form id="frmWaitingList" action="{{ path('reservation_waitinglist', { 'id': session.id }) }}" method="post" class="m-fjx">
+                <input type="hidden" name="_token" value="{{ csrf_token('reservation_waitinglist_' ~ session.id) }}" />
+            </form>
+        {% elseif msg_no_classes_available %}
+            <p class="modal-note">¡No cuentas con clases disponibles! Pero no te preocupes, adquiere más clases para poder registrarte en la lista de espera de esta clase.</p>
+        {% endif %}
+    </div>
+</section>
+
+<script>
+    reservationInit();
+</script>

@@ -1,0 +1,197 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% set page_section = 'Transacciones' %}
+{% block title %}Listado de Transacciones{% endblock %}
+
+{% block content %}
+    {% embed 'backend/default/embed/list_common.html.twig' with { 'page_section': page_section, 'page_title': block('title') } %}
+        {% block body_filters %}
+            <form action="{{ path('backend_transaction') }}" method="get">
+                <div class="row">
+                    <div class="col-md-4 col-sm-4 col-xs-12">
+                        <div class="form-group">
+                            <label for="filter_search">Buscar:</label>
+                            <input type="text" id="filter_search" name="filter_search" class="form-control" placeholder="Buscar por Id, Nombre o Email" value="{{ filter_search }}" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="filter_status">Estado:</label>
+                            <select id="filter_status" name="filter_status" class="form-control" data-current="{{ filter_status }}">
+                                <option value="">- Todos -</option>
+                                {% for status, label in statusChoices %}
+                                    <option value="{{ status }}">{{ status|TransactionStatusDescription }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 col-sm-4 col-xs-12">
+                        <div class="form-group">
+                            <label for="filter_date_start">Fecha inicio:</label>
+                            <div class="date-action-field">
+                                <input type="text" id="filter_date_start" name="filter_date_start" class="form-control datepicker" value="{{ filter_date_start }}" />
+                                <span class="date-action-icon" aria-hidden="true">
+                                    <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                                </span>
+                                <button type="button" class="btn btn-default date-action-clear" onclick="document.getElementById('filter_date_start').value = '';" title="Limpiar fecha" aria-label="Limpiar fecha">
+                                    <i class="fa fa-times" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="filter_branchOffice">Sucursal</label>
+                            <select id="filter_branchOffice" name="filter_branchOffice" class="form-control" data-current="{{ filter_branchOffice }}">
+                                <option value="">- Todos -</option>
+                                {% for branchOffice in branchOffices %}
+                                    <option value="{{ branchOffice.id }}">{{ branchOffice.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 col-sm-4 col-xs-12">
+                        <div class="form-group">
+                            <label for="filter_date_end">Fecha de término:</label>
+                            <div class="date-action-field">
+                                <input type="text" id="filter_date_end" name="filter_date_end" class="form-control datepicker" value="{{ filter_date_end }}" />
+                                <span class="date-action-icon" aria-hidden="true">
+                                    <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                                </span>
+                                <button type="button" class="btn btn-default date-action-clear" onclick="document.getElementById('filter_date_end').value = '';" title="Limpiar fecha" aria-label="Limpiar fecha">
+                                    <i class="fa fa-times" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="filter_package">Paquete</label>
+                            <select id="filter_package" name="filter_package" class="form-control" data-current="{{ filter_package }}">
+                                <option value="">- Todos -</option>
+                                {% for package in packages %}
+                                    <option value="{{ package.id }}">{{ package.totalClasses }} clase(s) {{ package.type|PackageSessionType }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 col-sm-4 col-xs-12">
+                        <div class="form-group">
+                            <label for="filter_charge_method">Método de Pago</label>
+                            <select id="filter_charge_method" name="filter_charge_method" class="form-control" data-current="{{ filter_charge_method }}">
+                                <option value="">- Todos -</option>
+                                {% for key, chargeMethod in chargeMethods %}
+                                    <option value="{{ key }}">{{ chargeMethod|trans }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 col-sm-4 col-xs-12">
+                        <div class="form-group">
+                            <label for="filter_discount">Descuento</label>
+                            <select id="filter_discount" name="filter_discount" class="form-control" data-current="{{ filter_discount }}">
+                                <option value="">- Todos -</option>
+                                {% for key in filterDiscount %}
+                                    <option value="{{ key }}">{{ ('filter.transaction_discount.' ~ key)|trans }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 col-sm-4 col-xs-12">
+                        <label>&nbsp;</label>
+                        <div class="clearfix">
+                            {% if pagination | length > 0 %}
+                                <a href="{{ url_export }}" class="btn btn-success pull-right">
+                                    <i class="fa fa-file-excel-o" aria-hidden="true"></i> Exportar
+                                </a>
+                            {% endif %}
+                            <button type="submit" class="btn btn-dark">Buscar</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        {% endblock %}
+
+        {% block body %}
+            {% if pagination | length > 0 %}
+                <div class="alert alert-success" role="alert">
+                    <strong>Total: ${{ total|number_format(2) }}</strong>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Usuario</th>
+                                <th>Email</th>
+                                <th>Paquete</th>
+                                <th>Modalidad</th>
+                                <th class="text-right">Monto</th>
+                                <th>Cupón</th>
+                                <th>M. de pago</th>
+                                <th class="text-center">Sucursal</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-center">F. creación</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in pagination %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ path('backend_transaction_show', { 'id': transaction.id }) }}" class="link-edit">
+                                            <u>{{ transaction.id }}</u>
+                                            <i class="fa fa-eye" aria-hidden="true"></i>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {{ transaction.user }}
+                                    </td>
+                                    <td>
+                                        {{ transaction.user.email }}
+                                    </td>
+                                    <td>
+                                        {{ transaction.packageTotalClasses }} clase(s)
+                                    </td>
+                                    <td>
+                                        {{ transaction.packageType|PackageSessionType }}
+                                    </td>
+                                    <td class="text-right">
+                                        ${{ transaction.total|number_format(2) }}
+                                    </td>
+                                    <td>{{ transaction.coupon.code|default('') }}</td>
+                                    <td>
+                                        {{ transaction.chargeMethod|ChargeMethodDescription }}
+                                    </td>
+                                    <td class="text-center">
+                                        {{ transaction.branchOffice }}
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="label label-{{ transaction.status|TransactionStatusLabel }}">
+                                            {{ transaction.status|TransactionStatusDescription }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        {% if transaction.createdAt %}
+                                            {{ transaction.createdAt|date('Y-m-d H:i:s') }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                {{ include('backend/default/partials/not_records.html.twig') }}
+            {% endif %}
+        {% endblock %}
+
+        {% block footer %}
+            {% if pagination | length > 0 %}
+                {{ knp_pagination_render(pagination) }}
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

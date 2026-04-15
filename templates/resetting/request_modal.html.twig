@@ -1,0 +1,22 @@
+{{ include('resetting/_flash.html.twig') }}
+
+<div class="resetting-modal-panel">
+    <a data-remodal-action="close" class="nav-toggle close resetting-modal-close"><span class="iconMenu"></span></a>
+
+    <h3 class="checkout-modal-title resetting-modal-title">
+        Recuperar contraseña
+        <small>Te enviaremos un correo con instrucciones para restablecer tu contraseña.</small>
+    </h3>
+
+    <form id="frmCheckoutResetting" action="{{ path('resetting_send_email') }}" method="post" class="resetting-modal-form">
+        <input type="email" id="username" name="username" required="required" placeholder="Correo electrónico" />
+
+        <button type="submit" class="btn-submit">Restablecer contraseña</button>
+
+        <input type="hidden" name="_modaltarget" value="{{ app.request.get('_modaltarget') ?: 1 }}" />
+    </form>
+</div>
+
+<script type="text/javascript">
+    checkoutNotLogged();
+</script>

@@ -1,0 +1,184 @@
+{% extends 'backend/default/list.html.twig' %}
+
+{% block title %}Listado de Clases{% endblock %}
+
+{% block actions %}
+    {% if is_allowed_route('backend_session_new') %}
+        <div class="col-md-3 col-sm-4 col-xs-8 form-group pull-right top_search text-right">
+            <a href="{{ path('backend_session_new') }}" class="btn btn-dark">
+                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                {{ 'main.backend_session_new'|trans }}
+            </a>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block filters %}
+    <form action="{{ path('backend_session') }}" method="get">
+        <div class="row">
+            {% if not is_instructor %}
+                <div class="col-md-4 col-sm-4 col-xs-12">
+                    <div class="form-group">
+                        <label for="filter_instructor">Instructor:</label>
+                        <select id="filter_instructor" name="filters[instructor]" class="form-control" data-current="{{ filters['instructor'] ?? '' }}">
+                            <option value="">- Todos -</option>
+                            {% for instructor in instructors %}
+                                <option value="{{ instructor.id }}">{{ instructor.profile.firstname }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="filter_status">Estado:</label>
+                    <select id="filter_status" name="filters[status]" class="form-control" data-current="{{ filters['status'] ?? '' }}">
+                        <option value="">- Todos -</option>
+                        {% for status in filter_status %}
+                            <option value="{{ status }}">{{ status|SessionStatusDescription }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="filter_date_start">Fecha inicio:</label>
+                    <div class="date-action-field">
+                        <input type="text" id="filter_date_start" name="filters[date_start]" class="form-control datepicker" value="{{ filters['date_start'] ?? '' }}" placeholder="dd/mm/aa" />
+                        <span class="date-action-icon" aria-hidden="true">
+                            <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                        </span>
+                        <button type="button" class="btn btn-default date-action-clear" onclick="document.getElementById('filter_date_start').value = '';" title="Limpiar fecha" aria-label="Limpiar fecha">
+                            <i class="fa fa-times" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="filter_date_end">Fecha de término:</label>
+                    <div class="date-action-field">
+                        <input type="text" id="filter_date_end" name="filters[date_end]" class="form-control datepicker" value="{{ filters['date_end'] ?? '' }}" placeholder="dd/mm/aa" />
+                        <span class="date-action-icon" aria-hidden="true">
+                            <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                        </span>
+                        <button type="button" class="btn btn-default date-action-clear" onclick="document.getElementById('filter_date_end').value = '';" title="Limpiar fecha" aria-label="Limpiar fecha">
+                            <i class="fa fa-times" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="filter_branchOffice">Sucursal</label>
+                    <select id="filter_branchOffice" name="filters[branchOffice]" class="form-control" data-current="{{ filters['branchOffice'] ?? '' }}">
+                        <option value="">- Todos -</option>
+                        {% for branch_office in branch_offices %}
+                            <option value="{{ branch_office.id }}">{{ branch_office.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="filter_exercise_room">Salón</label>
+                    <select id="filter_exercise_room" name="filters[exerciseRoom]" class="form-control" data-current="{{ filters['exerciseRoom'] ?? '' }}">
+                        <option value="">- Todos -</option>
+                        {% for branch_office, rooms in filter_exercise_rooms %}
+                            <optgroup label="{{ branch_office }}">
+                                {% for exercise_room in rooms %}
+                                    <option value="{{ exercise_room.id }}">{{ exercise_room.name }}</option>
+                                {% endfor %}
+                            </optgroup>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="filter_schedule">Horario</label>
+                    <select id="filter_schedule" name="filters[schedule]" class="form-control" data-current="{{ filters['schedule'] ?? '' }}">
+                        <option value="">- Todos -</option>
+                        {% for schedule in filter_schedules %}
+                            <option value="{{ schedule }}">{{ schedule }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-8 col-sm-8 col-xs-12">
+                <label>&nbsp;</label>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <button type="submit" class="btn btn-primary">Buscar</button>
+                    {% if pagination|length > 0 %}
+                        <a href="{{ url_export }}" class="btn btn-success">
+                            <i class="fa fa-file-excel-o" aria-hidden="true"></i> Exportar
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </form>
+{% endblock %}
+
+{% block table_thead %}
+    <tr>
+        <th>#</th>
+        <th>Día</th>
+        <th>Hora</th>
+        <th>Salón</th>
+        {% if not is_instructor %}
+            <th>Instructor</th>
+        {% endif %}
+        <th class="text-center">Reservas</th>
+        <th class="text-center">Sucursal</th>
+        <th class="text-center">Estado</th>
+    </tr>
+{% endblock %}
+
+{% block table_tbody %}
+    {% for session in pagination %}
+        <tr>
+            <td>
+                <a href="{{ path('backend_session_edit', { 'id': session.id }) }}" class="link-edit">
+                    <u>{{ session.id }}</u>
+                    <i class="fa fa-pencil" aria-hidden="true"></i>
+                </a>
+            </td>
+            <td>
+                {{ session.dateStart | date('d/m/Y') }}
+            </td>
+            <td>
+                {{ session.timeStart | date('H:i') }}
+            </td>
+            <td>
+                {{ session.exerciseRoom }}
+            </td>
+            {% if not is_instructor %}
+                <td>
+                    {{ session.instructor }}
+                </td>
+            {% endif %}
+            <td class="text-center">
+                <a href="{{ path('backend_session_reservations', { 'id': session.id }) }}" class="link-edit">
+                    <u>{{ session.reservations }}/{{ session.availableCapacity }}</u>
+                    <i class="fa fa-eye" aria-hidden="true"></i>
+                </a>
+            </td>
+            <td class="text-center">
+                {{ session.branchOffice }}
+            </td>
+            <td class="text-center">
+                <span class="label label-{{ session.status|SessionStatusLabel }}">
+                    {{ session.status|SessionStatusDescription }}
+                </span>
+            </td>
+        </tr>
+    {% endfor %}
+{% endblock %}

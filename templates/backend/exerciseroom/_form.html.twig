@@ -1,0 +1,24 @@
+{{ form_start(form, {'attr': {'id': 'form-branch-office'}}) }}
+    <div class="row">
+        {{ form_row(form.name, {'row_attr': {'class': 'col-md-6'}}) }}
+        {{ form_row(form.capacity, {'row_attr': {'class': 'col-md-6'}, 'attr': {'min': 1}}) }}
+    </div>
+
+    <div class="row">
+        {{ form_row(form.placesNotAvailable, {'row_attr': {'class': 'col-md-6'}, 'attr': {'data-tag-number': form.capacity.vars.id}}) }}
+        {{ form_row(form.discipline, {'row_attr': {'class': 'col-md-6'}}) }}
+    </div>
+
+    <div class="row">
+        {{ form_row(form.branchOffice, {'row_attr': {'class': 'col-md-6'}}) }}
+        {{ form_row(form.type, {'row_attr': {'class': 'col-md-6 icheck-fields'}}) }}
+    </div>
+
+    <div class="row">
+        {{ form_row(form.isActive, {'row_attr': {'class': 'col-md-6'}}) }}
+    </div>
+
+    <div class="ln_solid"></div>
+
+    {{ include('backend/default/_btn_save.html.twig') }}
+{{ form_end(form) }}

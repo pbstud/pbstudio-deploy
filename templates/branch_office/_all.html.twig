@@ -1,0 +1,17 @@
+{% for branch_office in branch_offices %}
+    {# branch_office \App\Entity\BranchOffice #}
+    <div class="branch-office-option">
+        <a href="{{ path('reservation_calendar', {'slug': branch_office.slug}) }}">
+            <h1 class="branch-office-name">{{ branch_office.name }}</h1>
+            <h6 class="branch-office-subtitle">
+                {% if branch_office.plaza %}
+                    {{ branch_office.plaza }} {{ branch_office.name }}
+                {% elseif branch_office.place %}
+                    {{ branch_office.place }}
+                {% else %}
+                    Sucursal activa
+                {% endif %}
+            </h6>
+        </a>
+    </div>
+{% endfor %}

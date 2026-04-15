@@ -1,0 +1,70 @@
+{% extends 'backend/layout-ajax.html.twig' %}
+
+{% block content %}
+    {% if reservations | length > 0 %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th class="text-center">F. de inicio</th>
+                        <th>Sucursal</th>
+                        <th>Salón</th>
+                        <th>Instructor</th>
+                        <th class="text-center">Camilla/Silla</th>
+                        <th class="text-center">F. de reservación</th>
+                        <th class="text-center">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reservation in reservations %}
+                        {# @var reservation \App\Entity\Reservation #}
+                        {# @var session \App\Entity\Session #}
+                        {% set session = reservation.session %}
+                        <tr>
+                            <td>
+                                <a href="{{ path('backend_user_reservation_detail', { 'id': user.id, 'reservation': reservation.id }) }}" class="link-edit" data-toggle="modal" data-target="#reservationDetailModal">
+                                    <u>{{ reservation.id }}</u>
+                                    <i class="fa fa-eye" aria-hidden="true"></i>
+                                </a>
+                            </td>
+                            <td class="text-center">
+                                {{ session.dateStart | date('d-m-Y') ~ ' ' ~ session.timeStart | date('H:i') }}
+                            </td>
+                            <td>
+                                {{ session.branchOffice }}
+                            </td>
+                            <td>
+                                {{ session.exerciseRoom }}
+                            </td>
+                            <td>
+                                {{ session.instructor.profile.firstname }}
+                            </td>
+                            <td class="text-center">
+                                {{ reservation.placeNumber }}
+                            </td>
+                            <td class="text-center">
+                                {{ reservation.createdAt|date('d-m-Y H:i') }}
+                            </td>
+                            <td class="text-center">
+                                {% if reservation.isAvailable and session.closed %}
+                                    <span class="label label-success">
+                                        Tomada
+                                    </span>
+                                {% else %}
+                                    <span class="label label-{{ (reservation.isAvailable * 1)|ReservationStatusLabel }}">
+                                        {{ (reservation.isAvailable * 1)|ReservationStatusDescription }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {{ knp_pagination_render(reservations) }}
+    {% else %}
+        {{ include('backend/default/partials/not_records.html.twig') }}
+    {% endif %}
+{% endblock %}

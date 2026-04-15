@@ -1,0 +1,20 @@
+<div class="auth-modal-panel auth-modal-panel--register">
+    <a data-remodal-action="close" class="nav-toggle close auth-modal-close" aria-label="Cerrar">
+        <span class="iconMenu"></span>
+    </a>
+
+    <h3 class="checkout-modal-title auth-modal-title">
+        Regístrate
+        <small class="auth-modal-switch">¿Ya tienes cuenta? <a href="#" class="load-modal" data-url="{{ path('app_login', {'_modaltarget': app.request.get('_modaltarget') ?: 1}) }}">¡Inicia sesión!</a></small>
+    </h3>
+
+    <form id="frmCheckoutRegister" action="{{ path('register') }}" method="post" class="auth-modal-form auth-modal-form--register">
+        {{ include('registration/_fields.html.twig') }}
+
+        <input type="hidden" name="_modaltarget" value="{{ app.request.get('_modaltarget') ?: 1 }}" />
+    </form>
+</div>
+
+<script type="text/javascript">
+    checkoutNotLogged();
+</script>

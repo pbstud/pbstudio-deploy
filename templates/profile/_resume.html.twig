@@ -1,0 +1,48 @@
+<div class="status">
+    <a href="{{ path('sessions_available', {'_fragment': 'section-content'}) }}">
+        {% if free_session %}
+            {% set sessions_available = sessions_available + 1 %}
+
+            <span class="courtesy str">*Clase de cortesía</span>
+        {% endif %}
+
+        {% if unlimited_transactions|length > 0 %}
+            <span class="courtesy str">
+                {% for transaction in unlimited_transactions %}
+                    {{ transaction.package.altText }}<br />
+                {% endfor %}
+            </span>
+        {% endif %}
+
+        <h3>
+            {% if unlimited_transactions|length > 0 %}
+                &infin;
+            {% else %}
+                {{ sessions_available }}
+            {% endif %}
+
+            {% if free_session %}
+                <span class="courtesy icon-gift"></span>
+            {% endif %}
+        </h3>
+        <p>Clases disponibles<small><span class="link">Ver detalle</span></small></p>
+    </a>
+
+    <a href="{{ path('sessions_used', {'_fragment': 'section-content'}) }}">
+        <h3>{{ sessions_used }}</h3>
+        <p>Clases tomadas<small><span class="link">Ver historial</span></small></p>
+    </a>
+
+    <a href="{{ path('reserved_sessions', {'_fragment': 'section-content'}) }}">
+        <h3>{{ reserved_sessions }}</h3>
+        <p>Próximas clases <small><span class="link">Ver reservaciones</span></small></p>
+    </a>
+
+    <a href="{{ path('profile_waiting_list', {'_fragment': 'section-content'}) }}">
+        <h3>{{ waiting_list }}</h3>
+        <p>
+            Lista de Espera
+            <small><span class="link">Ver lista</span></small>
+        </p>
+    </a>
+</div>

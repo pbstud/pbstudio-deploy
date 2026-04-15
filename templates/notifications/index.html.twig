@@ -1,0 +1,323 @@
+{% extends 'layout.html.twig' %}
+
+{% block page_title %}Mis notificaciones | {% endblock %}
+
+{% block content %}
+    <section class="profile">
+        <div class="row">
+            <div class="content">
+                <div class="sessions-used-header">
+                    <h2>Mis notificaciones</h2>
+                    <a href="{{ path('profile') }}" class="link">
+                        <span class="icon-individual"></span>Regresar a mi perfil
+                    </a>
+                </div>
+
+                {% if notifications is empty %}
+                    <p class="notifications-empty">No tienes notificaciones aún.</p>
+                {% else %}
+                    {%- set today = "now"|date("Y-m-d") -%}
+                    {%- set yesterday = "-1 day"|date("Y-m-d") -%}
+
+                    {%- set groups = { hoy: [], ayer: [], semana: [], anteriores: [] } -%}
+                    {%- for n in notifications -%}
+                        {%- set d = n.createdAt|date("Y-m-d") -%}
+                        {%- if d == today -%}
+                            {%- set groups = groups|merge({ hoy: groups.hoy|merge([n]) }) -%}
+                        {%- elseif d == yesterday -%}
+                            {%- set groups = groups|merge({ ayer: groups.ayer|merge([n]) }) -%}
+                        {%- elseif n.createdAt|date("U") >= ("now - 7 days"|date("U")) -%}
+                            {%- set groups = groups|merge({ semana: groups.semana|merge([n]) }) -%}
+                        {%- else -%}
+                            {%- set groups = groups|merge({ anteriores: groups.anteriores|merge([n]) }) -%}
+                        {%- endif -%}
+                    {%- endfor -%}
+
+                    {# Toolbar contextual — aparece solo con seleccion activa #}
+                    <div class="notifications-toolbar" data-notif-toolbar>
+                        <span class="notifications-toolbar__count" data-notif-toolbar-count>0 seleccionadas</span>
+                        <button type="button" class="notifications-toolbar__btn" data-bulk-read>Marcar leídas</button>
+                        <button type="button" class="notifications-toolbar__btn" data-bulk-unread>Marcar no leídas</button>
+                        <button type="button" class="notifications-toolbar__btn notifications-toolbar__btn--danger" data-bulk-delete>Eliminar</button>
+                        <button type="button" class="notifications-toolbar__btn notifications-toolbar__btn--outline" data-bulk-cancel>Cancelar</button>
+                    </div>
+
+                    {# Controles de seleccion rapida #}
+                    <div class="notifications-select-controls">
+                        <button type="button" class="notifications-select-btn" data-select-all>Seleccionar todos</button>
+                        <button type="button" class="notifications-select-btn" data-select-invert>Selección inversa</button>
+                    </div>
+
+                    <ul class="notifications-page-list">
+                        {% for label, items in { 'Hoy': groups.hoy, 'Ayer': groups.ayer, 'Esta semana': groups.semana, 'Anteriores': groups.anteriores } %}
+                            {% if items is not empty %}
+                                <li class="notifications-page-group-label">{{ label }}</li>
+                                {% for n in items %}
+                                    <li data-notif-li="{{ n.id }}">
+                                        <div class="notifications-page-item__row">
+                                            <input
+                                                type="checkbox"
+                                                class="notifications-page-item__checkbox"
+                                                data-notif-checkbox
+                                                data-id="{{ n.id }}"
+                                                aria-label="Seleccionar notificación"
+                                            >
+                                            <button
+                                                type="button"
+                                                class="notifications-page-item{% if n.readAt is null %} is-unread{% else %} is-read{% endif %} is-priority-{{ n.priority }}"
+                                                data-notification-page-item
+                                                data-id="{{ n.id }}"
+                                                data-is-unread="{% if n.readAt is null %}1{% else %}0{% endif %}"
+                                                data-mark-read-url="{{ mark_read_url|replace({'__ID__': n.id}) }}"
+                                                data-target-url="{{ target_urls[n.id] ?? '' }}"
+                                            >
+                                                <span class="notifications-page-item__header">
+                                                    <span class="notifications-page-item__title">{{ n.title }}</span>
+                                                    <span class="notifications-page-item__time">
+                                                        {{ n.createdAt|date('d/m/Y H:i') }}
+                                                    </span>
+                                                </span>
+                                                <span class="notifications-page-item__body">{{ n.body }}</span>
+                                            </button>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                    </ul>
+
+                    {% if total_pages > 1 %}
+                        <div class="sessions-used-history-footer">
+                            <div class="sessions-used-pagination">
+                                <ul class="pagination">
+                                    <li class="{% if page <= 1 %}disabled{% endif %}">
+                                        <a href="{% if page > 1 %}{{ path('notifications', { page: page - 1 }) }}{% else %}#{% endif %}">&laquo;</a>
+                                    </li>
+                                    {% for p in 1..total_pages %}
+                                        <li class="{% if p == page %}active{% endif %}">
+                                            <a href="{{ path('notifications', { page: p }) }}">{{ p }}</a>
+                                        </li>
+                                    {% endfor %}
+                                    <li class="{% if page >= total_pages %}disabled{% endif %}">
+                                        <a href="{% if page < total_pages %}{{ path('notifications', { page: page + 1 }) }}{% else %}#{% endif %}">&raquo;</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <script>
+    (function () {
+        var unreadCount  = {{ unread_count|default(0) }};
+        var bulkUrl      = '{{ path('api_notifications_bulk') }}';
+        var markUnreadUrlTpl = '{{ path('api_notifications_mark_unread', {id: '__ID__'}) }}';
+        var selectedIds  = new Set();
+
+        /* ── Badge y boton "Marcar todas" ─────────────────────────────────── */
+        function updateHeaderBadge(count) {
+            var badge = document.querySelector('[data-notification-badge]');
+            if (!badge) { return; }
+            if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : String(count);
+                badge.hidden = false;
+            } else {
+                badge.hidden = true;
+            }
+        }
+
+        function updateMarkAllBtn(count) {
+            var wrap = document.querySelector('.notifications-actions');
+            var btn  = document.querySelector('.notifications-mark-all-btn');
+            if (!wrap || !btn) { return; }
+            if (count > 0) {
+                btn.textContent = 'Marcar todas como leídas (' + count + ')';
+                wrap.hidden = false;
+            } else {
+                wrap.hidden = true;
+            }
+        }
+
+        /* ── Toolbar ───────────────────────────────────────────────────────── */
+        var toolbar     = document.querySelector('[data-notif-toolbar]');
+        var toolbarCount = document.querySelector('[data-notif-toolbar-count]');
+
+        function updateToolbar() {
+            var n = selectedIds.size;
+            if (n > 0) {
+                toolbar.classList.add('is-active');
+                toolbarCount.textContent = n + (n === 1 ? ' seleccionada' : ' seleccionadas');
+            } else {
+                toolbar.classList.remove('is-active');
+            }
+        }
+
+        /* ── Seleccion individual ──────────────────────────────────────────── */
+        function setCheckbox(cb, checked) {
+            var id  = parseInt(cb.dataset.id, 10);
+            var li  = document.querySelector('[data-notif-li="' + id + '"]');
+            var btn = li ? li.querySelector('[data-notification-page-item]') : null;
+            cb.checked = checked;
+            if (checked) {
+                selectedIds.add(id);
+                if (btn) { btn.classList.add('is-selected'); }
+            } else {
+                selectedIds.delete(id);
+                if (btn) { btn.classList.remove('is-selected'); }
+            }
+        }
+
+        document.querySelectorAll('[data-notif-checkbox]').forEach(function (cb) {
+            cb.addEventListener('change', function () {
+                setCheckbox(cb, cb.checked);
+                updateToolbar();
+            });
+        });
+
+        /* ── Seleccionar todos / inverso ───────────────────────────────────── */
+        var btnSelectAll    = document.querySelector('[data-select-all]');
+        var btnSelectInvert = document.querySelector('[data-select-invert]');
+
+        if (btnSelectAll) {
+            btnSelectAll.addEventListener('click', function () {
+                document.querySelectorAll('[data-notif-checkbox]').forEach(function (cb) {
+                    setCheckbox(cb, true);
+                });
+                updateToolbar();
+            });
+        }
+
+        if (btnSelectInvert) {
+            btnSelectInvert.addEventListener('click', function () {
+                document.querySelectorAll('[data-notif-checkbox]').forEach(function (cb) {
+                    setCheckbox(cb, !cb.checked);
+                });
+                updateToolbar();
+            });
+        }
+
+        /* ── Cancelar seleccion ────────────────────────────────────────────── */
+        function clearSelection() {
+            document.querySelectorAll('[data-notif-checkbox]').forEach(function (cb) {
+                setCheckbox(cb, false);
+            });
+            selectedIds.clear();
+            updateToolbar();
+        }
+
+        var btnCancel = document.querySelector('[data-bulk-cancel]');
+        if (btnCancel) { btnCancel.addEventListener('click', clearSelection); }
+
+        /* ── Accion bulk ───────────────────────────────────────────────────── */
+        function applyBulkResult(action, ids) {
+            ids.forEach(function (id) {
+                var li  = document.querySelector('[data-notif-li="' + id + '"]');
+                var btn = li ? li.querySelector('[data-notification-page-item]') : null;
+                if (!btn && !li) { return; }
+
+                if (action === 'delete') {
+                    if (li) { li.remove(); }
+                    return;
+                }
+
+                if (!btn) { return; }
+
+                if (action === 'read') {
+                    if (btn.classList.contains('is-unread')) {
+                        btn.classList.remove('is-unread');
+                        btn.classList.add('is-read');
+                        btn.dataset.isUnread = '0';
+                        unreadCount = Math.max(0, unreadCount - 1);
+                    }
+                } else if (action === 'unread') {
+                    if (btn.classList.contains('is-read') || !btn.classList.contains('is-unread')) {
+                        btn.classList.remove('is-read');
+                        btn.classList.add('is-unread');
+                        btn.dataset.isUnread = '1';
+                        unreadCount++;
+                    }
+                }
+            });
+
+            updateHeaderBadge(unreadCount);
+            updateMarkAllBtn(unreadCount);
+
+            if (action === 'delete') {
+                var remaining = document.querySelectorAll('[data-notif-li]').length;
+                if (remaining === 0) { window.location.reload(); }
+            }
+
+            clearSelection();
+        }
+
+        function doBulk(action) {
+            if (selectedIds.size === 0) { return; }
+            var ids = Array.from(selectedIds);
+
+            fetch(bulkUrl, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: ids, action: action }),
+            }).then(function (res) {
+                if (res.ok) { applyBulkResult(action, ids); }
+            }).catch(function () {});
+        }
+
+        var btnRead   = document.querySelector('[data-bulk-read]');
+        var btnUnread = document.querySelector('[data-bulk-unread]');
+        var btnDelete = document.querySelector('[data-bulk-delete]');
+
+        if (btnRead)   { btnRead.addEventListener('click',   function () { doBulk('read'); }); }
+        if (btnUnread) { btnUnread.addEventListener('click', function () { doBulk('unread'); }); }
+        if (btnDelete) {
+            btnDelete.addEventListener('click', function () {
+                if (!window.confirm('\u00bfEliminar ' + selectedIds.size + ' notificación(es)? Esta acción no se puede deshacer.')) {
+                    return;
+                }
+                doBulk('delete');
+            });
+        }
+
+        /* ── Marcar leida individual (click en body del item) ──────────────── */
+        document.querySelectorAll('[data-notification-page-item]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                var id        = btn.dataset.id;
+                var markUrl   = btn.dataset.markReadUrl;
+                var targetUrl = btn.dataset.targetUrl || null;
+
+                if (!id) { return; }
+
+                // Si ya esta leida, solo navegar (sin PATCH innecesario)
+                if (btn.dataset.isUnread !== '1') {
+                    if (targetUrl) { window.location.href = targetUrl; }
+                    return;
+                }
+
+                // Marcar como leida en el servidor primero, luego navegar
+                fetch(markUrl, {
+                    method: 'PATCH',
+                    headers: { 'Accept': 'application/json' },
+                }).then(function (res) {
+                    if (res.ok) {
+                        btn.classList.remove('is-unread');
+                        btn.classList.add('is-read');
+                        btn.dataset.isUnread = '0';
+                        var titleEl = btn.querySelector('.notifications-page-item__title');
+                        if (titleEl) { titleEl.style.fontWeight = '400'; }
+                        unreadCount = Math.max(0, unreadCount - 1);
+                        updateHeaderBadge(unreadCount);
+                        updateMarkAllBtn(unreadCount);
+                    }
+                    if (targetUrl) { window.location.href = targetUrl; }
+                }).catch(function () {
+                    if (targetUrl) { window.location.href = targetUrl; }
+                });
+            });
+        });
+    }());
+    </script>
+{% endblock %}

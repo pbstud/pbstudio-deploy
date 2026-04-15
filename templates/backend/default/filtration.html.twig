@@ -1,0 +1,26 @@
+<div class="col-md-5 col-sm-5 col-xs-12 form-group pull-right top_search">
+    <form action="{{ action }}" method="get" enctype="application/x-www-form-urlencoded">
+        {% if fields|length > 1 %}
+            <select class="form-control" name="{{ filterFieldName }}">
+                {% for field, label in fields %}
+                    <option value="{{ field }}"{% if selectedField == field %} selected="selected"{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        {% else %}
+            <input type="hidden" name="{{ filterFieldName }}" value="{{ fields|keys|first }}" />
+        {% endif %}
+
+        <div class="input-group">
+            <input class="form-control" type="search" value="{{ selectedValue }}" name="{{ filterValueName }}" placeholder="{{ fields|length == 1 ? fields|first }}" required>
+            <a href="{{ options.reset }}" class="link-reset {{ selectedValue ? '' : 'hidden' }}">
+                <i class="fa fa-times-circle" aria-hidden="true"></i>
+            </a>
+
+            <span class="input-group-btn">
+                <button class="btn btn-default" type="submit">
+                    <i class="fa fa-search" aria-hidden="true"></i>
+                </button>
+            </span>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,79 @@
+{% extends 'profile/layout.html.twig' %}
+
+{% block page_title %}Próximas clases | {% endblock %}
+
+{% block account_content %}
+    <div class="row">
+        <div class="content">
+            {{ include('default/_flash.html.twig') }}
+
+            <h2>Próximas clases</h2>
+
+            <div class="profile-classes-grid">
+                {% for reservation in reservations %}
+                    {# reservation \App\Entity\Reservation #}
+                    {% set session = reservation.session %}
+                    {% set branch_label = session.branchOffice.name %}
+                    {% if session.branchOffice.plaza %}
+                        {% set branch_label = branch_label ~ ' - ' ~ session.branchOffice.plaza %}
+                    {% elseif session.branchOffice.zone %}
+                        {% set branch_label = branch_label ~ ' - ' ~ session.branchOffice.zone %}
+                    {% endif %}
+                    {# session \App\Entity\Session #}
+                    <div class="reserv_class clearfix">
+                        <div class="class {{ session.discipline|replace({' ': '-'})|lower }}">
+                            <span class="icon-{{  'i' == session.type ? 'individual' : 'group' }}"></span>
+                            <h6>{{ session.discipline }}</h6>
+                            <p>{{ session.timeStart|date('h:i a') }}</p>
+                            <p>{{ session.instructor.profile.firstname }}</p>
+                            {% set class_description = session.information is not null ? session.information|trim : '' %}
+                            {% if class_description != '' %}
+                                <div class="class-description js-class-description" data-collapsed="1">
+                                    <div class="class-description__text js-class-description-text">{{ class_description }}</div>
+                                    <button type="button" class="class-description__toggle js-class-description-toggle" aria-expanded="false">Ver mas</button>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="detail">
+                            <p><b>Día: </b>{{ session.dateStart()|format_date(null, "EEEE d 'de' MMMM") }}</p>
+                            <p><b>Sucursal: </b>{{ branch_label }}</p>
+                            <p><b>Salón: </b>{{ session.exerciseRoom }}</p>
+                            <p><b>Instructor: </b>{{ session.instructor.profile.firstname }}</p>
+                            {% if 'g' == session.type %}
+                                <p><b>Camilla/Silla: </b>{{ reservation.placeNumber }}</p>
+                            {% endif %}
+
+                            {% if reservation.isAvailable %}
+                                <div class="reservation-actions" style="display:flex; flex-direction:column; gap:8px; align-items:flex-start;">
+                                {% if reservation_can_cancel(reservation) %}
+                                    <a href="#" data-url="{{ path('reservation_cancel', { 'id': reservation.id }) }}" class="link" data-remodal>
+                                        Cancelar reservación
+                                    </a>
+                                {% endif %}
+                                {% if reservation_can_change(reservation) %}
+                                    <a href="{{ path('reservation_change', {
+                                        'id': reservation.id,
+                                        '_fragment': 'section-content'
+                                    }) }}" class="link">
+                                        Cambiar reservación
+                                    </a>
+                                {% endif %}
+                                </div>
+                            {% else %}
+                                <p>
+                                    <i>* Clase cancelada: {{ reservation.cancellationAt|date('d/m/Y h:i a') }}</i>
+                                </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="reserv_class reserv_class--empty clearfix">
+                        <p>Sin registros por mostrar</p>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <a href="{{ path('reservation_calendar') }}" class="btn reserve-class-toggle">Reservar clase</a>
+        </div>
+    </div>
+{% endblock %}

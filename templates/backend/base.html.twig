@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>{% block title %}Welcome!{% endblock %} | Administrador P&amp;B Studio</title>
+
+    {% block stylesheets %}
+        {{ encore_entry_link_tags('backend') }}
+    {% endblock %}
+</head>
+<body class="{{ body_class|default('') }}">
+{% block body %}{% endblock %}
+
+<div class="remodal" data-remodal-id="modal" data-remodal-options="hashTracking:false,closeOnEscape:false,closeOnOutsideClick:false"></div>
+
+{% block javascripts %}
+    {{ encore_entry_script_tags('backend') }}
+{% endblock %}
+</body>
+</html>

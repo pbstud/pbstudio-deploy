@@ -1,0 +1,380 @@
+{% extends 'backend/default/list.html.twig' %}
+
+{% block title %}Calificaciones{% endblock %}
+
+{% block section_title %}Calificaciones por clase{% endblock %}
+
+{% block filters %}
+    <form method="get" action="{{ path('backend_stats_ratings') }}">
+        <div class="row">
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="rating_date_start">Fecha inicio:</label>
+                    <div class="date-action-field">
+                        <input type="text"
+                               id="rating_date_start"
+                               name="rating_date_start"
+                               class="form-control datepicker"
+                               value="{{ ratingFilters.rating_date_start }}"
+                               autocomplete="off" />
+                        <span class="date-action-icon" aria-hidden="true">
+                            <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                        </span>
+                        <button type="button"
+                            class="btn btn-default date-action-clear"
+                                onclick="document.getElementById('rating_date_start').value = '';"
+                                title="Limpiar fecha"
+                                aria-label="Limpiar fecha">
+                            <i class="fa fa-times" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="rating_date_end">Fecha de término:</label>
+                    <div class="date-action-field">
+                        <input type="text"
+                               id="rating_date_end"
+                               name="rating_date_end"
+                               class="form-control datepicker"
+                               value="{{ ratingFilters.rating_date_end }}"
+                               autocomplete="off" />
+                        <span class="date-action-icon" aria-hidden="true">
+                            <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                        </span>
+                        <button type="button"
+                            class="btn btn-default date-action-clear"
+                                onclick="document.getElementById('rating_date_end').value = '';"
+                                title="Limpiar fecha"
+                                aria-label="Limpiar fecha">
+                            <i class="fa fa-times" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="rating_branch_office">Sucursal:</label>
+                    <select id="rating_branch_office" name="rating_branch_office" class="form-control">
+                        <option value="">- Todas -</option>
+                        {% for branchOffice in branchOffices %}
+                            <option value="{{ branchOffice.id }}" {{ ratingFilters.rating_branch_office == branchOffice.id ? 'selected' : '' }}>
+                                {{ branchOffice.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="rating_schedule">Horario:</label>
+                    <div class="input-group schedule-action-field">
+                        <input type="time"
+                               id="rating_schedule"
+                               name="rating_schedule"
+                               class="form-control"
+                               step="60"
+                               value="{{ ratingFilters.rating_schedule }}" />
+                        <span class="input-group-btn">
+                            <button type="button" class="btn btn-default schedule-action-clear" onclick="document.getElementById('rating_schedule').value = '';" title="Limpiar horario">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="rating_instructor">Instructor:</label>
+                    <select id="rating_instructor" name="rating_instructor" class="form-control">
+                        <option value="">- Todos -</option>
+                        {% for instructor in instructors %}
+                            <option value="{{ instructor.id }}" {{ ratingFilters.rating_instructor == instructor.id ? 'selected' : '' }}>
+                                {{ instructor.profile ? instructor.profile : instructor.username }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="rating_discipline">Clase:</label>
+                    <select id="rating_discipline" name="rating_discipline" class="form-control">
+                        <option value="">- Todas -</option>
+                        {% for discipline in disciplines %}
+                            <option value="{{ discipline.id }}" {{ ratingFilters.rating_discipline == discipline.id ? 'selected' : '' }}>
+                                {{ discipline.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="rating_average_type">Promedio por tipo:</label>
+                    <select id="rating_average_type" name="rating_average_type" class="form-control">
+                        <option value="">- Selecciona tipo -</option>
+                        <option value="exercise" {{ ratingFilters.rating_average_type == 'exercise' ? 'selected' : '' }}>Ejercicios</option>
+                        <option value="instructor" {{ ratingFilters.rating_average_type == 'instructor' ? 'selected' : '' }}>Instructor</option>
+                        <option value="class_type" {{ ratingFilters.rating_average_type == 'class_type' ? 'selected' : '' }}>Clases</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="rating_average_type_value">Valor mínimo:</label>
+                    <select id="rating_average_type_value" name="rating_average_type_value" class="form-control">
+                        <option value="">- Todos -</option>
+                        {% for rating in 1..5 %}
+                            <option value="{{ rating }}" {{ ratingFilters.rating_average_type_value == rating ? 'selected' : '' }}>
+                                {{ rating }}+
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <label>&nbsp;</label>
+                <div class="clearfix">
+                    <button type="submit" class="btn btn-primary">Buscar</button>
+                    <a href="{{ path('backend_stats_ratings', {'clear': 1}) }}" class="btn btn-default">Limpiar</a>
+                    <a href="{{ path('backend_stats_ratings_export', {
+                        'rating_date_start': ratingFilters.rating_date_start,
+                        'rating_date_end': ratingFilters.rating_date_end,
+                        'rating_branch_office': ratingFilters.rating_branch_office,
+                        'rating_schedule': ratingFilters.rating_schedule,
+                        'rating_instructor': ratingFilters.rating_instructor,
+                        'rating_discipline': ratingFilters.rating_discipline,
+                        'rating_average_type': ratingFilters.rating_average_type,
+                        'rating_average_type_value': ratingFilters.rating_average_type_value,
+                    }) }}"
+                       class="btn btn-success pull-right js-ratings-export">
+                        <i class="fa fa-file-excel-o" aria-hidden="true"></i> Exportar
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div id="ratings-export-overlay" class="ratings-export-overlay" aria-hidden="true">
+        <div class="ratings-export-overlay__content">
+            <i class="fa fa-spinner fa-spin fa-2x" aria-hidden="true"></i>
+            <p>Generando archivo de Excel, por favor espere...</p>
+        </div>
+    </div>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+
+    <style>
+        .ratings-export-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 99999;
+            background: rgba(15, 23, 42, 0.45);
+        }
+
+        .ratings-export-overlay.is-active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ratings-export-overlay__content {
+            width: 90%;
+            max-width: 420px;
+            text-align: center;
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 20px 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            color: #22324a;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .ratings-export-overlay__content i {
+            color: #2a3f54;
+            margin-bottom: 10px;
+        }
+
+        .ratings-export-overlay__content p {
+            margin: 0;
+        }
+    </style>
+{% endblock %}
+
+{% block table_thead %}
+    <tr>
+        <th>#</th>
+        <th>Día</th>
+        <th>Hora</th>
+        <th>Salón</th>
+        <th>Instructor</th>
+        <th class="text-center">Reservas</th>
+        <th class="text-center">Sucursal</th>
+        <th class="text-center">{{ ratingColumnLabel }}</th>
+    </tr>
+{% endblock %}
+
+{% block table_tbody %}
+    {% for row in ratingRows %}
+        {% set session = row.session %}
+        <tr>
+            <td>
+                {% if session %}
+                    <a href="{{ path('backend_session_edit', { 'id': session.id }) }}" class="link-edit">
+                        <u>{{ session.id }}</u>
+                        <i class="fa fa-pencil" aria-hidden="true"></i>
+                    </a>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if session and session.dateStart %}
+                    {{ session.dateStart|date('d/m/Y') }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if session and session.timeStart %}
+                    {{ session.timeStart|date('H:i') }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if session %}
+                    {{ session.exerciseRoom }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>{{ session ? session.instructor : '-' }}</td>
+            <td class="text-center">
+                {% if session %}
+                    <a href="{{ path('backend_session_reservations', { 'id': session.id }) }}" class="link-edit">
+                        <u>{{ row.reservationsAvailable }}/{{ session.availableCapacity }}</u>
+                        <i class="fa fa-eye" aria-hidden="true"></i>
+                    </a>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td class="text-center">{{ session ? session.branchOffice : '-' }}</td>
+            <td class="text-center">
+                {% if row.ratingDisplay is not null %}
+                    <a href="#"
+                       class="label label-info"
+                       data-remodal="rating-breakdown-modal"
+                       data-url="{{ path('backend_stats_ratings_detail', {
+                           'id': session.id,
+                           'rating_date_start': ratingFilters.rating_date_start,
+                           'rating_date_end': ratingFilters.rating_date_end,
+                           'rating_branch_office': ratingFilters.rating_branch_office,
+                           'rating_schedule': ratingFilters.rating_schedule,
+                           'rating_instructor': ratingFilters.rating_instructor,
+                           'rating_discipline': ratingFilters.rating_discipline,
+                           'rating_average_type': ratingFilters.rating_average_type,
+                           'rating_average_type_value': ratingFilters.rating_average_type_value,
+                       }) }}"
+                       title="Ver desglose de calificaciones">
+                        {{ row.ratingDisplay|number_format(1) }}
+                    </a>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+
+    <script>
+        $(function () {
+            $(".datepicker").daterangepicker(datepickeroptions);
+
+            var $exportBtn = $('.js-ratings-export');
+            var $overlay = $('#ratings-export-overlay');
+            var pollTimer = null;
+            var maxWaitTimer = null;
+            var cookieName = 'ratings_export_token';
+
+            function getCookieValue(name) {
+                var pattern = new RegExp('(?:^|; )' + name.replace(/[.$?*|{}()\[\]\\/+^]/g, '\\$&') + '=([^;]*)');
+                var match = document.cookie.match(pattern);
+
+                return match ? decodeURIComponent(match[1]) : null;
+            }
+
+            function clearCookie(name) {
+                document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+            }
+
+            function stopBlocking() {
+                if (pollTimer) {
+                    clearInterval(pollTimer);
+                    pollTimer = null;
+                }
+
+                if (maxWaitTimer) {
+                    clearTimeout(maxWaitTimer);
+                    maxWaitTimer = null;
+                }
+
+                $overlay.removeClass('is-active').attr('aria-hidden', 'true');
+                $exportBtn.removeClass('disabled').prop('disabled', false).removeAttr('aria-disabled');
+            }
+
+            $exportBtn.on('click', function (event) {
+                event.preventDefault();
+
+                if ($exportBtn.hasClass('disabled')) {
+                    return;
+                }
+
+                var baseUrl = $(this).attr('href');
+                var token = String(Date.now());
+                var separator = baseUrl.indexOf('?') === -1 ? '?' : '&';
+                var exportUrl = baseUrl + separator + 'export_token=' + encodeURIComponent(token);
+
+                clearCookie(cookieName);
+                $overlay.addClass('is-active').attr('aria-hidden', 'false');
+                $exportBtn.addClass('disabled').prop('disabled', true).attr('aria-disabled', 'true');
+
+                pollTimer = setInterval(function () {
+                    var value = getCookieValue(cookieName);
+                    if (value === token) {
+                        clearCookie(cookieName);
+                        stopBlocking();
+                    }
+                }, 500);
+
+                window.location.href = exportUrl;
+
+                maxWaitTimer = setTimeout(function () {
+                    stopBlocking();
+                    $.alert('La exportacion esta tardando mas de lo esperado. Puedes intentarlo de nuevo.', 'Aviso');
+                }, 120000);
+            });
+        });
+    </script>
+{% endblock %}

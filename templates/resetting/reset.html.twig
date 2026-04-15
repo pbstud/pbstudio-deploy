@@ -1,0 +1,40 @@
+{% extends 'layout.html.twig' %}
+
+{% block page_title %}Restablecer contraseña | {% endblock %}
+
+{% block content %}
+    <section class="box-form resetting-box">
+        {% for flash_message in app.flashes('danger') %}
+            <div class="error">
+                <p>{{ flash_message }}</p>
+            </div>
+        {% endfor %}
+
+        <div class="gradient">
+            <div class="row">
+                <div class="resetting-panel">
+                    <h3 class="resetting-title">Restablecer contraseña</h3>
+                    <p class="resetting-subtitle">Elige una nueva contraseña segura para tu cuenta.</p>
+
+                    {{ form_start(form, { 'action': path('resetting_reset', {'token': token}), 'attr': { 'class': 'fos_user_resetting_reset resetting-form' } }) }}
+                        {{ form_widget(form.plainPassword.first, {
+                            'attr': {
+                                'placeholder': 'Nueva contraseña',
+                            }
+                        }) }}
+                        {{ form_errors(form.plainPassword.first) }}
+
+                        {{ form_widget(form.plainPassword.second, {
+                            'attr': {
+                                'placeholder': 'Repita la contraseña',
+                            }
+                        }) }}
+                        {{ form_errors(form.plainPassword.second) }}
+
+                        <button type="submit" class="btn-submit">Cambiar contraseña</button>
+                    {{ form_end(form) }}
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

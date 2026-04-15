@@ -1,0 +1,66 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% set page_section = 'Instructores' %}
+{% set active_tab = (active_tab is not defined ? 'data_general' : active_tab) %}
+
+{% block section %}
+    <div class="row">
+        <div class="col-md-12 col-sm-12 col-xs-12">
+            <div class="x_panel">
+                <div class="x_title">
+                    <h2>{{ page_title }}</h2>
+                    <div class="clearfix"></div>
+                </div>
+                <div class="x_content">
+                    <div class="col-md-3 col-sm-3 col-xs-12 profile_left">
+                        <div class="profile_img">
+                            <div id="crop-avatar">
+                                {% set defaultInstructorPhoto = asset('images/home/instructor1.jpg') %}
+                                {% set hasPhoto = instructorHasPhotoFile|default(false) %}
+                                <img
+                                    src="{{ hasPhoto ? vich_uploader_asset(instructor.profile) : defaultInstructorPhoto }}"
+                                    alt="{{ instructor }}"
+                                    class="instructor-avatar instructor-avatar--backend"
+                                    width="200"
+                                    height="200"
+                                    onerror="this.onerror=null;this.src='{{ defaultInstructorPhoto }}';"
+                                />
+                            </div>
+                        </div>
+                        <h3>{{ instructor }}</h3>
+
+                        <ul class="list-unstyled user_data">
+                            <li>
+                                <i class="fa fa-user user-profile-icon"></i> {{ instructor.username }}
+                            </li>
+                            <li>
+                                <i class="fa fa-at user-profile-icon"></i> {{ instructor.email }}
+                            </li>
+                            <li>
+                                <i class="fa fa-mobile user-profile-icon"></i> {{ instructor.profile.telephone }}
+                            </li>
+                            <li>
+                                <i class="fa fa-heart-o user-profile-icon"></i>
+                                {% for discipline in instructor.disciplines %}
+                                    {{ discipline }}{{ loop.last ? '' : ',' }}
+                                {% endfor %}
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-9 col-sm-9 col-xs-12">
+                        <div class="" role="tabpanel" data-example-id="togglable-tabs">
+                            <ul id="instructorTab" class="nav nav-tabs nav-tabs-custom" role="tablist">
+                                <li role="presentation" {% if 'data_general' == active_tab %}class="active"{% endif %}>
+                                    <a href="{{ path('backend_instructor_edit', { 'id': instructor.id }) }}">Datos Generales</a>
+                                </li>
+                            </ul>
+                            <div id="instructorTabContent" class="tab-content">
+                                {% block subcontent %}{% endblock %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

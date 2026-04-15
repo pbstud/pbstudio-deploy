@@ -1,0 +1,43 @@
+{% extends 'layout.html.twig' %}
+
+{% block page_title %}Clases | {% endblock %}
+
+{% block content %}
+    <section class="page classes-page">
+        <div class="row">
+            <div class="content">
+                <div class="title clearfix">
+                    <h1>Nuestras clases</h1>
+                    <p>
+                        Conoce los tipos de clases que impartimos en P&amp;B Studio y elige la que mejor se ajuste
+                        a tu objetivo, nivel y ritmo. Presiona cualquier tarjeta para ver la guia completa.
+                    </p>
+                </div>
+
+                <div class="classes-grid">
+                    {% for classDescription in classDescriptions %}
+                        <button
+                            type="button"
+                            class="classes-card classes-card--interactive classes-card--{{ classDescription.slug }} classes-card--position-{{ loop.index }}"
+                            data-url="{{ path('class_descriptions_show', { slug: classDescription.slug }) }}"
+                            data-remodal="class-description-modal"
+                        >
+                            <span class="classes-card__kicker">Guia detallada</span>
+                            <h3 class="classes-card__title">{{ classDescription.name }}</h3>
+                            <p class="classes-card__meta">
+                                <span>{{ classDescription.audience }}</span>
+                                <span>{{ classDescription.duration }}</span>
+                                <span>{{ classDescription.intensity }}</span>
+                            </p>
+                            <p class="classes-card__focus">{{ classDescription.focus }}</p>
+                            <p class="classes-card__description">{{ classDescription.summary }}</p>
+                            <span class="classes-card__cta">Presiona para ver detalle completo</span>
+                        </button>
+                    {% else %}
+                        <p>No hay descripciones de clases disponibles por el momento.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

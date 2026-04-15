@@ -1,0 +1,25 @@
+{{ form_start(form, {'attr': {'id': 'form-coupon'}}) }}
+    <div class="row">
+        {{ form_row(form.name, {'row_attr': {'class': 'col-md-6'}}) }}
+        {{ form_row(form.code, {'row_attr': {'class': 'col-md-6'}}) }}
+    </div>
+
+    <div class="row">
+        {{ form_row(form.dateStart, {'row_attr': {'class': 'col-md-6'}}) }}
+        {{ form_row(form.dateEnd, {'row_attr': {'class': 'col-md-6'}}) }}
+    </div>
+
+    <div class="row">
+        {{ form_row(form.discount, {'row_attr': {'class': 'col-md-6'}}) }}
+        {{ form_row(form.usesTotal, {'row_attr': {'class': 'col-md-6'}}) }}
+    </div>
+
+    <div class="row">
+        {{ form_row(form.packages, {'row_attr': {'class': 'col-md-6'}}) }}
+        {{ form_row(form.applySpecialPrice, {'row_attr': {'class': 'col-md-6'}}) }}
+    </div>
+
+    <div class="ln_solid"></div>
+
+    {{ include('backend/default/_btn_save.html.twig') }}
+{{ form_end(form) }}

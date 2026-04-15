@@ -1,0 +1,252 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% set page_section = 'Transacciones' %}
+{% set return_to = path('backend_transaction') %}
+
+{% form_theme form _self %}
+{% use 'bootstrap_3_horizontal_layout.html.twig' %}
+
+{% block form_label_class -%}
+    col-md-3 col-sm-3 col-xs-12
+{%- endblock form_label_class %}
+
+{% block form_group_class -%}
+    col-md-6 col-sm-6 col-xs-12
+{%- endblock form_group_class %}
+
+{% block _transaction_discount_widget %}
+    {%- set attr = attr|merge({class: (attr.class|default('') ~ ' has-feedback-right')|trim}) -%}
+    {{- block('form_widget_simple') -}}
+    <span class="form-control-feedback right" aria-hidden="true">%</span>
+{% endblock %}
+
+{% block section %}
+    {{ form_start(form, {
+        'attr': {
+            'id': 'form-transaction-new',
+            'class': 'form-horizontal form-label-left',
+            'autocomplete': 'off',
+            'data-parsley-validate': '',
+        }
+    }) }}
+        <div class="row">
+            {% embed 'backend/default/_card.html.twig' with {
+                'title': 'Forma de pago',
+            } %}
+                {% block content %}
+                    {{ form_row(form.chargeMethod) }}
+
+                    <div id="PaymentMethodExtraFields">
+                        <div class="payment-panel hidden" id="payment_card">
+                            <div class="panel panel-primary not-radius">
+                                <div class="panel-heading not-radius">Información de la tarjeta</div>
+
+                                <div class="panel-body">
+                                    <div class="form-group">
+                                        <label class="control-label col-md-3 col-sm-3 col-xs-12" for="transaction_card_name">Nombre del titular:</label>
+                                        <div class="col-md-6 col-sm-6 col-xs-12">
+                                            <input type="text" id="transaction_card_name" class="form-control" size="20" data-conekta="card[name]" />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="control-label col-md-3 col-sm-3 col-xs-12" for="transaction_card_number">Número:</label>
+                                        <div class="col-md-6 col-sm-6 col-xs-12">
+                                            <input type="text" id="transaction_card_number" class="form-control" size="20" data-conekta="card[number]" />
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="control-label col-md-3 col-sm-3 col-xs-12" for="transaction_card_exp_year">Vigencia:</label>
+
+                                        <div class="col-md-3 col-sm-3 col-xs-6">
+                                            <select id="transaction_card_exp_year" class="form-control" data-conekta="card[exp_month]">
+                                                <option value="">Mes</option>
+                                                {% for i in 1..12 %}
+                                                    <option value="{{ '%02d'|format(i) }}">{{ '%02d'|format(i) }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-3 col-sm-3 col-xs-6">
+                                            <select class="form-control" data-conekta="card[exp_year]">
+                                                <option value="">Año</option>
+                                                {% set startYear = 'now'|date('Y') %}
+                                                {% set endYear = startYear + 10 %}
+                                                {% for i in startYear..endYear %}
+                                                    <option value="{{ i }}">{{ i }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="control-label col-md-3 col-sm-3 col-xs-12" for="transaction_card_cvc">Código de seguridad:</label>
+                                        <div class="col-md-3 col-sm-3 col-xs-12">
+                                            <input type="text" id="transaction_card_cvc" class="form-control" data-conekta="card[cvc]" placeholder="***" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="payment-panel hidden" id="payment_pos">
+                            <div class="panel panel-primary not-radius">
+                                <div class="panel-heading not-radius">Información de la transacción</div>
+
+                                <div class="panel-body">
+                                    {{ form_row(form.cardLast4) }}
+                                    {{ form_row(form.chargeAuthCode) }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endblock %}
+            {% endembed %}
+        </div>
+
+        <div class="row">
+            {% embed 'backend/default/_card.html.twig' with {
+                'title': 'Detalle de la transacción',
+            } %}
+                {% block content %}
+                    {{ form_row(form.branchOffice) }}
+
+                    <div class="form-group">
+                        <label class="control-label col-md-3 col-sm-3 col-xs-12" for="transaction_user_search">Usuario</label>
+                        <div class="col-md-6 col-sm-6 col-xs-12">
+                            {{ form_widget(form.user, {'attr': {'data-parsley-errors-container': '#errors-user'}}) }}
+
+                            <select id="transaction_user_search"
+                                    class="form-control"
+                                    data-search-url="{{ path('backend_transaction_user_search') }}"
+                                    data-parsley-errors-container="#errors-user">
+                                {% if transactionModel.user %}
+                                    <option value="{{ transactionModel.user.id }}" selected="selected" data-email="{{ transactionModel.user.email }}">
+                                        {{ transactionModel.user.name }} {{ transactionModel.user.lastname }}
+                                    </option>
+                                {% endif %}
+                            </select>
+
+                            {{ form_errors(form.user) }}
+                            <div id="errors-user"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="control-label col-md-3 col-sm-3 col-xs-12">Email</label>
+
+                        <div class="col-md-6 col-sm-6 col-xs-12">
+                            <input type="text" id="transaction_user_email" class="form-control" readonly />
+                        </div>
+                    </div>
+
+                    {{ form_row(form.package) }}
+
+                    <div class="form-group">
+                        {{ form_label(form.coupon) }}
+
+                        <div class="col-md-6 col-sm-6 col-xs-12">
+                            <div class="input-group">
+                                {{ form_widget(form.coupon) }}
+                                <input type="text" id="coupon_code" class="form-control">
+                                <span class="input-group-btn">
+                                    <button type="button" id="btn_coupon" class="btn btn-success" data-url="{{ path('backend_coupon_validate') }}">
+                                        Aplicar
+                                    </button>
+                                </span>
+                            </div>
+                            {{ form_errors(form.coupon) }}
+                        </div>
+                    </div>
+
+                    {{ form_row(form.discount, {'attr': {
+                        'min': 0,
+                        'max': 99
+                    }}) }}
+
+                    <div class="form-group has-feedback">
+                        <label class="control-label col-md-3 col-sm-3 col-xs-12">Fecha de expiración</label>
+
+                        <div class="col-md-6 col-sm-6 col-xs-12">
+                            <input type="text" id="transaction_package_expiration_at" class="form-control has-feedback-right" readonly />
+                            <span class="form-control-feedback right" aria-hidden="true">
+                            <i class="fa fa-calendar" aria-hidden="true"></i>
+                        </span>
+                        </div>
+                    </div>
+
+                    <div class="ln_solid"></div>
+
+                    <div class="row">
+                        <div class="panel panel-success not-radius">
+                            <div class="panel-heading not-radius"><strong>Resumen de Compra</strong></div>
+
+                            <table class="table">
+                                <tbody>
+                                <tr>
+                                    <th style="width: 25%">Precio</th>
+                                    <td>
+                                        $<span id="package_amount">0.00</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Precio Especial</th>
+                                    <td>
+                                        $<span id="special_price">--</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>
+                                        Cupón de Descuento
+                                        <span id="coupon_percentaje"></span>
+                                    </th>
+                                    <td>
+                                        $<span id="coupon_total">--</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>
+                                        Descuento Adicional
+                                        <span id="additional_discount_percentaje"></span>
+                                    </th>
+                                    <td>
+                                        $<span id="additional_discount">--</span>
+                                    </td>
+                                </tr>
+                                <tr class="warning">
+                                    <th>Total</th>
+                                    <th>
+                                        $<span id="transaction_total">0.00</span>
+                                    </th>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="ln_solid"></div>
+
+                    <div class="form-group">
+                        <div class="col-md-12">
+                            <div class="pull-right">
+                                <button type="submit" class="btn btn-primary" data-loading-text="<i class='fa fa-circle-o-notch fa-spin'></i> Registrando ...">
+                                    Registrar
+                                </button>
+                            </div>
+                            <div class="clearfix"></div>
+                        </div>
+                    </div>
+                {% endblock %}
+            {% endembed %}
+        </div>
+    {{ form_end(form) }}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+
+    <script type="text/javascript">
+        checkoutHandler('{{ conekta_public_key }}');
+    </script>
+{% endblock %}

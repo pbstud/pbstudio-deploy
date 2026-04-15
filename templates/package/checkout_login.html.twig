@@ -1,0 +1,26 @@
+<section class="pop_box">
+    <div class="row clearfix">
+        <a data-remodal-action="close" class="nav-toggle close"><span class="iconMenu"></span></a>
+
+        <div class="grid-1-8 right right-container">
+            <h3 class="checkout-modal-title">
+                Bienvenido a P&B
+                <small>Inicia sesión o regístrate para realizar tu compra</small>
+            </h3>
+            <div>
+                <h5>¿Ya tienes una cuenta con P&B?</h5>
+                <a href="#" data-url="{{ path('app_login', {'_modaltarget': modalTarget}) }}" class="btn load-modal">Inicia sesión</a>
+            </div>
+            <div>
+                <h5>¿Es la primera vez que nos visitas?</h5>
+                <a href="#" data-url="{{ path('register', {'_modaltarget': modalTarget}) }}" class="btn load-modal">Regístrate</a>
+            </div>
+        </div>
+
+        {{ include('package/_checkout_detail.html.twig') }}
+    </div>
+</section>
+
+<script type="text/javascript">
+    checkoutNotLogged();
+</script>

@@ -1,0 +1,3 @@
+<p><strong>No. Tarjeta:</strong> **** **** **** {{ transaction.cardLast4 }}</p>
+<p><strong>Clave de autorización:</strong> {{ transaction.chargeAuthCode }}</p>
+<p><strong>Monto:</strong> ${{ transaction.total | number_format(2) }} <small>MXN</small></p>

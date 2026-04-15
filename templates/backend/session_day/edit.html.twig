@@ -1,0 +1,503 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% set page_section = 'Clases x día' %}
+{% set page_title = 'Editar día: ' ~ data.branchOffice.name %}
+{% set return_to = path('backend_session_day') %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .session-day-edit-scroll {
+            max-height: calc(100vh - 330px);
+            overflow-y: scroll;
+            overflow-x: auto;
+            scrollbar-gutter: stable;
+            background-color: #fff;
+        }
+
+        #edit-session-grid {
+            margin-bottom: 0;
+            min-width: 100%;
+        }
+
+        #edit-session-grid th,
+        #edit-session-grid td {
+            min-width: 130px;
+            vertical-align: top;
+        }
+
+        #edit-session-grid th:first-child,
+        #edit-session-grid td:first-child {
+            min-width: 75px;
+            width: 75px;
+        }
+
+        #edit-session-grid thead th {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            background-color: #f5f7fa;
+            box-shadow: inset 0 -1px 0 #d5dde6;
+            font-size: 14px !important;
+            font-weight: 600 !important;
+            line-height: 1.3 !important;
+            white-space: nowrap;
+            padding: 9px 10px !important;
+        }
+
+        #edit-session-grid td .form-control {
+            font-size: 14px !important;
+            line-height: 1.35 !important;
+            height: 34px !important;
+            padding: 6px 10px !important;
+        }
+
+        #edit-session-grid td input[type="time"] {
+            font-size: 14px !important;
+        }
+
+        @media (max-width: 991px) {
+            .session-day-edit-scroll {
+                max-height: calc(100vh - 290px);
+            }
+        }
+
+        @media (max-height: 780px) {
+            .session-day-edit-scroll {
+                max-height: calc(100vh - 250px);
+            }
+        }
+
+        .edit-add-row-wrap {
+            margin-top: 10px;
+            text-align: right;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    {% embed 'backend/default/embed/form_common.html.twig' with { 'page_section': page_section, 'page_title': page_title } %}
+        {% block body %}
+            <form action="{{ path('backend_session_day_edit', { 'editDate': data.dateStart|date('d-m-Y'), 'branchOfficeId': data.branchOffice.id, 'fromCreation': fromCreation ? 1 : 0 }) }}" method="post">
+                <div class="row">
+                    <div class="col-md-6 col-xs-12 form-group">
+                        <label>{{ applyDatesDisplay|length > 1 ? 'Fechas:' : 'Día:' }}</label>
+
+                        {% set dateValuesDisplay = (applyDatesDisplay is defined and applyDatesDisplay is iterable and applyDatesDisplay|length > 0)
+                            ? applyDatesDisplay
+                            : [data.dateStart|date('d/m/Y')] %}
+                        {% set dateValuesHidden = (applyDates is defined and applyDates is iterable and applyDates|length == dateValuesDisplay|length)
+                            ? applyDates
+                            : [data.dateStart|date('d-m-Y')] %}
+
+                        {% for dateValue in dateValuesDisplay %}
+                            <div class="has-feedback"{% if not loop.first %} style="margin-top: 8px; width: 260px;"{% else %} style="width: 260px;"{% endif %}>
+                                <input type="text" required="required" class="form-control has-feedback-right" value="{{ dateValue }}" readonly style="width: 100%;">
+                                <span class="form-control-feedback right" aria-hidden="true" style="width: 34px; height: 34px; line-height: 34px; top: -7px; right: 0;">
+                                    <i class="fa fa-calendar" aria-hidden="true"></i>
+                                </span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {% for applyDate in dateValuesHidden %}
+                    <input type="hidden" name="session[applyDates][]" value="{{ applyDate }}">
+                {% endfor %}
+
+                <div class="dataTables_wrapper">
+                    <div class="row">
+                        <div class="col-md-12 col-xs-12">
+                            <div class="session-day-edit-scroll" id="edit-session-grid-scroll">
+                                <table class="table table-striped" id="edit-session-grid">
+                                    <thead>
+                                        <tr>
+                                            <th>Hora (HH:mm)</th>
+                                            {% for exerciseRoom in exerciseRooms %}
+                                                <th>{{ exerciseRoom }} / Información</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for schedule in schedules %}
+                                            <tr>
+                                                <td>
+                                                    <input type="time" class="form-control" name="session[scheduleTimes][{{ schedule }}]" value="{{ schedule }}" required>
+                                                </td>
+                                                {% for exerciseRoom in exerciseRooms %}
+                                                    {% set current = null %}
+                                                    {% if data['schedules'][schedule][exerciseRoom.id] is defined and (data['schedules'][schedule][exerciseRoom.id]|number_format) > 0 %}
+                                                        {% set current = data['schedules'][schedule][exerciseRoom.id] %}
+                                                    {% endif %}
+
+                                                    <td class="js-instructor-cell">
+                                                        {% if current %}
+                                                            <input type="hidden" name="session[schedules][{{ schedule }}][{{ exerciseRoom.id }}][session]" value="{{ current['session'] }}">
+                                                            <input type="hidden" name="session[schedules][{{ schedule }}][{{ exerciseRoom.id }}][hash]" value="{{ current['hash'] }}">
+                                                        {% endif %}
+
+                                                        <select class="form-control js-instructor-select" name="session[schedules][{{ schedule }}][{{ exerciseRoom.id }}][instructor]" {% if current %}data-current="{{ current['instructor'] }}"{% endif %}>
+                                                            <option value="">- Instructor -</option>
+                                                            {% for instructor in exerciseRoom.discipline.instructors|filter(v=> v.enabled and not v.deleted) %}
+                                                                <option value="{{ instructor.id }}" data-instructor-id="{{ instructor.id }}" data-instructor-color="{{ instructor.profile.colorHex|default('') }}">
+                                                                    {{ instructor.profile.firstname }}
+                                                                </option>
+                                                            {% endfor %}
+                                                        </select>
+                                                        <br>
+                                                        <input type="text" class="form-control" name="session[information][{{ schedule }}][{{ exerciseRoom.id }}]" placeholder="Información Adicional" value="{{ current ? current['information'] : '' }}">
+                                                        <br>
+                                                        <input type="text" class="form-control" name="session[capacity][{{ schedule }}][{{ exerciseRoom.id }}]" placeholder="Capacidad" value="{{ current ? current['capacity'] : '' }}">
+                                                    </td>
+                                                {% endfor %}
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="edit-add-row-wrap">
+                                <button type="button" class="btn btn-default" id="edit-add-row">Agregar fila</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ln_solid"></div>
+
+                <div class="form-group">
+                    <div class="col-xs-12">
+                        <div class="pull-right">
+                            <button type="submit" class="btn btn-primary">
+                                Guardar
+                            </button>
+                        </div>
+                        <div class="clearfix"></div>
+                    </div>
+                </div>
+            </form>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    {{ include('backend/session_day/_instructor_color_script.html.twig') }}
+    <script>
+        (function () {
+            var formEl = document.querySelector('form');
+            var editGridBody = document.querySelector('#edit-session-grid tbody');
+            var editAddRowButton = document.getElementById('edit-add-row');
+            var roomIds = [{% for exerciseRoom in exerciseRooms %}{{ exerciseRoom.id }}{% if not loop.last %}, {% endif %}{% endfor %}];
+            var roomOptionsById = {
+                {% for exerciseRoom in exerciseRooms %}
+                '{{ exerciseRoom.id }}': '<option value="">- Instructor -</option>{% for instructor in exerciseRoom.discipline.instructors|filter(v=> v.enabled and not v.deleted) %}<option value="{{ instructor.id }}" data-instructor-id="{{ instructor.id }}" data-instructor-color="{{ instructor.profile.colorHex|default('') }}">{{ instructor.profile.firstname|e('js') }}</option>{% endfor %}'{% if not loop.last %},{% endif %}
+                {% endfor %}
+            };
+            var dynamicRowIndex = 0;
+            var firstSchedule = '{{ schedules|first }}';
+            if (!formEl) {
+                return;
+            }
+
+            function normalize(value) {
+                return (value || '').trim();
+            }
+
+            function hasAdditionalDataWithoutInstructor(cell) {
+                var selectEl = cell.querySelector('.js-instructor-select');
+                var infoEl = cell.querySelector('input[name*="[information]"]');
+                var capacityEl = cell.querySelector('input[name*="[capacity]"]');
+                var currentInfo = normalize(infoEl ? infoEl.value : '');
+                var currentCapacity = normalize(capacityEl ? capacityEl.value : '');
+                var hasAdditionalData = currentInfo !== '' || currentCapacity !== '';
+
+                if (!hasAdditionalData) {
+                    return false;
+                }
+
+                var instructorValue = normalize(selectEl ? selectEl.value : '');
+                var hasInstructor = instructorValue !== '' && parseInt(instructorValue, 10) > 0;
+
+                return !hasInstructor;
+            }
+
+            function getCellContext(cell) {
+                var row = cell.closest('tr');
+                var table = cell.closest('table');
+                var cellIndex = cell.cellIndex;
+                var className = 'Clase';
+                var timeValue = '';
+
+                if (table) {
+                    var headerCell = table.querySelector('thead tr th:nth-child(' + (cellIndex + 1) + ')');
+                    if (headerCell) {
+                        className = normalize(headerCell.textContent) || className;
+                    }
+                }
+
+                if (row) {
+                    var timeInput = row.querySelector('td:first-child input[type="time"]');
+                    if (timeInput) {
+                        timeValue = normalize(timeInput.value);
+                    }
+                }
+
+                return {
+                    className: className,
+                    timeValue: timeValue,
+                };
+            }
+
+            function showValidationError(message) {
+                if (window.jQuery && window.jQuery.flash && typeof window.jQuery.flash.danger === 'function') {
+                    window.jQuery.flash.danger(message);
+                    return;
+                }
+            }
+
+            function toMinutes(timeValue) {
+                var value = normalize(timeValue);
+                if (!/^\d{2}:\d{2}(?::\d{2})?$/.test(value)) {
+                    return null;
+                }
+
+                var parts = value.split(':');
+                var hours = parseInt(parts[0], 10);
+                var minutes = parseInt(parts[1], 10);
+
+                if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+                    return null;
+                }
+
+                return (hours * 60) + minutes;
+            }
+
+            function addMinutesToTime(timeValue, minutesToAdd) {
+                var base = toMinutes(timeValue);
+                if (base === null) {
+                    return firstSchedule || '06:00';
+                }
+
+                var total = base + minutesToAdd;
+                var dayMinutes = 24 * 60;
+                if (total >= dayMinutes) {
+                    total = total % dayMinutes;
+                }
+
+                var hh = String(Math.floor(total / 60)).padStart(2, '0');
+                var mm = String(total % 60).padStart(2, '0');
+
+                return hh + ':' + mm;
+            }
+
+            function getNextEditRowTime() {
+                if (!editGridBody) {
+                    return firstSchedule || '06:00';
+                }
+
+                var rows = editGridBody.querySelectorAll('tr');
+                if (rows.length === 0) {
+                    return firstSchedule || '06:00';
+                }
+
+                var lastRow = rows[rows.length - 1];
+                var lastTimeInput = lastRow.querySelector('td:first-child input[type="time"]');
+                var lastTime = lastTimeInput ? lastTimeInput.value : (firstSchedule || '06:00');
+
+                return addMinutesToTime(lastTime, 30);
+            }
+
+            function createEditRow(defaultTime) {
+                if (!editGridBody) {
+                    return null;
+                }
+
+                dynamicRowIndex += 1;
+                var rowKey = 'dynamic_' + dynamicRowIndex;
+                var tr = document.createElement('tr');
+
+                var timeTd = document.createElement('td');
+                timeTd.innerHTML = '<input type="time" class="form-control" name="session[scheduleTimes][' + rowKey + ']" value="' + (defaultTime || (firstSchedule || '06:00')) + '" required>';
+                tr.appendChild(timeTd);
+
+                roomIds.forEach(function (roomId) {
+                    var td = document.createElement('td');
+                    td.className = 'js-instructor-cell';
+                    td.innerHTML =
+                        '<select class="form-control js-instructor-select" name="session[schedules][' + rowKey + '][' + roomId + '][instructor]">' +
+                            (roomOptionsById[String(roomId)] || '<option value="">- Instructor -</option>') +
+                        '</select>' +
+                        '<br>' +
+                        '<input type="text" class="form-control" name="session[information][' + rowKey + '][' + roomId + ']" placeholder="Información Adicional" value="">' +
+                        '<br>' +
+                        '<input type="text" class="form-control" name="session[capacity][' + rowKey + '][' + roomId + ']" placeholder="Capacidad" value="">';
+                    tr.appendChild(td);
+                });
+
+                editGridBody.appendChild(tr);
+
+                var timeInput = tr.querySelector('td:first-child input[type="time"]');
+                if (timeInput) {
+                    timeInput.addEventListener('change', function () {
+                        sortEditRowsByTime();
+                    });
+                }
+
+                tr.querySelectorAll('.js-instructor-select').forEach(function (selectEl) {
+                    selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+
+                return tr;
+            }
+
+            function sortEditRowsByTime() {
+                if (!editGridBody) {
+                    return;
+                }
+
+                var rows = Array.prototype.slice.call(editGridBody.querySelectorAll('tr'));
+                rows.sort(function (a, b) {
+                    var aInput = a.querySelector('td:first-child input[type="time"]');
+                    var bInput = b.querySelector('td:first-child input[type="time"]');
+                    var aTime = toMinutes(aInput ? aInput.value : '');
+                    var bTime = toMinutes(bInput ? bInput.value : '');
+
+                    if (aTime === null && bTime === null) {
+                        return 0;
+                    }
+                    if (aTime === null) {
+                        return 1;
+                    }
+                    if (bTime === null) {
+                        return -1;
+                    }
+
+                    return aTime - bTime;
+                });
+
+                rows.forEach(function (row) {
+                    editGridBody.appendChild(row);
+                });
+            }
+
+            function clearValidationMarks() {
+                var markedCells = formEl.querySelectorAll('.js-instructor-cell[data-validation-error="1"]');
+                for (var i = 0; i < markedCells.length; i++) {
+                    clearValidationMark(markedCells[i]);
+                }
+            }
+
+            function clearValidationMark(cell) {
+                if (!cell) {
+                    return;
+                }
+
+                cell.removeAttribute('data-validation-error');
+                cell.style.outline = '';
+                cell.style.outlineOffset = '';
+                cell.style.backgroundColor = '';
+
+                var fields = cell.querySelectorAll('.js-instructor-select, input[name*="[information]"], input[name*="[capacity]"]');
+                for (var j = 0; j < fields.length; j++) {
+                    fields[j].style.borderColor = '';
+                }
+            }
+
+            function markValidationError(cell) {
+                cell.setAttribute('data-validation-error', '1');
+                cell.style.outline = '2px solid #d9534f';
+                cell.style.outlineOffset = '-2px';
+                cell.style.backgroundColor = '#fff5f5';
+
+                var fields = cell.querySelectorAll('.js-instructor-select, input[name*="[information]"], input[name*="[capacity]"]');
+                for (var i = 0; i < fields.length; i++) {
+                    fields[i].style.borderColor = '#d9534f';
+                }
+
+                cell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            formEl.addEventListener('submit', function (event) {
+                sortEditRowsByTime();
+                clearValidationMarks();
+
+                var cells = formEl.querySelectorAll('.js-instructor-cell');
+                var firstInvalidCell = null;
+                for (var i = 0; i < cells.length; i++) {
+                    var cell = cells[i];
+                    var selectEl = cell.querySelector('.js-instructor-select');
+                    if (!selectEl) {
+                        continue;
+                    }
+
+                    if (hasAdditionalDataWithoutInstructor(cell)) {
+                        markValidationError(cell);
+                        if (!firstInvalidCell) {
+                            firstInvalidCell = cell;
+                        }
+                    }
+                }
+
+                if (firstInvalidCell) {
+                    showValidationError('No se ejecutó la actualización porque hay clases con datos erróneos.');
+                    var firstInvalidSelect = firstInvalidCell.querySelector('.js-instructor-select');
+                    if (firstInvalidSelect) {
+                        firstInvalidSelect.focus();
+                    }
+                    firstInvalidCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    event.preventDefault();
+                }
+            });
+
+            formEl.addEventListener('input', function (event) {
+                var target = event.target;
+                if (!target.matches('.js-instructor-select, input[name*="[information]"], input[name*="[capacity]"]')) {
+                    return;
+                }
+
+                var cell = target.closest('.js-instructor-cell');
+                if (!cell) {
+                    return;
+                }
+
+                if (!hasAdditionalDataWithoutInstructor(cell)) {
+                    clearValidationMark(cell);
+                }
+            });
+
+            formEl.addEventListener('change', function (event) {
+                var target = event.target;
+                if (target.matches('input[type="time"]')) {
+                    sortEditRowsByTime();
+                }
+
+                if (!target.matches('.js-instructor-select, input[name*="[information]"], input[name*="[capacity]"]')) {
+                    return;
+                }
+
+                var cell = target.closest('.js-instructor-cell');
+                if (!cell) {
+                    return;
+                }
+
+                if (!hasAdditionalDataWithoutInstructor(cell)) {
+                    clearValidationMark(cell);
+                }
+            });
+
+            if (editAddRowButton) {
+                editAddRowButton.addEventListener('click', function () {
+                    var newRow = createEditRow(getNextEditRowTime());
+                    sortEditRowsByTime();
+
+                    var timeInput = newRow ? newRow.querySelector('td:first-child input[type="time"]') : null;
+                    if (timeInput) {
+                        timeInput.focus();
+                    }
+                });
+            }
+
+            sortEditRowsByTime();
+        })();
+    </script>
+{% endblock %}

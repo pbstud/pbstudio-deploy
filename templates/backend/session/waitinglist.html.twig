@@ -1,0 +1,49 @@
+{% extends 'backend/session/profile.html.twig' %}
+
+{% set page_title = 'Lista de espera' %}
+{% set active_tab = 'tab_waitinglist' %}
+
+{% block subcontent %}
+    {% if waitinglist | length > 0 %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Usuario</th>
+                        <th class="text-center">Estado</th>
+                        <th class="text-center">F. de registro</th>
+                        <th class="text-center">F. de reservación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in waitinglist %}
+                        <tr>
+                            <td>
+                                <a href="{{ path('backend_user_show', { 'id': item.user.id }) }}" class="link-edit">
+                                    <u>{{ item.user }}</u>
+                                    <i class="fa fa-eye" aria-hidden="true"></i>
+                                </a>
+                            </td>
+                            <td class="text-center">
+                                {% set label_class = item.isAvailable ? 'primary' : ( item.error ? 'danger' : 'warning' ) %}
+                                {% set label_text = item.isAvailable ? 'en espera' : ( item.error ? 'denegada' : 'tomada' ) %}
+
+                                <span class="label label-{{ label_class }}" data-toggle="tooltip" data-placement="top" data-original-title="{{ item.error }}">
+                                    {{ label_text }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                {{ item.createdAt | date('d/m/Y H:i') }}
+                            </td>
+                            <td class="text-center">
+                                {{ item.updatedAt ? item.updatedAt | date('d/m/Y H:i') : null }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        {{ include('backend/default/partials/not_records.html.twig') }}
+    {% endif %}
+{% endblock %}

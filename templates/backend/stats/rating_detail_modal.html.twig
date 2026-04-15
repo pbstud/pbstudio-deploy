@@ -1,0 +1,196 @@
+<section class="pop_box rating-breakdown-modal">
+    <div class="row clearfix">
+        <a data-remodal-action="close" class="nav-toggle close"><span class="iconMenu"></span></a>
+
+        {% set activeMetric = selectedAverageType ?: 'general' %}
+        {% set activeMetricLabel = selectedAverageLabel ?: 'General' %}
+
+        <div class="center rating-breakdown-modal__header">
+            <h4>Desglose de calificaciones</h4>
+            <p class="rating-breakdown-modal__meta">
+                Sesión #{{ session.id }}
+                {% if session.dateStart %}
+                    - {{ session.dateStart|date('d/m/Y') }}
+                {% endif %}
+                {% if session.timeStart %}
+                    {{ session.timeStart|date('H:i') }}
+                {% endif %}
+            </p>
+            <small>Métrica activa: {{ activeMetricLabel }}</small>
+        </div>
+
+        <div class="row rating-breakdown-modal__kpis">
+            <div class="col-md-4 col-sm-6 col-xs-12 rating-kpi-slot rating-kpi-slot--total">
+                <div class="x_panel rating-kpi-card rating-kpi-card--accent">
+                    <div class="x_content">
+                        <span class="rating-kpi-card__label">Total valoraciones</span>
+                        <h3 class="rating-kpi-card__value">{{ breakdown.ratedReservations }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 col-sm-6 col-xs-12 rating-kpi-slot rating-kpi-slot--metric">
+                <div class="x_panel rating-kpi-card">
+                    <div class="x_content">
+                        <span class="rating-kpi-card__label">General</span>
+                        <h3 class="rating-kpi-card__value">{{ breakdown.averages.general is not null ? breakdown.averages.general|number_format(1) : '-' }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 col-sm-6 col-xs-12 rating-kpi-slot rating-kpi-slot--metric">
+                <div class="x_panel rating-kpi-card">
+                    <div class="x_content">
+                        <span class="rating-kpi-card__label">Ejercicios</span>
+                        <h3 class="rating-kpi-card__value">{{ breakdown.averages.exercise is not null ? breakdown.averages.exercise|number_format(1) : '-' }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 col-sm-6 col-xs-12 rating-kpi-slot rating-kpi-slot--metric">
+                <div class="x_panel rating-kpi-card">
+                    <div class="x_content">
+                        <span class="rating-kpi-card__label">Instructor</span>
+                        <h3 class="rating-kpi-card__value">{{ breakdown.averages.instructor is not null ? breakdown.averages.instructor|number_format(1) : '-' }}</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 col-sm-6 col-xs-12 rating-kpi-slot rating-kpi-slot--metric">
+                <div class="x_panel rating-kpi-card">
+                    <div class="x_content">
+                        <span class="rating-kpi-card__label">Clases</span>
+                        <h3 class="rating-kpi-card__value">{{ breakdown.averages.class_type is not null ? breakdown.averages.class_type|number_format(1) : '-' }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if activeMetric == 'general' %}
+
+            <div class="row rating-breakdown-modal__distribution-grid">
+                <div class="col-md-4 col-sm-12">
+                    <div class="x_panel rating-distribution-card">
+                        <div class="x_title">
+                            <h2>Distribución - Ejercicios</h2>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="x_content">
+                            <ul class="list-unstyled rating-distribution-list">
+                                {% for star in 5..1 %}
+                                    <li>
+                                        <span class="rating-distribution-list__label">{{ star }} estrella(s)</span>
+                                        <span class="rating-count-pill">{{ breakdown.distribution.exercise[star] }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 col-sm-12">
+                    <div class="x_panel rating-distribution-card">
+                        <div class="x_title">
+                            <h2>Distribución - Instructor</h2>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="x_content">
+                            <ul class="list-unstyled rating-distribution-list">
+                                {% for star in 5..1 %}
+                                    <li>
+                                        <span class="rating-distribution-list__label">{{ star }} estrella(s)</span>
+                                        <span class="rating-count-pill">{{ breakdown.distribution.instructor[star] }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 col-sm-12">
+                    <div class="x_panel rating-distribution-card">
+                        <div class="x_title">
+                            <h2>Distribución - Clases</h2>
+                            <div class="clearfix"></div>
+                        </div>
+                        <div class="x_content">
+                            <ul class="list-unstyled rating-distribution-list">
+                                {% for star in 5..1 %}
+                                    <li>
+                                        <span class="rating-distribution-list__label">{{ star }} estrella(s)</span>
+                                        <span class="rating-count-pill">{{ breakdown.distribution.class_type[star] }}</span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div class="x_panel rating-distribution-card rating-distribution-card--single">
+                <div class="x_title">
+                    <h2>Distribución - {{ activeMetricLabel }}</h2>
+                    <div class="clearfix"></div>
+                </div>
+                <div class="x_content">
+                    <ul class="list-unstyled rating-distribution-list rating-distribution-list--inline">
+                        {% for star in 5..1 %}
+                            <li>
+                                <span class="rating-distribution-list__label">{{ star }} estrella(s)</span>
+                                <span class="rating-count-pill">{{ attribute(breakdown.distribution, activeMetric)[star] }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        {% endif %}
+
+        <hr class="rating-breakdown-modal__separator" />
+
+        <h5 class="rating-breakdown-modal__detail-title">Detalle por reservación</h5>
+        <div class="rating-breakdown-modal__detail-table">
+            <div class="rating-breakdown-modal__detail-scroll-x">
+            <table class="table table-striped table-hover table-condensed">
+                <thead>
+                <tr>
+                    <th>Reservacion</th>
+                    <th>Asiento</th>
+                    <th>Usuario</th>
+                    {% if activeMetric == 'general' %}
+                        <th>General</th>
+                        <th>Ejercicios</th>
+                        <th>Instructor</th>
+                        <th>Clases</th>
+                    {% else %}
+                        <th>{{ activeMetricLabel }}</th>
+                    {% endif %}
+                    <th>Fecha calificacion</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for row in breakdown.ratings %}
+                    <tr>
+                        <td>#{{ row.reservationId }}</td>
+                        <td>{{ row.placeNumber is not null ? row.placeNumber : '-' }}</td>
+                        <td class="rating-breakdown-modal__cell-user">{{ row.userDisplay }}</td>
+                        {% if activeMetric == 'general' %}
+                            <td>{{ row.ratingGeneral is not null ? row.ratingGeneral|number_format(1) : '-' }}</td>
+                            <td>{{ row.ratingExercise is not null ? row.ratingExercise : '-' }}</td>
+                            <td>{{ row.ratingInstructor is not null ? row.ratingInstructor : '-' }}</td>
+                            <td>{{ row.ratingClassType is not null ? row.ratingClassType : '-' }}</td>
+                        {% else %}
+                            <td>{{ attribute(row, activeMetric == 'exercise' ? 'ratingExercise' : (activeMetric == 'instructor' ? 'ratingInstructor' : 'ratingClassType')) is not null ? attribute(row, activeMetric == 'exercise' ? 'ratingExercise' : (activeMetric == 'instructor' ? 'ratingInstructor' : 'ratingClassType')) : '-' }}</td>
+                        {% endif %}
+                        <td class="rating-breakdown-modal__cell-date">{{ row.ratedAt ? row.ratedAt|date('d/m/Y H:i') : '-' }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="{% if activeMetric == 'general' %}8{% else %}5{% endif %}" class="text-center">No hay calificaciones para esta sesión con los criterios actuales.</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+        </div>
+
+        <div class="text-center rating-breakdown-modal__actions">
+            <button type="button" class="btn btn-default" data-remodal-action="close">
+                <i class="fa fa-times" aria-hidden="true"></i> Cerrar
+            </button>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,37 @@
+<div class="auth-modal-panel auth-modal-panel--login">
+    <a data-remodal-action="close" class="nav-toggle close auth-modal-close" aria-label="Cerrar">
+        <span class="iconMenu"></span>
+    </a>
+
+    <h3 class="checkout-modal-title auth-modal-title">
+        Iniciar sesión
+        <small class="auth-modal-switch">
+            ¿Aún no tienes cuenta?
+            <a href="#" data-url="{{ path('register', {'_modaltarget': app.request.get('_modaltarget') ?: 1}) }}" class="load-modal">¡Regístrate ahora!</a>
+        </small>
+    </h3>
+
+    <form id="frmCheckoutLogin" action="{{ path("app_login") }}" method="post" class="auth-modal-form">
+        <input type="email" class="form-control" id="username" name="username" value="{{ last_username }}" placeholder="Correo" required>
+        <input type="password" class="form-control" id="password" name="password" placeholder="Contraseña" required>
+
+        <div class="auth-modal-actions-row">
+            <a href="#" data-url="{{ path('resetting_request',  {'_modaltarget': app.request.get('_modaltarget') ?: 1}) }}" class="load-modal auth-modal-forgot">¿Olvidaste tu contraseña?</a>
+
+            <div class="remember-me auth-modal-remember">
+                <label>
+                    <input type="checkbox" name="_remember_me" checked> Recordarme
+                </label>
+            </div>
+        </div>
+
+        <button type="submit" class="btn-submit auth-modal-submit">Entrar</button>
+
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+        <input type="hidden" name="_modaltarget" value="{{ app.request.get('_modaltarget') ?: 1 }}">
+    </form>
+</div>
+
+<script type="text/javascript">
+    checkoutNotLogged();
+</script>

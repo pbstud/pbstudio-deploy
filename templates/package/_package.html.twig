@@ -1,0 +1,30 @@
+{# package \App\Entity\Package #}
+<a href="#" data-url="{{ path('package_checkout', { 'id': package.id }) }}" data-remodal="checkout" class="{% if package.newUser %}first-class{% endif %}">
+    <div>
+        {% if package.discountInfo %}
+            <i class="discount">{{ package.discountInfo }}</i>
+        {% endif %}
+        <p>
+            {% if package.isUnlimited %}
+                &infin;
+            {% else %}
+                {{ package.totalClasses }}
+            {% endif %}
+        </p>
+    </div>
+    <h6 class="{{ package.specialPrice ? 'old-price' }}">
+        {% if package.altText %}
+            <small>{{ package.altText }}</small><br>
+        {% else %}
+            <small>Clase{{ 1 == package.totalClasses ? '' : 's' }}</small><br>
+        {% endif %}
+
+        ${{ package.amount|number_format }}
+    </h6>
+
+    {% if package.specialPrice %}
+        <h5 class="new-price">${{ package.specialPrice|number_format }}</h5>
+    {% endif %}
+
+    <small class="validity">Vigencia {{ package.daysExpiry }} días</small>
+</a>

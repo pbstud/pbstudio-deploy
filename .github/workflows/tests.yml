@@ -1,0 +1,199 @@
+name: Tests CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  smoke:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+
+    env:
+      APP_ENV: test
+      APP_SECRET: ci-test-secret
+      KERNEL_CLASS: App\Kernel
+      SYMFONY_DEPRECATIONS_HELPER: 999999
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/pbstudio?serverVersion=8.0.36&charset=utf8mb4
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create test .env
+        shell: bash
+        run: |
+          cat > .env <<'EOF'
+          APP_ENV=test
+          APP_SECRET=ci-test-secret
+          DATABASE_URL=mysql://root:root@127.0.0.1:3306/pbstudio?serverVersion=8.0.36&charset=utf8mb4
+          MAILER_DSN=null://default
+          MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0
+          EOF
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: ctype, exif, fileinfo, gd, iconv, intl, mbstring, openssl, pdo_mysql
+          coverage: none
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-php82-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php82-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+
+      - name: Run smoke tests (Command)
+        shell: bash
+        run: |
+          set -o pipefail
+          failed=0
+          failures_file="/tmp/smoke-command-failures.txt"
+          : > "$failures_file"
+          shopt -s nullglob
+
+          for file in tests/Command/*Test.php; do
+            base=$(basename "$file" .php)
+            log_file="/tmp/smoke-command-${base}.log"
+            echo "[ci] Running $file"
+            if php bin/phpunit "$file" --colors=never 2>&1 | tee "$log_file"; then
+              exit_code=0
+            else
+              exit_code=$?
+            fi
+
+            if [ "$exit_code" -ne 0 ]; then
+              echo "[ci] FAILED: $file (exit $exit_code)"
+              echo "$file (exit $exit_code)" >> "$failures_file"
+              details=$(tail -n 20 "$log_file" | tr '\n' '|' | sed 's/%/%25/g; s/\r/%0D/g; s/|/%0A/g')
+              echo "::error title=Smoke Command Test Failed::$file (exit $exit_code)%0A$details"
+              failed=1
+            fi
+          done
+
+          if [ "$failed" -ne 0 ]; then
+            echo "[ci] Command smoke failures:"
+            cat "$failures_file"
+          fi
+
+          exit "$failed"
+
+      - name: Run smoke tests (Service)
+        shell: bash
+        run: |
+          set -o pipefail
+          php bin/phpunit tests/Service --colors=never 2>&1 | tee /tmp/smoke-service.log
+
+      - name: Dump smoke logs
+        if: always()
+        shell: bash
+        run: |
+          for file in /tmp/smoke-command*.log /tmp/smoke-service.log /tmp/smoke-command-failures.txt; do
+            if [ -f "$file" ]; then
+              echo "[ci] --- $file ---"
+              cat "$file"
+            fi
+          done
+
+  full:
+    name: Full PHPUnit Suite
+    runs-on: ubuntu-latest
+    needs: smoke
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: pbstudio
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    env:
+      APP_ENV: test
+      APP_SECRET: ci-test-secret
+      KERNEL_CLASS: App\Kernel
+      SYMFONY_DEPRECATIONS_HELPER: 999999
+      DATABASE_URL: mysql://root:root@127.0.0.1:3306/pbstudio?serverVersion=8.0.36&charset=utf8mb4
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create test .env
+        shell: bash
+        run: |
+          cat > .env <<'EOF'
+          APP_ENV=test
+          APP_SECRET=ci-test-secret
+          DATABASE_URL=mysql://root:root@127.0.0.1:3306/pbstudio?serverVersion=8.0.36&charset=utf8mb4
+          MAILER_DSN=null://default
+          MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=0
+          EOF
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: ctype, exif, fileinfo, gd, iconv, intl, mbstring, openssl, pdo_mysql
+          coverage: none
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-php82-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php82-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            php -r 'try { new PDO("mysql:host=127.0.0.1;port=3306", "root", "root", [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]); exit(0); } catch (Throwable $e) { exit(1); }'
+            if [ $? -eq 0 ]; then
+              echo "[ci] MySQL ready"
+              exit 0
+            fi
+            echo "[ci] Waiting for MySQL ($i/30)"
+            sleep 1
+          done
+          echo "[ci] MySQL did not become ready in time"
+          exit 1
+
+      - name: Configure MySQL sql_mode
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot --batch \
+            -e "SET GLOBAL sql_mode=(SELECT REPLACE(@@GLOBAL.sql_mode, 'ONLY_FULL_GROUP_BY', ''))" \
+            2>/dev/null
+          mysql -h 127.0.0.1 -uroot -proot --batch \
+            -e "SELECT VERSION() AS version, @@GLOBAL.sql_mode AS global_sql_mode" \
+            2>/dev/null
+          echo "[ci] MySQL sql_mode configured"
+
+      - name: Create test database
+        run: php bin/console doctrine:database:create --if-not-exists --env=test -vvv
+
+      - name: Update database schema
+        run: php bin/console doctrine:schema:create --env=test
+
+      - name: Run full tests
+        run: composer test

@@ -1,0 +1,89 @@
+{% extends 'layout.html.twig' %}
+
+{% block page_title %}Paquetes | {% endblock %}
+
+{% block content %}
+    <section id="packages" class="page">
+        <div class="row">
+            <div class="content">
+                <div class="title clearfix">
+                    <h1>¡Tu cuerpo como nunca lo habías sentido!</h1>
+                    <p>
+                        En <strong>P&B Studio</strong> queremos que descubras la mejor versión de ti. Selecciona alguno
+                        de nuestros paquetes: Pilates y Barra en clases grupales o si lo prefieres
+                        clases totalmente personales para ti de Pilates. ¡Tu decides!
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="content">
+                <div class="center">
+                    <h4>Clases grupales</h4>
+                    <div class="price">
+                        {{ render(controller('App\\Controller\\PackageController::groupPackages')) }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="content">
+                <div class="center">
+                    <h4>Clases individuales</h4>
+                    <p>(Solo en sucursal Santa Fé. Reserva por teléfono)</p>
+                    <div class="price">
+                        {{ render(controller('App\\Controller\\PackageController::individualPackages')) }}
+                    </div>
+
+                    <a href="{{ path('reservation_calendar') }}" class="btn">
+                        Consulta el calendario
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section>
+        <div class="box-row location">
+            <div class="content">
+                <div class="col branch-contact-col">
+                    <div class="social">
+                        <a href="https://www.facebook.com/pbstudiomx/" target="blank"><span class="icon-fb"></span></a>
+                        <a href="https://www.instagram.com/pbstudiomx/" target="blank"><span class="icon-instagram-fill"></span></a>
+                    </div>
+                    <div><a href="mailto:contacto@pbstudio.mx">contacto@pbstudio.mx</a></div>
+                </div>
+                <div class="col branch-office-col">
+                    <div class="branch-office-list">
+                        {% if branchOffices is defined and branchOffices is not empty %}
+                            {% for branchOffice in branchOffices %}
+                                <article class="branch-office-home">
+                                    <h6 class="branch-office-title">
+                                        {{ branchOffice.name }}
+                                        {% if branchOffice.plaza %}
+                                            <span>· {{ branchOffice.plaza }}</span>
+                                        {% endif %}
+                                    </h6>
+                                    {% if branchOffice.place %}
+                                        <p class="branch-office-city">{{ branchOffice.place }}</p>
+                                    {% endif %}
+                                    {% if branchOffice.zone %}
+                                        <p class="branch-office-meta"><b>Zona:</b> {{ branchOffice.zone }}</p>
+                                    {% endif %}
+                                    {% if branchOffice.address %}
+                                        <p class="branch-office-meta">{{ branchOffice.address }}</p>
+                                    {% endif %}
+                                    {% if branchOffice.phone %}
+                                        <p class="branch-office-meta"><b>Tel:</b> {{ branchOffice.phone }}</p>
+                                    {% endif %}
+                                </article>
+                            {% endfor %}
+                        {% else %}
+                            <p>No hay sucursales publicas configuradas.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

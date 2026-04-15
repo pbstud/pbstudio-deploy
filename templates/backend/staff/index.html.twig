@@ -1,0 +1,68 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% set page_section = 'Staff' %}
+{% set page_title = 'Listado de Staff' %}
+
+{% block content %}
+    {% embed 'backend/default/embed/list_common.html.twig' with { 'page_section': page_section, 'page_title': page_title } %}
+        {% block actions %}
+            <div class="col-md-3 col-sm-4 col-xs-8 form-group pull-right top_search">
+                <div class="input-group">
+                    <a href="{{ path('backend_staff_new') }}" class="btn btn-default">Nuevo Staff</a>
+                </div>
+            </div>
+        {% endblock %}
+
+        {% block body %}
+            {% if pagination | length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Usuario</th>
+                                <th>Último acceso</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entity in pagination %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ path('backend_staff_edit', { 'id': entity.id }) }}" class="link-edit">
+                                            <u>{{ entity.id }}</u>
+                                            <i class="fa fa-pencil" aria-hidden="true"></i>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        {{ entity.username }}
+                                    </td>
+                                    <td>
+                                        {% if entity.lastLogin %}
+                                            {{ entity.lastLogin|date('Y-m-d H:i:s') }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if entity.isActive %}
+                                        <span class="label label-primary">Activo</span>
+                                        {% else %}
+                                        <span class="label label-danger">Inactivo</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                {{ include('backend/default/partials/not_records.html.twig') }}
+            {% endif %}
+        {% endblock %}
+
+        {% block footer %}
+            {% if pagination | length > 0 %}
+                {{ knp_pagination_render(pagination) }}
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

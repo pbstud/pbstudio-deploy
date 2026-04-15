@@ -1,0 +1,8 @@
+parameters:
+    knp_menu.renderer.twig.options:
+        currentClass: current-page
+        ancestorClass: has-current-page
+
+knp_menu:
+    twig:
+        template: 'backend/default/sidebar.html.twig'

@@ -1,0 +1,42 @@
+{% extends 'mail/layout.html.twig' %}
+
+{% block body %}
+    <tr>
+        <td align="center" style="font-family:arial,sans-serif; color:#67ccbb; font-size:30px; text-align:center; text-transform:uppercase; font-weight:100">
+            Tu registro ha sido exitoso en la lista de espera
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <table width="600px" style="margin:20px;" class="w320">
+                <tr>
+                    <td class="blockwrap" style="margin-bottom:10px;">
+                        <table width="600px">
+                            <tr>
+                                <td style="font-family:arial,sans-serif; color:#6D6E70; font-size:16px; text-align:center; padding: 10px;">
+                                    <strong>Hola {{ user.name }}</strong>
+                                    <br /><br />
+
+                                    <p>Tu subscripción a la lista de espera se ha realizado correctamente. Si se
+                                    llegase a liberar un lugar te lo asignaremos a ti automáticamente y te notificaremos
+                                    vía correo electrónico.</p>
+
+                                    <p>Nota: Los lugares se asignan de acuerdo al orden de la lista de espera. Es
+                                    necesario que cuentes con clases disponibles para la asignación.</p>
+
+                                    <p>Te compartimos los detalles de tu registro en la lista de espera.</p>
+
+                                    <p><strong>Clase:</strong> {{ discipline }}</p>
+                                    <p><strong>Hora:</strong> {{ session.timeStart|date('h:i a') }}</p>
+                                    <p><strong>Fecha:</strong> {{ session.dateStart|format_date(null, "EEEE d 'de' MMMM") }}</p>
+                                    <p><strong>Instructor:</strong> {{ instructor.profile.firstname }}</p>
+                                    <p><strong>Tu lugar en la lista:</strong> {{ session.waitingList|length }}</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+{% endblock %}

@@ -1,0 +1,306 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% block content %}
+    <div class="">
+        <div class="page-title">
+            <div class="title_left">
+                <h3>Configuración</h3>
+            </div>
+        </div>
+
+        <div class="clearfix"></div>
+
+        <div class="row">
+            <div class="col-sm-6 col-xs-12">
+                <div class="x_panel">
+                    <div class="x_title">
+                        <h2>General</h2>
+
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        <form action="{{ path('backend_configuration_update') }}" method="post" class="form-horizontal form-label-left " role="form">
+                            <div class="form-group">
+                                <label class="control-label col-md-6 col-sm-6 col-xs-12 required" for="general_email_contacto">Email de contacto:</label>
+                                <div class="col-md-6 col-sm-6 col-xs-12">
+                                    <input type="text" id="general_email_contacto" name="general[email_contacto]" value="{{ general.email_contacto | default('') }}" class="form-control" placeholder="Email de contacto">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="control-label col-md-6 col-sm-6 col-xs-12 required" for="general_package_free">
+                                    Paquete gratis:<br />
+                                    <small class="help">Paquete de promoción a usuarios nuevos</small>
+                                </label>
+                                <div class="col-md-6 col-sm-6 col-xs-12">
+                                    <select class="form-control" id="general_package_free" name="general[package_free]" data-current="{{ general.package_free | default('') }}">
+                                        <option value="">- Seleccionar -</option>
+                                        <optgroup label="Grupales">
+                                            {% for package in packages|filter(v => v.type == 'g') %}
+                                                <option value="{{ package.id }}">{{ package.totalClasses }} clase{{ 1 < package.totalClasses ? 's' : '' }}</option>
+                                            {% endfor %}
+                                        </optgroup>
+                                        <optgroup label="Individuales">
+                                            {% for package in packages|filter(v => v.type == 'i') %}
+                                                <option value="{{ package.id }}">{{ package.totalClasses }} clase{{ 1 < package.totalClasses ? 's' : '' }}</option>
+                                            {% endfor %}
+                                        </optgroup>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="control-label col-md-12 col-sm-12 col-xs-12 required" for="general_header_scripts">
+                                    Header:<br />
+                                    <small class="help">Scripts que se ejecutan antes de cerrar el <code>{{ '</head>' | e }}</code></small>
+                                </label>
+                                <div class="col-md-12 col-sm-12 col-xs-12">
+                                    <textarea id="general_header_scripts" name="general[header_scripts]" rows="5" class="form-control" placeholder="Scripts">{{ general.header_scripts | default('') }}</textarea>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="control-label col-md-12 col-sm-12 col-xs-12 required" for="general_header_scripts">
+                                    Footer:<br />
+                                    <small class="help">Scripts que se ejecutan antes de cerrar el <code>{{ '</body>' | e }}</code></small>
+                                </label>
+                                <div class="col-md-12 col-sm-12 col-xs-12">
+                                    <textarea id="general_footer_scripts" name="general[footer_scripts]" rows="5" class="form-control" placeholder="Scripts">{{ general.footer_scripts | default('') }}</textarea>
+                                </div>
+                            </div>
+
+                            <div class="ln_solid"></div>
+
+                            <div class="form-group">
+                                <div class="col-xs-12">
+                                    <div class="pull-right">
+                                        <button type="submit" class="btn btn-primary">
+                                            Guardar
+                                        </button>
+                                    </div>
+                                    <div class="clearfix"></div>
+                                </div>
+                            </div>
+
+                            <input type='hidden' name='_method' value='PUT'>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="x_panel">
+                    <div class="x_title">
+                        <h2>Avisos</h2>
+
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        <form action="{{ path('backend_configuration_update') }}" method="post" enctype="multipart/form-data" class="form-horizontal form-label-left " role="form">
+                            <div class="form-group">
+                                <label class="control-label col-md-6 col-sm-6 col-xs-12 required" for="notice_image">Imagen:</label>
+                                <div class="col-md-6 col-sm-6 col-xs-12">
+                                    <input type="file" id="notice_image" name="notice[image]" accept="image/png,image/jpeg,image/webp">
+                                    <small class="help">
+                                        Recomendado: imagen horizontal en alta resolucion (minimo 1200px de ancho) para evitar que se vea borrosa.
+                                    </small>
+
+                                    {% if notice.image|default(false) %}
+                                        {% set image_uri = vich_uploader_asset(notice.image, 'file') %}
+                                        <br>
+                                        <a href="{{ asset(image_uri) }}" download>
+                                            <img class="img-thumbnail" src="{{ asset(image_uri) }}" alt="Actual" />
+                                        </a>
+                                    {%- endif -%}
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="control-label col-md-6 col-sm-6 col-xs-12" for="notice_url">Url:</label>
+                                <div class="col-md-6 col-sm-6 col-xs-12">
+                                    <input type="url" id="notice_url" name="notice[url]" value="{{ notice.url|default('') }}" class="form-control">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label col-md-6 col-sm-6 col-xs-12">Activo:</label>
+                                <div class="col-md-6 col-sm-6 col-xs-12">
+                                    <div>
+                                        <input type="radio" id="notice_active_0" name="notice[active]" class="flat" value="0" {% if not notice.active|default(0) %}checked="checked"{% endif %} />
+                                        <label for="notice_active_0">No</label>
+                                        <input type="radio" id="notice_active_1" name="notice[active]" class="flat" value="1" {% if notice.active|default(0) %}checked="checked"{% endif %} />
+                                        <label for="notice_active_1">Si</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="ln_solid"></div>
+
+                            <div class="form-group">
+                                <div class="col-xs-12">
+                                    <div class="pull-right">
+                                        <button type="submit" class="btn btn-primary">
+                                            Guardar
+                                        </button>
+                                    </div>
+                                    <div class="clearfix"></div>
+                                </div>
+                            </div>
+
+                            <input type="hidden" name="_method" value="PUT">
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-xs-12">
+                <div class="x_panel">
+                    <div class="x_title">
+                        <h2>Conekta</h2>
+
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        <form action="{{ path('backend_configuration_update') }}" method="post" class="form-horizontal form-label-left" role="form">
+                            <div class="form-group">
+                                <label class="control-label col-md-6 col-sm-6 col-xs-12">Sandbox:</label>
+                                <div class="col-md-6 col-sm-6 col-xs-12">
+                                    <div>
+                                        <input type="radio" id="conekta_sandbox_mode_0" name="conekta[sandbox_mode]" class="flat" value="0" {% if not conekta.sandbox_mode | default(0) %}checked="checked"{% endif %} />
+                                        <label for="conekta_sandbox_mode_0">No</label>
+                                        &nbsp;&nbsp;&nbsp;&nbsp;
+
+                                        <input type="radio" id="conekta_sandbox_mode_1" name="conekta[sandbox_mode]" class="flat" value="1" {% if conekta.sandbox_mode | default(0) %}checked="checked"{% endif %} />
+                                        <label for="conekta_sandbox_mode_1">Si</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label col-md-6 col-sm-6 col-xs-12" for="conekta_sandbox_secret_key">Sandbox Secret Key:</label>
+                                <div class="col-md-6 col-sm-6 col-xs-12">
+                                    <input type="text" id="conekta_sandbox_secret_key" name="conekta[sandbox_secret_key]" value="{{ conekta.sandbox_secret_key | default('') }}" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="control-label col-md-6 col-sm-6 col-xs-12" for="conekta_sandbox_public_key">Sandbox Public Key:</label>
+                                <div class="col-md-6 col-sm-6 col-xs-12">
+                                    <input type="text" id="conekta_sandbox_public_key" name="conekta[sandbox_public_key]" value="{{ conekta.sandbox_public_key | default('') }}" class="form-control">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="control-label col-md-6 col-sm-6 col-xs-12" for="conekta_production_secret_key">Production Secret Key:</label>
+                                <div class="col-md-6 col-sm-6 col-xs-12">
+                                    <input type="text" id="conekta_production_secret_key" name="conekta[production_secret_key]" value="{{ conekta.production_secret_key | default('') }}" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="control-label col-md-6 col-sm-6 col-xs-12" for="conekta_production_public_key">Production Public Key:</label>
+                                <div class="col-md-6 col-sm-6 col-xs-12">
+                                    <input type="text" id="conekta_production_public_key" name="conekta[production_public_key]" value="{{ conekta.production_public_key | default('') }}" class="form-control">
+                                </div>
+                            </div>
+
+                            <div class="ln_solid"></div>
+
+                            <div class="form-group">
+                                <div class="col-xs-12">
+                                    <div class="pull-right">
+                                        <button type="submit" class="btn btn-primary">
+                                            Guardar
+                                        </button>
+                                    </div>
+                                    <div class="clearfix"></div>
+                                </div>
+                            </div>
+
+                            <input type='hidden' name='_method' value='PUT'>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="x_panel">
+                    <div class="x_title">
+                        <h2>Clases</h2>
+
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        <form action="{{ path('backend_configuration_update') }}" method="post" class="form-horizontal form-label-left" role="form">
+                            <fieldset>
+                                <legend><small>Cancelaciones</small></legend>
+                                <div class="form-group">
+                                    <label class="control-label col-md-6 col-sm-6 col-xs-12" for="sessions_time_cancel_individual">
+                                        Individuales:<br />
+                                        <small class="help">Tiempo limite, <u>en minutos</u>, para cancelar una clase individual</small>
+                                    </label>
+                                    <div class="col-md-6 col-sm-6 col-xs-12">
+                                        <input type="text" id="sessions_time_cancel_individual" name="sessions[time_cancel_individual]" value="{{ sessions.time_cancel_individual | default('') }}" placeholder="1440" class="form-control">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label col-md-6 col-sm-6 col-xs-12" for="sessions_time_cancel_group">
+                                        Grupal:<br />
+                                        <small class="help">Tiempo limite, <u>en minutos</u>, para cancelar una clase grupal</small>
+                                    </label>
+                                    <div class="col-md-6 col-sm-6 col-xs-12">
+                                        <input type="text" id="sessions_time_cancel_group" name="sessions[time_cancel_group]" value="{{ sessions.time_cancel_group | default('') }}" placeholder="720" class="form-control">
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <div class="ln_solid"></div>
+
+                            <div class="form-group">
+                                <div class="col-xs-12">
+                                    <div class="pull-right">
+                                        <button type="submit" class="btn btn-primary">
+                                            Guardar
+                                        </button>
+                                    </div>
+                                    <div class="clearfix"></div>
+                                </div>
+                            </div>
+
+                            <input type='hidden' name='_method' value='PUT'>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="x_panel">
+                    <div class="x_title">
+                        <h2>Estadísticas</h2>
+
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        <form action="{{ path('backend_configuration_update') }}" method="post" class="form-horizontal form-label-left" role="form">
+                            <div class="form-group">
+                                <label class="control-label col-md-6 col-sm-6 col-xs-12 required" for="stats_start_date">
+                                    Fecha inicio de mes:<br />
+                                    <small class="help">Fecha para cálculo de catorcena y mensualidad de instructores</small>
+                                </label>
+                                <div class="col-md-6 col-sm-6 col-xs-12">
+                                    <input type="text" id="stats_start_date" name="stats[start_date]" value="{{ stats.start_date|default('') }}" class="form-control datepicker has-feedback-right">
+                                    <span class="form-control-feedback right" aria-hidden="true">
+                                        <i class="fa fa-calendar" aria-hidden="true"></i>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="ln_solid"></div>
+
+                            <div class="form-group">
+                                <div class="col-xs-12">
+                                    <div class="pull-right">
+                                        <button type="submit" class="btn btn-primary">
+                                            Guardar
+                                        </button>
+                                    </div>
+                                    <div class="clearfix"></div>
+                                </div>
+                            </div>
+
+                            <input type='hidden' name='_method' value='PUT'>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

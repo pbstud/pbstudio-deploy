@@ -1,0 +1,74 @@
+{% extends 'profile/layout.html.twig' %}
+
+{% block page_title %}Clases disponibles | {% endblock %}
+
+{% block account_content %}
+    <div class="row">
+        <div class="content">
+            <h2>Clases disponibles</h2>
+
+            {% for transaction in transactions %}
+                <div class="contained_table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <td>Concepto</td>
+                                <td>Detalle</td>
+                            </tr>
+                        </thead>
+                        <tbody>
+                                <tr>
+                                    <td>Paquete</td>
+                                    <td>
+                                        {% if transaction['package_is_unlimited'] %}
+                                            {{ transaction['package_alt_text'] }}
+                                        {% else %}
+                                            {{ transaction['package_total_sessions'] }} clase(s)
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Modalidad</td>
+                                    <td>{{ transaction['package_type'] }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Clases disponibles</td>
+                                    <td>
+                                        {% if transaction['package_is_unlimited'] %}
+                                            (&infin;) Ilimitadas
+                                        {% else %}
+                                            {{ transaction['total_sessions_available'] }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Clases tomadas</td>
+                                    <td>{{ transaction['total_sessions_used'] }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Clases reservadas</td>
+                                    <td>{{ transaction['total_reserved_sessions'] }}</td>
+                                </tr>
+                                <tr>
+                                    <td>Vigencia hasta</td>
+                                    <td>{{ transaction['expiration_at']|date('d/m/Y') }}</td>
+                                </tr>
+
+                        </tbody>
+                    </table>
+                </div>
+                <br>
+            {% else %}
+                <p>
+                    Sin registros por mostrar
+                </p>
+            {% endfor %}
+
+            <a href="{{ path('reservation_calendar') }}" class="btn reserve-class-toggle">Reservar clase</a>
+        </div>
+    </div>
+{% endblock %}
+
+{% block account_aside_content %}
+    {{ include('package/_aside.html.twig') }}
+{% endblock %}

@@ -1,0 +1,94 @@
+sections:
+    Dashboard:
+        label: 'Dashboard'
+        actions:
+            - { label: 'Estadísticas', route: 'dashboard_stats' }
+
+    BranchOffice:
+        label: 'Sucursales'
+        actions:
+            - { label: 'Listado',   route: 'backend_branchoffice' }
+            - { label: 'Crear',     route: 'backend_branchoffice_new' }
+            - { label: 'Editar',    route: 'backend_branchoffice_edit' }
+
+    ExerciseRoom:
+        label: 'Salones'
+        actions:
+            - { label: 'Listado',   route: 'backend_exerciseroom' }
+            - { label: 'Crear',     route: 'backend_exerciseroom_new' }
+            - { label: 'Editar',    route: 'backend_exerciseroom_edit' }
+
+    Package:
+        label: 'Paquetes'
+        actions:
+            - { label: 'Listado',   route: 'backend_package' }
+            - { label: 'Crear',     route: 'backend_package_new' }
+            - { label: 'Editar',    route: 'backend_package_edit' }
+
+    Discipline:
+        label: 'Disciplinas'
+        actions:
+            - { label: 'Listado',   route: 'backend_discipline' }
+            - { label: 'Crear',     route: 'backend_discipline_new' }
+            - { label: 'Editar',    route: 'backend_discipline_edit' }
+
+    Instructor:
+        label: 'Instructores'
+        actions:
+            - { label: 'Listado',   route: 'backend_instructor' }
+            - { label: 'Crear',     route: 'backend_instructor_new' }
+            - { label: 'Editar',    route: 'backend_instructor_edit' }
+            - { label: 'Borrar',    route: 'backend_instructor_delete' }
+
+    Session:
+        label: 'Clases'
+        actions:
+            - { label: 'Listado',           route: 'backend_session' }
+            - { label: 'Crear',             route: 'backend_session_new' }
+            - { label: 'Editar',            route: 'backend_session_edit' }
+            - { label: 'Asientos',          route: 'backend_session_seats' }
+            - { label: 'Auditoría',         route: 'backend_session_audit' }
+            - { label: 'Cancelar',          route: 'backend_session_cancel' }
+            - { label: 'Reservaciones',     route: 'backend_session_reservations' }
+            - { label: 'Lista de espera',   route: 'backend_session_waitinglist' }
+
+    SessionDay:
+        label: 'Clases x día'
+        actions:
+            - { label: 'Listado',   route: 'backend_session_day' }
+            - { label: 'Crear',     route: 'backend_session_day_new' }
+            - { label: 'Editar',    route: 'backend_session_day_edit' }
+
+    User:
+        label: 'Usuarios'
+        actions:
+            - { label: 'Listado',   route: 'backend_user' }
+            - { label: 'Exportar',   route: 'backend_user_export' }
+            - { label: 'Crear',     route: 'backend_user_new' }
+            - { label: 'Perfil',    route: 'backend_user_show' }
+            - { label: 'Habilitar / Deshabilitar',    route: 'backend_user_toggle_enable' }
+            - { label: 'Restablecer Contraseña',    route: 'backend_user_reset_password' }
+            - { label: 'Editar',    route: 'backend_user_edit' }
+
+    Reservation:
+        label: 'Reservaciones'
+        actions:
+            - { label: 'Crear',     route: 'backend_user_reservation_new' }
+            - { label: 'Cancelar',  route: 'backend_user_reservation_cancel' }
+
+    Transaction:
+        label: 'Transacciones'
+        actions:
+            - { label: 'Listado',   route: 'backend_transaction' }
+            - { label: 'Caja',      route: 'backend_transaction_new' }
+            - { label: 'Detalle',   route: 'backend_transaction_show' }
+            - { label: 'Cancelar',  route: 'backend_transaction_cancel' }
+            - { label: 'Editar f. expiración',  route: 'backend_transaction_edit_expiration' }
+
+    Coupon:
+        label: 'Cupones'
+        actions:
+            - { label: 'Listado', route: 'backend_coupon' }
+            - { label: 'Crear', route: 'backend_coupon_new' }
+            - { label: 'Editar', route: 'backend_coupon_edit' }
+            - { label: 'Detalle', route: 'backend_coupon_show' }

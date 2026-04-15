@@ -1,0 +1,15 @@
+{% extends 'layout.html.twig' %}
+
+{% block page_title %}{{ post }} | {% endblock %}
+
+{% block content %}
+    <section class="page page-{{ post.type }} {{ post.slug }}">
+        <div class="row">
+            <div class="content">
+                <div class="text_box">
+                    {{ post.content | raw }}
+                </div>
+            </div>
+        </div>
+    </section>
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends 'backend/default/list.html.twig' %}
+
+{% block title %}Listado de Sucursales{% endblock %}
+
+{% block actions %}
+    {% if is_allowed_route('backend_branchoffice_new') %}
+        <div class="col-md-3 col-sm-4 col-xs-8 form-group pull-right top_search text-right">
+            <a href="{{ path('backend_branchoffice_new') }}" class="btn btn-dark">
+                <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                Nueva sucursal
+            </a>
+        </div>
+    {% endif %}
+{% endblock %}
+
+{% block table_thead %}
+    <tr>
+        <th>#</th>
+        <th>Nombre</th>
+        <th>Sede</th>
+        <th>Zona</th>
+        <th>Plaza</th>
+        <th>Telefono</th>
+        <th>Pública</th>
+        <th>F. creación</th>
+    </tr>
+{% endblock %}
+
+{% block table_tbody %}
+    {% for branchOffice in pagination %}
+        {# branchOffice \App\Entity\BranchOffice #}
+        <tr>
+            <td>
+                <a href="{{ path('backend_branchoffice_edit', { 'id': branchOffice.id }) }}" class="link-edit">
+                    <u>{{ branchOffice.id }}</u>
+                    <i class="fa fa-pencil" aria-hidden="true"></i>
+                </a>
+            </td>
+            <td>{{ branchOffice.name }}</td>
+            <td>{{ branchOffice.place }}</td>
+            <td>{{ branchOffice.zone|default('—') }}</td>
+            <td>{{ branchOffice.plaza|default('—') }}</td>
+            <td>{{ branchOffice.phone|default('—') }}</td>
+            <td>
+                {% if branchOffice.public %}
+                    <span class="label label-primary">Sí</span>
+                {% else %}
+                    <span class="label label-danger">No</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if branchOffice.createdAt %}
+                    {{ branchOffice.createdAt|date('Y-m-d H:i:s') }}
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends 'profile/layout.html.twig' %}
+
+{% block page_title %}Cambiar Reservación | {% endblock %}
+
+{% block account_content %}
+    <div class="row session-change">
+        <div class="content">
+            {{ include('default/_flash.html.twig') }}
+
+            <h2>Cambiar Reservación</h2>
+
+            <h3 class="session-change__title">Reservación Actual</h3>
+
+            <div class="profile-classes-grid">
+                {% set session = reservation.session %}
+                {% set branch_label = session.branchOffice.name %}
+                {% if session.branchOffice.plaza %}
+                    {% set branch_label = branch_label ~ ' - ' ~ session.branchOffice.plaza %}
+                {% elseif session.branchOffice.zone %}
+                    {% set branch_label = branch_label ~ ' - ' ~ session.branchOffice.zone %}
+                {% endif %}
+                {# session \App\Entity\Session #}
+                <div class="reserv_class clearfix">
+                    <div class="class {{ session.discipline|replace({' ': '-'})|lower }}">
+                        <span class="icon-{{  session.individual ? 'individual' : 'group' }}"></span>
+                        <h6>{{ session.discipline }}</h6>
+                        <p>{{ session.timeStart|date('h:i a') }}</p>
+                        <p>{{ session.instructor.profile.firstname }}</p>
+                    </div>
+                    <div class="detail">
+                        <p><b>Día: </b>{{ session.dateStart()|format_date(null, "EEEE d 'de' MMMM") }}</p>
+                        <p><b>Sucursal: </b>{{ branch_label }}</p>
+                        <p><b>Salón: </b>{{ session.exerciseRoom }}</p>
+                        {% if not session.individual %}
+                            <p><b>Camilla/Silla: </b>{{ reservation.placeNumber }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="session-change__filters">
+                <ul class="branch-office">
+                    {% for studio in branchOffices %}
+                        <li><a href="#" class="btn little studio-filter" data-value="{{ studio.id }}">{{ studio.name }}</a></li>
+                    {% endfor %}
+                </ul>
+                <form class="filters" autocomplete="off">
+                    <select data-filter="type">
+                        <option value="">- Tipo -</option>
+                        <option value="g">Grupal</option>
+                        <option value="i">Individual</option>
+                    </select>
+                    <select data-filter="discipline">
+                        <option value="">- Disciplina -</option>
+                        {% for discipline in disciplines %}
+                            <option value="{{ discipline.id }}">{{ discipline.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <select data-filter="instructor">
+                        <option value="">- Instructor -</option>
+                        {% for instructor in instructors %}
+                            <option value="{{ instructor.id }}">{{ instructor.profile.firstname }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+
+            <h3 class="session-change__title session-change__title--calendar">Clases disponibles para cambio</h3>
+
+            <div class="change-calendar">
+                {% for week in weeks %}
+                    <div class="calendar clearfix change-week">
+                        {% for day in week %}
+                            <div class="day" data-day="{{ day.dateKey }}">
+                                <h6><small>{{ day.date|format_date(null, "EEE d") }}</small></h6>
+                                {% for session in day.sessions %}
+                                    <a href="#"
+                                       data-url="{{ path('reservation_change_session', {
+                                           'id': reservation.id,
+                                           'sessionId': session.id
+                                       }) }}"
+                                       data-remodal
+                                       class="class session-item {{ session.discipline|replace({' ': '-'})|lower }}{{ session.full ? ' disabled' : '' }}"
+                                       data-studio="{{ session.branchOffice.id }}"
+                                       data-type="{{ session.type }}"
+                                       data-discipline="{{ session.discipline.id }}"
+                                       data-instructor="{{ session.instructor.id }}">
+                                        <span class="icon-{{ session.individual ? 'individual' : 'group' }}"></span>
+                                        <h6>{{ session.discipline }}</h6>
+                                        <p>{{ session.timeStart|date('h:i a') }}</p>
+                                        <p>{{ session.instructor.profile.firstname }}</p>
+                                        {% set branch_label = session.branchOffice.name %}
+                                        {% if session.branchOffice.plaza %}
+                                            {% set branch_label = branch_label ~ ' - ' ~ session.branchOffice.plaza %}
+                                        {% elseif session.branchOffice.zone %}
+                                            {% set branch_label = branch_label ~ ' - ' ~ session.branchOffice.zone %}
+                                        {% endif %}
+                                        <p><small>{{ branch_label }}</small></p>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="reserv_class clearfix">
+                        <p>Sin registros por mostrar</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

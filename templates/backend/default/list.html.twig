@@ -1,0 +1,60 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% block pagination_filter %}
+    {% if pagination_filter is defined %}
+        {{ knp_pagination_filter(pagination, pagination_filter.fields, {
+            'reset': pagination_filter.reset
+        }) }}
+    {% endif %}
+{% endblock %}
+
+{% block section %}
+    {% set _block_filters = block('filters') is defined ? block('filters') %}
+    {% if _block_filters is not empty %}
+        <div class="row">
+            <div class="col-md-12 col-sm-12 col-xs-12">
+                <div class="x_panel x_panel_filters">
+                    <div class="x_content">
+                        {{ _block_filters|raw }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-12 col-sm-12 col-xs-12">
+            <div class="x_panel">
+                <div class="x_title">
+                    <h2>{% block section_title %}{{ block('title') }}{% endblock %}</h2>
+                    <div class="clearfix"></div>
+                </div>
+
+                <div class="x_content">
+                    {% if pagination.count > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="thead-dark">
+                                {% block table_thead %}{% endblock %}
+                                </thead>
+                                <tbody>
+                                {% block table_tbody %}{% endblock %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        {{ include('backend/default/partials/not_records.html.twig') }}
+                    {% endif %}
+                </div>
+
+                <div class="clearfix"></div>
+
+                {% if pagination.count > 0 %}
+                    <div class="x_footer">
+                        {{ knp_pagination_render(pagination) }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

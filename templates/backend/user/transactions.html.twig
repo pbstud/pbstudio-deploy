@@ -1,0 +1,74 @@
+{% extends 'backend/layout-ajax.html.twig' %}
+
+{% block content %}
+    {% if transactions | length > 0 %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Paquete</th>
+                        <th>Modalidad</th>
+                        <th class="text-right">Monto</th>
+                        <th>M. de pago</th>
+                        <th class="text-center">Estado</th>
+                        <th class="text-center">F. creación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                        {# @var transaction \App\Entity\Transaction #}
+                        <tr>
+                            <td>
+                                <a href="{{ path('backend_transaction_show', { 'id': transaction.id }) }}" class="link-edit">
+                                    <u>{{ transaction.id }}</u>
+                                    <i class="fa fa-eye" aria-hidden="true"></i>
+                                </a>
+                            </td>
+                            <td>
+                                {{ transaction.packageTotalClasses }} clase(s)
+                            </td>
+                            <td>
+                                {{ transaction.packageType|PackageSessionType }}
+                            </td>
+                            <td class="text-right">
+                                ${{ transaction.total|number_format }}
+                            </td>
+                            <td>
+                                {{ transaction.chargeMethod|ChargeMethodDescription }}
+                            </td>
+                            <td class="text-center">
+                                <span class="label label-{{ transaction.status|TransactionStatusLabel }}">
+                                    {{ transaction.status|TransactionStatusDescription }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                {% if transaction.createdAt %}
+                                    {{ transaction.createdAt|date('d-m-Y H:i') }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {{ knp_pagination_render(transactions) }}
+    {% else %}
+        {{ include('backend/default/partials/not_records.html.twig') }}
+    {% endif %}
+
+    <script>
+        $('.pagination a').on('click', function (e) {
+            e.preventDefault();
+            let url = $(this).prop('href');
+
+            if ('' === url) {
+                return;
+            }
+
+            $.loader.show('#userTabContent');
+            $('#userTabContent').load(url);
+        });
+    </script>
+{% endblock %}

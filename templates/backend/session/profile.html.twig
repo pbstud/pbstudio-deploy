@@ -1,0 +1,129 @@
+{% extends app.request.xmlHttpRequest
+    ? 'backend/layout-ajax.html.twig'
+    : 'backend/layout.html.twig' %}
+
+{% set page_section = 'Clases' %}
+{% set active_tab = (active_tab is not defined ? 'tab_edit' : active_tab) %}
+
+{% block content %}
+    <div class="">
+        <div class="page-title">
+            <div class="title_left">
+                <h3>
+                    <a href="{{ path('backend_session') }}" class="btn btn-default btn-return-to">
+                        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                    </a>
+                    {{ page_section }}
+                </h3>
+            </div>
+        </div>
+
+        <div class="clearfix"></div>
+
+        <div class="row">
+            <div class="col-md-12 col-sm-12 col-xs-12">
+                <div class="x_panel">
+                    <div class="x_title">
+                        <h2>{{ page_title }}</h2>
+
+                        {% block actions %}
+                            {% if is_allowed_route('backend_session_cancel') %}
+                                <ul class="nav navbar-right panel_toolbox">
+                                    <li>
+                                        <a class="cancel-link" title="Cancelar"><i class="fa fa-ban"></i></a>
+                                    </li>
+                                </ul>
+                            {% endif %}
+                        {% endblock %}
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        <div class="col-md-3 col-sm-3 col-xs-12 profile_left">
+                            <h3>{{ session.discipline }}</h3>
+                            <span class="label label-{{ session.status|SessionStatusLabel }}">
+                                {{ session.status|SessionStatusDescription }}
+                            </span>
+                            <hr />
+
+                            <ul class="list-unstyled user_data">
+                                <li>
+                                    <strong>Fecha:</strong><br />{{ session.dateStart|date('d/m/Y') ~ ' ' ~ session.timeStart|date('H:i') }}
+                                </li>
+                                <li>
+                                    <strong>Instructor:</strong><br />{{ session.instructor }}
+                                </li>
+                                <li>
+                                    <strong>Salón:</strong><br />{{ session.exerciseRoom ? session.exerciseRoom.name }}
+                                </li>
+                                <li>
+                                    <strong>Modalidad:</strong><br />{{ session.type|PackageSessionType }}
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-9 col-sm-9 col-xs-12">
+                            <div class="" role="tabpanel" data-example-id="togglable-tabs">
+                                <ul id="instructorTab" class="nav nav-tabs nav-tabs-custom" role="tablist">
+                                    <li role="presentation" {% if 'tab_edit' == active_tab %}class="active"{% endif %}>
+                                        <a href="{{ path('backend_session_edit', { 'id': session.id }) }}">Editar</a>
+                                    </li>
+                                    {% if is_allowed_route('backend_session_reservations') %}
+                                        <li role="presentation" {% if 'tab_reservations' == active_tab %}class="active"{% endif %}>
+                                            <a href="{{ path('backend_session_reservations', { 'id': session.id }) }}">Reservaciones</a>
+                                        </li>
+                                    {% endif %}
+                                    {% if is_allowed_route('backend_session_waitinglist') %}
+                                        {% if session.waitinglist | length %}
+                                            <li role="presentation" {% if 'tab_waitinglist' == active_tab %}class="active"{% endif %}>
+                                                <a href="{{ path('backend_session_waitinglist', { 'id': session.id }) }}">Lista de espera</a>
+                                            </li>
+                                        {% endif %}
+                                    {% endif %}
+                                    {% if is_allowed_route('backend_session_seats') %}
+                                        <li role="presentation" {% if 'tab_seats' == active_tab %}class="active"{% endif %}>
+                                            <a href="{{ path('backend_session_seats', { 'id': session.id }) }}">
+                                                <i class="fa fa-th"></i> Asientos
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                    {% if is_allowed_route('backend_session_audit') %}
+                                        <li role="presentation" {% if 'tab_audit' == active_tab %}class="active"{% endif %}>
+                                            <a href="{{ path('backend_session_audit', { 'id': session.id }) }}">
+                                                <i class="fa fa-history"></i> Auditoría
+                                            </a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+
+                                <div id="instructorTabContent" class="tab-content">
+                                    {% block subcontent %}{% endblock %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{ form_start(cancel_form, {
+        'attr': {
+            'id': 'frmCancel',
+        }
+    }) }}{{ form_end(cancel_form) }}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+
+    {% if is_allowed_route('backend_session_cancel') %}
+        <script>
+            $(function () {
+                $('.cancel-link').on('click', function () {
+                    if (confirm('¿Confirmas que deseas cancelar la clase?')) {
+                        $('#frmCancel').submit();
+                    }
+                });
+            });
+        </script>
+    {% endif %}
+{% endblock %}
