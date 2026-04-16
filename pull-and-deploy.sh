@@ -134,6 +134,14 @@ else
     warn "Migraciones omitidas (--skip-migrations)"
 fi
 
+# Seeds de datos iniciales
+# Idempotentes: solo crean el registro si no existe. Si ya existe, no hacen nada.
+log "Ejecutando seeds de datos iniciales..."
+run sudo -u "$RUNTIME_USER" \
+    APP_ENV=prod APP_DEBUG=0 \
+    php "$APP_ROOT/bin/console" app:class-content:seed --env=prod
+ok "Seeds completados"
+
 # Cache — en Symfony 6+ cache:clear hace warmup atomico:
 # construye el nuevo cache en un dir temporal y hace swap con el anterior.
 # No hay ventana sin cache. Se ejecuta como runtime user para que los archivos
