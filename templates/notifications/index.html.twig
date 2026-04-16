@@ -149,6 +149,10 @@
             } else {
                 badge.hidden = true;
             }
+            // Sincronizar con NotificationCenter para que el SSE no revierta el conteo local
+            if (window.NotificationCenter && null !== NotificationCenter.lastUnreadCount) {
+                NotificationCenter.lastUnreadCount = count;
+            }
         }
 
         function updateMarkAllBtn(count) {

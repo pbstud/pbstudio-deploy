@@ -7,9 +7,12 @@ namespace App\Controller\Api;
 use App\Entity\User;
 use App\Repository\NotificationRepository;
 use App\Service\Notification\NotificationResolver;
+use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/api/notifications', name: 'api_notifications_')]
@@ -18,6 +21,7 @@ class NotificationController extends AbstractController
     public function __construct(
         private readonly NotificationRepository $notificationRepository,
         private readonly NotificationResolver $resolver,
+        private readonly Connection $connection,
     ) {}
 
     #[Route('', name: 'list', methods: ['GET'])]
@@ -44,6 +48,63 @@ class NotificationController extends AbstractController
         ], $items);
 
         return $this->json(['data' => $data, 'page' => $page, 'limit' => $limit]);
+    }
+
+    #[Route('/stream', name: 'stream', methods: ['GET'])]
+    public function streamNotifications(Request $request): StreamedResponse
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_REMEMBERED');
+
+        /** @v
+         * ar User $user */
+        $user   = $this->getUser();
+        $userId = $user->getId();
+        $conn   = $this->connection;
+
+        // Libera el lock de sesion para no bloquear otras requests del mismo usuario
+        // mientras el stream SSE permanece abierto.
+        $session = $request->getSession();
+        if ($session->isStarted()) {
+            $session->save();
+        }
+
+        $response = new StreamedResponse(function () use ($conn, $userId): void {
+            set_time_limit(0);
+
+            $lastCount = -1;
+
+            while (true) {
+                if (connection_aborted()) {
+                    break;
+                }
+
+                try {
+                    $count = (int) $conn->fetchOne(
+                        'SELECT COUNT(id) FROM notification WHERE user_id = ? AND read_at IS NULL',
+                        [$userId]
+                    );
+                } catch (\Throwable) {
+                    break;
+                }
+
+                if ($count !== $lastCount) {
+                    echo 'data: ' . json_encode(['count' => $count]) . "\n\n";
+                    $lastCount = $count;
+                } else {
+                    // Heartbeat para mantener viva la conexion
+                    echo ": heartbeat\n\n";
+                }
+
+                flush();
+                sleep(10);
+            }
+        });
+
+        $response->headers->set('Content-Type', 'text/event-stream');
+        $response->headers->set('Cache-Control', 'no-cache');
+        $response->headers->set('X-Accel-Buffering', 'no');
+
+        return $response;
     }
 
     #[Route('/unread-count', name: 'unread_count', methods: ['GET'])]

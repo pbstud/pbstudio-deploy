@@ -48,8 +48,10 @@
                     </div>
 
                 {% else %}
-                    <div class="reserv_class reserv_class--empty clearfix">
-                        <p>Sin registros por mostrar</p>
+                    <div class="reserv_class reserv_class--empty">
+                        <i class="bi bi-clock-history empty-state-icon"></i>
+                        <p class="empty-state-title">Sin clases en lista de espera</p>
+                        <p class="empty-state-sub">Cuando te registres en la lista de espera de una clase llena, aparecerá aquí.</p>
                     </div>
                 {% endfor %}
             </div>

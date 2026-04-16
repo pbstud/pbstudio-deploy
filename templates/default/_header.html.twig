@@ -15,6 +15,7 @@
                     data-notification-center
                     data-list-url="{{ path('api_notifications_list') }}"
                     data-unread-url="{{ path('api_notifications_unread_count') }}"
+                    {% if not app.debug %}data-stream-url="{{ path('api_notifications_stream') }}"{% endif %}
                     data-mark-read-url-template="{{ path('api_notifications_mark_read', { id: '__ID__' }) }}"
                 >
                     <button type="button" class="pb-notification-bell" data-notification-bell aria-label="Abrir notificaciones" aria-expanded="false">
