@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Repository\DisciplineRepository;
+use App\Service\ClassContentService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -14,8 +15,13 @@ class ClassDescriptionController extends AbstractController
 {
     private const PRIVATE_CLASS_SLUG = 'clase-privada';
 
+    public function __construct(private readonly ClassContentService $classContentService)
+    {
+    }
+
     /**
-     * Contenido base para primera version (sin edicion desde staff).
+     * Contenido base (fallback) cuando la BD no tiene el campo.
+     * Slugs reales generados por AsciiSlugger sobre los nombres de las disciplinas activas.
      */
     private const CLASS_CONTENT_MAP = [
         [
@@ -53,113 +59,79 @@ class ClassDescriptionController extends AbstractController
             ],
         ],
         [
-            'slug' => 'barra-funcional',
+            'slug' => 'beastformer',
             'audience' => 'Intermedio a avanzado',
             'duration' => '50 minutos',
-            'intensity' => 'Media alta',
-            'focus' => 'Resistencia, tonificación y equilibrio corporal',
-            'summary' => 'Secuencias dinamicas en barra con enfoque en resistencia muscular.',
-            'description' => 'Entrenamiento dinámico de bajo impacto con secuencias en barra y trabajo funcional. Activa piernas, glúteos y abdomen para mejorar fuerza-resistencia y coordinación.',
+            'intensity' => 'Alta',
+            'focus' => 'Fuerza funcional de alta intensidad en reformer',
+            'summary' => 'Entrenamiento funcional intenso que combina reformer y movimiento atletico.',
+            'description' => 'BeastFormer fusiona la resistencia del reformer con patrones de movimiento funcional para elevar fuerza, potencia y acondicionamiento fisico de forma progresiva y controlada.',
             'bestFor' => [
-                'Tonificar piernas y gluteos con trabajo continuo.',
-                'Mejorar coordinacion, control y resistencia muscular.',
-                'Complementar rutinas de fuerza y movilidad.',
+                'Mejorar rendimiento fisico y fuerza explosiva.',
+                'Trabajar resistencia cardiovascular con control tecnico.',
+                'Superar mesetas de entrenamiento con estimulos variados.',
             ],
             'keyPostures' => [
-                'Pliés y relevés controlados en barra.',
-                'Pulses isometricos para gluteo medio y aductores.',
-                'Bloques de core antirotacional y estabilidad unilateral.',
+                'Jumping y box springs para potencia y pliometria.',
+                'Plank row y rotaciones con carro para core y traccion.',
+                'Squat jumps y lunges controlados en reformer.',
             ],
             'guidedFlow' => [
-                'Activacion de cadera y tobillo.',
-                'Secuencia principal de barra por bloques de resistencia.',
-                'Cierre con movilidad de cadena posterior y liberacion.',
+                'Activacion cardiovascular y movilidad articular.',
+                'Bloque principal de potencia y fuerza funcional.',
+                'Descarga muscular y estiramiento integrado.',
             ],
             'benefits' => [
-                'Definicion muscular sin impacto excesivo.',
-                'Incremento de resistencia local y control motor fino.',
-                'Mayor estabilidad y propiocepcion en tren inferior.',
+                'Mayor fuerza funcional y explosividad.',
+                'Mejor capacidad cardiovascular y resistencia.',
+                'Cuerpo trabajado de forma integral y progresiva.',
             ],
             'tips' => [
-                'Mantener rodillas alineadas con direccion de pies.',
-                'Respirar en cada transicion para sostener tecnica.',
-                'Usar rango controlado antes de buscar velocidad.',
+                'Informa tu nivel de experiencia en reformer al instructor.',
+                'Mantener estabilidad del core en movimientos explosivos.',
+                'Hidratarse bien antes y despues de la sesion.',
             ],
         ],
         [
-            'slug' => 'bsc',
-            'audience' => 'Intermedio a avanzado',
+            'slug' => 'dual-pilates',
+            'audience' => 'Todos los niveles (2 personas)',
             'duration' => '50 minutos',
-            'intensity' => 'Media alta',
-            'focus' => 'Resistencia, tonificacion y estabilidad global',
-            'summary' => 'Clase dinamica tipo barre con enfoque en control, fuerza y resistencia.',
-            'description' => 'BSC combina patrones de barra y trabajo funcional para elevar resistencia muscular, equilibrio y control postural con bajo impacto articular.',
+            'intensity' => 'Media',
+            'focus' => 'Trabajo en pareja en reformer con coordinacion compartida',
+            'summary' => 'Sesion de pilates en duo para trabajar coordinacion, apoyo mutuo y tecnica.',
+            'description' => 'Clase diseñada para dos personas que trabajan juntas en el reformer, desarrollando coordinación, comunicación y técnica compartida con atención personalizada para cada integrante.',
             'bestFor' => [
-                'Tonificar tren inferior y abdomen con continuidad de esfuerzo.',
-                'Mejorar estabilidad y coordinacion en movimientos de precision.',
-                'Incrementar resistencia sin carga articular excesiva.',
+                'Entrenar en pareja con un objetivo comun.',
+                'Mejorar coordinacion y trabajo colaborativo.',
+                'Iniciar o progresar juntos con guia tecnica cercana.',
             ],
             'keyPostures' => [
-                'Pliés y relevés con control de alineacion.',
-                'Pulses isometricos para gluteo y aductores.',
-                'Bloques de core antirotacional y estabilidad unilateral.',
+                'Footwork sincronizado en dos reformers.',
+                'Rowing y pulling cooperativo con elasticos compartidos.',
+                'Stretching asistido entre companeros.',
             ],
             'guidedFlow' => [
-                'Activacion de cadera, tobillo y centro.',
-                'Bloques de resistencia por segmentos musculares.',
-                'Cierre con movilidad y descarga de cadenas activadas.',
+                'Activacion y familiarizacion en pareja.',
+                'Bloque de trabajo coordinado por series.',
+                'Estiramiento asistido y cierre integrado.',
             ],
             'benefits' => [
-                'Mayor resistencia local y control motor fino.',
-                'Mejor postura dinamica y equilibrio.',
-                'Definicion muscular progresiva.',
+                'Mayor motivacion y adherencia por trabajo en pareja.',
+                'Tecnica mejorada con retroalimentacion mutua.',
+                'Experiencia personalizada para ambos participantes.',
             ],
             'tips' => [
-                'Mantener alineacion de rodilla con punta del pie.',
-                'Controlar respiracion en cada cambio de bloque.',
-                'Priorizar tecnica antes de subir ritmo.',
+                'Coordinar nivel de resistencia entre ambos antes de iniciar.',
+                'Comunicar molestias en todo momento al instructor.',
+                'Mantener ritmo compartido sin adelantar al companero.',
             ],
         ],
         [
-            'slug' => 'pilates-suelo',
-            'audience' => 'Principiante a intermedio',
-            'duration' => '50 minutos',
-            'intensity' => 'Suave media',
-            'focus' => 'Movilidad, respiración y control consciente del movimiento',
-            'summary' => 'Base tecnica de pilates para mejorar movilidad y estabilidad central.',
-            'description' => 'Clase en mat enfocada en técnica, movilidad y respiración. Ideal para construir una base sólida, mejorar flexibilidad y reducir tensión muscular en la vida diaria.',
-            'bestFor' => [
-                'Iniciar en pilates con base tecnica clara.',
-                'Recuperar movilidad y reducir tension corporal.',
-                'Desarrollar respiracion y control del core.',
-            ],
-            'keyPostures' => [
-                'Roll Up y Spine Stretch Forward.',
-                'Single Leg Stretch y Dead Bug controlado.',
-                'Bridge articulado y Side Kick Series.',
-            ],
-            'guidedFlow' => [
-                'Respiracion guiada y activacion profunda.',
-                'Secuencia de control segmentario de columna.',
-                'Fortalecimiento de centro y estiramientos activos.',
-            ],
-            'benefits' => [
-                'Mejor postura al sentarte, caminar y entrenar.',
-                'Disminucion de rigidez en espalda y cadera.',
-                'Mayor control corporal y eficiencia de movimiento.',
-            ],
-            'tips' => [
-                'Mantener respiracion fluida durante todo el bloque.',
-                'Evitar compensar con cuello y hombros.',
-                'Aumentar rango gradualmente, sin dolor.',
-            ],
-        ],
-        [
-            'slug' => 'clase-individual',
+            'slug' => 'clase-privada',
             'audience' => 'Plan personalizado',
             'duration' => '50 minutos',
             'intensity' => 'Variable',
-            'focus' => 'Atención 1 a 1 con objetivos específicos',
+            'focus' => 'Atencion 1 a 1 con objetivos especificos',
             'summary' => 'Programa personalizado segun objetivo, historial y nivel actual.',
             'description' => 'Sesión personalizada para rehabilitación, acondicionamiento o perfeccionamiento técnico. El plan se adapta completamente a tu historial, ritmo y metas.',
             'bestFor' => [
@@ -194,9 +166,11 @@ class ClassDescriptionController extends AbstractController
     public function index(DisciplineRepository $disciplineRepository): Response
     {
         $classDescriptions = $this->buildClassDescriptions($disciplineRepository);
+        $header = $this->classContentService->getHeader();
 
         return $this->render('class_description/index.html.twig', [
             'classDescriptions' => $classDescriptions,
+            'pageHeader'        => $header,
         ]);
     }
 
@@ -256,7 +230,7 @@ class ClassDescriptionController extends AbstractController
                 $classContent['name'] = $name;
                 $classContent['slug'] = $slug;
 
-                return $classContent;
+                return $this->classContentService->mergeClassContent($classContent, $contentSlug);
             }
         }
 
@@ -302,11 +276,7 @@ class ClassDescriptionController extends AbstractController
     private function resolveContentSlug(string $slug): string
     {
         if (str_contains($slug, 'privad') || str_contains($slug, 'individual')) {
-            return 'clase-individual';
-        }
-
-        if ('barra' === $slug || 'barre' === $slug) {
-            return 'bsc';
+            return 'clase-privada';
         }
 
         return $slug;

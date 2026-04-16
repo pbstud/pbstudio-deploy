@@ -8,6 +8,7 @@ use App\Entity\Post;
 use App\Form\Backend\PageCreateType;
 use App\Form\Backend\PageEditType;
 use App\Repository\PostRepository;
+use App\Service\ClassContentService;
 use Doctrine\ORM\EntityManagerInterface;
 use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -28,16 +29,21 @@ class PageController extends AbstractController
         PostRepository $postRepository,
         #[MapQueryParameter] int $page = 1,
     ): Response {
-        $pages = $postRepository->findBy([
+        $pages = array_values(array_filter(
+            $postRepository->findBy(['type' => Post::TYPE_STATIC], ['title' => 'ASC']),
+            static fn (Post $p): bool => $p->getSlug() !== ClassContentService::POST_SLUG,
+        ));
+
+        $classContentPost = $postRepository->findOneBy([
+            'slug' => ClassContentService::POST_SLUG,
             'type' => Post::TYPE_STATIC,
-        ], [
-            'title' => 'ASC',
         ]);
 
         $pagination = $paginator->paginate($pages, $page, Post::NUMBER_OF_ITEMS);
 
         return $this->render('backend/page/index.html.twig', [
-            'pagination' => $pagination,
+            'pagination'       => $pagination,
+            'classContentPost' => $classContentPost,
         ]);
     }
 

@@ -25,6 +25,27 @@
                             </tr>
                         </thead>
                         <tbody>
+                            <tr class="info">
+                                <td>
+                                    <a href="{{ path('backend_class_content') }}" class="link-edit">
+                                        <u>Contenido · Página de Clases</u>
+                                        <i class="fa fa-pencil" aria-hidden="true"></i>
+                                    </a>
+                                </td>
+                                <td>
+                                    <a href="/clases" target="_blank">
+                                        /clases
+                                        <i class="fa fa-external-link" aria-hidden="true"></i>
+                                    </a>
+                                </td>
+                                <td class="text-center">
+                                    {% if classContentPost and classContentPost.updatedAt %}
+                                        {{ classContentPost.updatedAt | date('Y-m-d H:i:s') }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                            </tr>
                             {% for page in pagination %}
                                 {# page \App\Entity\Post #}
                                 <tr>

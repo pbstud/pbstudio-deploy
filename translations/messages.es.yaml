@@ -107,6 +107,7 @@ main:
     backend_package_edit: Editar Paquete
     backend_package_new: Nuevo Paquete
     backend_page: Páginas
+    backend_class_content: Contenido Página de Clases
     backend_page_edit: Editar Página
     backend_page_new: Nueva Página
     backend_session: Clases

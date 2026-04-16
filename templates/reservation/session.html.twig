@@ -64,6 +64,12 @@
                             height: 40px;
                         }
                     </style>
+                    <div class="classroom-layout">
+                    <div class="instructor-seat" title="Instructor">
+                        <span class="icon-individual"></span>
+                        <span class="instructor-label">Instructor</span>
+                    </div>
+                    <div class="seat-map-frame">
                     <div id="place_container" class="seat-map-grid">
                         {% for slot in 1..36 %}
                             {% if slot_to_seat[slot] is defined %}
@@ -83,6 +89,8 @@
                             {% endif %}
                         {% endfor %}
                     </div>
+                    </div>{# /seat-map-frame #}
+                    </div>{# /classroom-layout #}
                 {% else %}
                     {# Fallback: no layout saved, show sequential list #}
                     <div id="place_container">
