@@ -233,6 +233,40 @@ class ReservationRepository extends ServiceEntityRepository
     /**
      * @return Reservation[]|int
      */
+    /**
+     * Devuelve un mapa [sessionId => [placeNumbers]] para las reservas activas
+     * del usuario dentro del rango de fechas dado.
+     * placeNumber = 0 en sesiones individuales (sin asiento).
+     *
+     * @return array<int, int[]>
+     */
+    public function getReservedPlacesByUser(User $user, \DateTimeInterface $dateStart, \DateTimeInterface $dateEnd): array
+    {
+        $rows = $this->createQueryBuilder('r')
+            ->select('IDENTITY(r.session) as sessionId', 'r.placeNumber')
+            ->join('r.session', 's')
+            ->where('r.user = :user')
+            ->andWhere('r.isAvailable = true')
+            ->andWhere('s.dateStart >= :dateStart')
+            ->andWhere('s.dateStart <= :dateEnd')
+            ->andWhere('s.status IN (:statuses)')
+            ->setParameter('user', $user)
+            ->setParameter('dateStart', $dateStart)
+            ->setParameter('dateEnd', $dateEnd)
+            ->setParameter('statuses', [Session::STATUS_OPEN, Session::STATUS_FULL])
+            ->getQuery()
+            ->getArrayResult()
+        ;
+
+        $map = [];
+        foreach ($rows as $row) {
+            $sid = (int) $row['sessionId'];
+            $map[$sid][] = (int) $row['placeNumber'];
+        }
+
+        return $map;
+    }
+
     public function getReservedSessionsByUser(User $user, bool $count = false): array|int
     {
         $qb = $this->createQueryBuilder('r');

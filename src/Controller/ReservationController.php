@@ -39,6 +39,7 @@ class ReservationController extends AbstractController
         SessionRepository $sessionRepository,
         DisciplineRepository $disciplineRepository,
         StaffRepository $staffRepository,
+        ReservationRepository $reservationRepository,
         ?string $slug = null,
     ): Response {
         $branchOffice = null;
@@ -66,6 +67,17 @@ class ReservationController extends AbstractController
             $weekNext = $weekNextStart;
         }
 
+        $userReservedPlaces = [];
+        if ($this->isGranted('ROLE_USER')) {
+            /** @var \App\Entity\User $user */
+            $user = $this->getUser();
+            $userReservedPlaces = $reservationRepository->getReservedPlacesByUser(
+                $user,
+                $period->start->toDateTimeImmutable(),
+                $period->end->toDateTimeImmutable(),
+            );
+        }
+
         $template = 'calendar_ajax';
         $filter = [];
 
@@ -83,6 +95,7 @@ class ReservationController extends AbstractController
             'sessions' => $sessions,
             'weekPrev' => $weekPrev,
             'weekNext' => $weekNext,
+            'userReservedPlaces' => $userReservedPlaces,
         ]);
     }
 

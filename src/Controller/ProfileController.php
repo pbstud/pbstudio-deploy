@@ -585,6 +585,7 @@ class ProfileController extends AbstractController
         BranchOfficeRepository $branchOfficeRepository,
         DisciplineRepository $disciplineRepository,
         StaffRepository $staffRepository,
+        ReservationRepository $reservationRepository,
     ): Response {
         /** @var User $loggedUser */
         $loggedUser = $this->getUser();
@@ -694,6 +695,11 @@ class ProfileController extends AbstractController
             'weekNext'    => $weekNext,
             'weekStart'   => $reqWeekStart,
             'weekEnd'     => $reqWeekStart->modify('+6 days'),
+            'userReservedPlaces' => $reservationRepository->getReservedPlacesByUser(
+                $loggedUser,
+                $reqWeekStart,
+                $reqWeekEnd,
+            ),
         ];
 
         if ($request->isXmlHttpRequest()) {
