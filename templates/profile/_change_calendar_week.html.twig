@@ -1,0 +1,56 @@
+<div class="date">
+    {% if weekPrev %}
+        <a href="{{ path('reservation_change', {
+            'id': reservation.id,
+            'weekno': weekPrev.weekno,
+            'year': weekPrev.year
+        }) }}" id="lwprev" title="Semana anterior">
+            <span class="icon-flecha-izq"></span>
+        </a>
+    {% endif %}
+
+    <h4>{{ weekStart|date('j') }} - {{ weekEnd|format_date(null, "d 'de' MMMM") }}</h4>
+
+    {% if weekNext %}
+        <a href="{{ path('reservation_change', {
+            'id': reservation.id,
+            'weekno': weekNext.weekno,
+            'year': weekNext.year
+        }) }}" id="lwnext" title="Semana siguiente">
+            <span class="icon-flecha-der"></span>
+        </a>
+    {% endif %}
+</div>
+
+<div class="calendar clearfix change-week">
+    {% for day in weekDays %}
+        <div class="day" data-day="{{ day.dateKey }}">
+            <h6><small>{{ day.date|format_date(null, "EEE d") }}</small></h6>
+            {% for session in day.sessions %}
+                <a href="#"
+                   data-url="{{ path('reservation_change_session', {
+                       'id': reservation.id,
+                       'sessionId': session.id
+                   }) }}"
+                   data-remodal
+                   class="class session-item {{ session.discipline|replace({' ': '-'})|lower }}{{ session.full ? ' disabled' : '' }}"
+                   data-studio="{{ session.branchOffice.id }}"
+                   data-type="{{ session.type }}"
+                   data-discipline="{{ session.discipline.id }}"
+                   data-instructor="{{ session.instructor.id }}">
+                    <i class="bi bi-{{ session.individual ? 'person' : 'people' }}"></i>
+                    <h6>{{ session.discipline }}</h6>
+                    <p>{{ session.timeStart|date('h:i a') }}</p>
+                    <p>{{ session.instructor.profile.firstname }}</p>
+                    {% set branch_label = session.branchOffice.name %}
+                    {% if session.branchOffice.plaza %}
+                        {% set branch_label = branch_label ~ ' - ' ~ session.branchOffice.plaza %}
+                    {% elseif session.branchOffice.zone %}
+                        {% set branch_label = branch_label ~ ' - ' ~ session.branchOffice.zone %}
+                    {% endif %}
+                    <p><small>{{ branch_label }}</small></p>
+                </a>
+            {% endfor %}
+        </div>
+    {% endfor %}
+</div>

@@ -577,6 +577,7 @@ class ProfileController extends AbstractController
 
     #[Route('/reservacion/{id}/cambiar', name: 'reservation_change', methods: ['GET'])]
     public function reservationChange(
+        Request $request,
         Reservation $reservation,
         SessionRepository $sessionRepository,
         ReservationService $reservationService,
@@ -611,72 +612,99 @@ class ProfileController extends AbstractController
         $today = new \DateTimeImmutable('today');
         $dow = (int) $today->format('N'); // 1=Mon, 7=Sun
         $showNextWeek = $dow >= 5;
-        $windowEnd = $today
-            ->modify('sunday this week')
-            ->setTime(23, 59, 59)
-        ;
 
-        if ($showNextWeek) {
-            $windowEnd = $windowEnd->modify('+7 days');
+        // Current ISO week start (Monday) and max allowed week start
+        $curWeekStart = $today->modify(sprintf('-%d days', $dow - 1))->setTime(0, 0, 0);
+        $maxWeekStart = $showNextWeek ? $curWeekStart->modify('+7 days') : $curWeekStart;
+
+        // Parse requested week from query params (defaults to current week)
+        $curIsoWeek = (int) $curWeekStart->format('W');
+        $curIsoYear = (int) $curWeekStart->format('o');
+        $reqYear     = $request->query->getInt('year', $curIsoYear);
+        $reqWeek     = $request->query->getInt('weekno', $curIsoWeek);
+
+        // setISODate with day=1 anchors to Monday of the ISO week
+        $reqWeekStart = (new \DateTimeImmutable())->setISODate($reqYear, $reqWeek, 1)->setTime(0, 0, 0);
+
+        // Clamp to allowed range
+        if ($reqWeekStart < $curWeekStart) {
+            $reqWeekStart = $curWeekStart;
+        }
+        if ($reqWeekStart > $maxWeekStart) {
+            $reqWeekStart = $maxWeekStart;
         }
 
-        $sessions = $sessionRepository->getForChange($today, $windowEnd);
-        $filteredSessions = array_filter($sessions, function (Session $session) use ($reservation) {
-            return $this->isSessionAllowedForChangeTarget($reservation, $session);
-        });
+        $reqWeekEnd = $reqWeekStart->modify('+6 days')->setTime(23, 59, 59);
 
-        if (!$filteredSessions) {
-            // Detectar causa: sin clases publicadas vs paquete no cubre
-            $message = $this->getChangeAvailabilityMessage($reservation, $sessions);
-            $this->addFlash('danger', $message);
+        // On initial non-AJAX load verify at least one session exists in the whole window
+        if (!$request->isXmlHttpRequest()) {
+            $windowEnd   = $maxWeekStart->modify('+6 days')->setTime(23, 59, 59);
+            $allSessions = $sessionRepository->getForChange($today, $windowEnd);
+            $allFiltered = array_filter($allSessions, fn(Session $s) => $this->isSessionAllowedForChangeTarget($reservation, $s));
 
-            return $this->redirectToRoute('reserved_sessions', [
-                '_fragment' => 'section-content',
-            ]);
+            if (!$allFiltered) {
+                $message = $this->getChangeAvailabilityMessage($reservation, $allSessions);
+                $this->addFlash('danger', $message);
+
+                return $this->redirectToRoute('reserved_sessions', [
+                    '_fragment' => 'section-content',
+                ]);
+            }
         }
-        
-        $sessions = $filteredSessions;
 
-        // Group sessions by date key
+        // Fetch sessions for the requested week only
+        $sessions        = $sessionRepository->getForChange($reqWeekStart, $reqWeekEnd);
+        $filteredSessions = array_filter($sessions, fn(Session $s) => $this->isSessionAllowedForChangeTarget($reservation, $s));
+
+        // Group by date
         $sessionsByDate = [];
-        foreach ($sessions as $session) {
+        foreach ($filteredSessions as $session) {
             $sessionsByDate[$session->getDateStart()->format('Y-m-d')][] = $session;
         }
 
-        // Build weeks (Mon–Sun) for current week and, from Wednesday, next week
-        $endDate = $windowEnd->setTime(0, 0, 0);
-        $weekStart = $today->modify(sprintf('-%d days', $dow - 1));
-
-        $weeks = [];
-        $current = $weekStart;
-        while ($current <= $endDate) {
-            $weekDays = [];
-            $weekHasSessions = false;
-            for ($i = 0; $i < 7; $i++) {
-                $dateKey = $current->format('Y-m-d');
-                $daySessions = $sessionsByDate[$dateKey] ?? [];
-                $weekDays[] = [
-                    'date'     => $current,
-                    'dateKey'  => $dateKey,
-                    'sessions' => $daySessions,
-                ];
-                if (!empty($daySessions)) {
-                    $weekHasSessions = true;
-                }
-                $current = $current->modify('+1 day');
-            }
-            if ($weekHasSessions) {
-                $weeks[] = $weekDays;
-            }
+        // Build week days array (Mon–Sun)
+        $weekDays = [];
+        for ($i = 0; $i < 7; $i++) {
+            $current = $reqWeekStart->modify("+{$i} days");
+            $dateKey = $current->format('Y-m-d');
+            $weekDays[] = [
+                'date'     => $current,
+                'dateKey'  => $dateKey,
+                'sessions' => $sessionsByDate[$dateKey] ?? [],
+            ];
         }
 
-        return $this->render('profile/reservation_change.html.twig', [
-            'reservation'   => $reservation,
-            'weeks'         => $weeks,
+        // weekPrev / weekNext
+        $prevWeekStart = $reqWeekStart->modify('-7 days');
+        $weekPrev = $prevWeekStart >= $curWeekStart ? [
+            'weekno' => (int) $prevWeekStart->format('W'),
+            'year'   => (int) $prevWeekStart->format('o'),
+        ] : null;
+
+        $nextWeekStart = $reqWeekStart->modify('+7 days');
+        $weekNext = $nextWeekStart <= $maxWeekStart ? [
+            'weekno' => (int) $nextWeekStart->format('W'),
+            'year'   => (int) $nextWeekStart->format('o'),
+        ] : null;
+
+        $partialParams = [
+            'reservation' => $reservation,
+            'weekDays'    => $weekDays,
+            'weekPrev'    => $weekPrev,
+            'weekNext'    => $weekNext,
+            'weekStart'   => $reqWeekStart,
+            'weekEnd'     => $reqWeekStart->modify('+6 days'),
+        ];
+
+        if ($request->isXmlHttpRequest()) {
+            return $this->render('profile/_change_calendar_week.html.twig', $partialParams);
+        }
+
+        return $this->render('profile/reservation_change.html.twig', array_merge($partialParams, [
             'branchOffices' => $branchOfficeRepository->getPublic(),
             'disciplines'   => $disciplineRepository->getAllActives(),
             'instructors'   => $staffRepository->getAllActiveInstructors(),
-        ]);
+        ]));
     }
 
     #[Route('/reservacion/{id}/cambiar/{sessionId}',name: 'reservation_change_session', methods: ['GET', 'POST'])]
