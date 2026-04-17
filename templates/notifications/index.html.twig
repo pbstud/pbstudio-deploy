@@ -136,7 +136,6 @@
     (function () {
         var unreadCount  = {{ unread_count|default(0) }};
         var bulkUrl      = '{{ path('api_notifications_bulk') }}';
-        var markUnreadUrlTpl = '{{ path('api_notifications_mark_unread', {id: '__ID__'}) }}';
         var selectedIds  = new Set();
         var selectionMode = false;
 
@@ -275,7 +274,7 @@
         }
 
         var btnCancel = document.querySelector('[data-bulk-cancel]');
-        if (btnCancel) { btnCancel.addEventListener('click', clearSelection); }
+        if (btnCancel) { btnCancel.addEventListener('click', exitSelectionMode); }
 
         /* ── Accion bulk ───────────────────────────────────────────────────── */
         function applyBulkResult(action, ids) {

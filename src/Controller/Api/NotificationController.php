@@ -69,10 +69,15 @@ class NotificationController extends AbstractController
 
         $response = new StreamedResponse(function () use ($conn, $userId): void {
             set_time_limit(0);
+            ignore_user_abort(true);
 
             $lastCount = -1;
+            $iterations = 0;
+            $maxIterations = 360; // 1 hora máx (360 * 10s)
 
-            while (true) {
+            while ($iterations < $maxIterations) {
+                $iterations++;
+
                 if (connection_aborted()) {
                     break;
                 }
