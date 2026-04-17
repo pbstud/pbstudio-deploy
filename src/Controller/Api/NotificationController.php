@@ -55,8 +55,7 @@ class NotificationController extends AbstractController
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_REMEMBERED');
 
-        /** @v
-         * ar User $user */
+        /** @var User $user */
         $user   = $this->getUser();
         $userId = $user->getId();
         $conn   = $this->connection;
