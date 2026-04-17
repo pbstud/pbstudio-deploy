@@ -9,34 +9,63 @@
                 </div>
             {% else %}
                 <div class="checkout-form">
-                    <p>Información de pago</p>
-                    <form id="checkout-form" action="{{ path('package_checkout', { 'id': package.id }) }}" method="POST">
-                        <input type="text" size="20" data-conekta="card[name]" placeholder="Nombre del titular de la tarjeta" required="required">
-                        <input type="number" size="20" data-conekta="card[number]" placeholder="Número de tarjeta" required="required">
-                        <div>
-                            <label>Vigencia</label>
-                            <select data-conekta="card[exp_month]" required="required">
-                                <option>Mes</option>
-                                {% for i in 1..12 %}
-                                    <option value="{{ '%02d'|format(i) }}">{{ '%02d'|format(i) }}</option>
-                                {% endfor %}
-                            </select>
-                            <span class="line">/</span>
-                            <select data-conekta="card[exp_year]" required="required">
-                                <option>Año</option>
-                                {% set startYear = 'now'|date('Y') %}
-                                {% set endYear = startYear + 10 %}
-                                {% for i in startYear..endYear %}
-                                    <option value="{{ i }}">{{ i }}</option>
-                                {% endfor %}
-                            </select>
+                    <h4 class="checkout-form__title">Datos de pago<small>Ingresa los datos de tu tarjeta</small></h4>
+                    <form id="checkout-form" action="{{ path('package_checkout', { 'id': package.id }) }}" method="POST" autocomplete="off">
+                        <div class="checkout-form__field">
+                            <label class="checkout-form__label">Titular de la tarjeta</label>
+                            <input type="text"
+                                   data-conekta="card[name]"
+                                   placeholder="Nombre como aparece en la tarjeta"
+                                   maxlength="100"
+                                   autocomplete="cc-name"
+                                   required="required">
                         </div>
-                        <div>
-                            <label>Código de seguridad</label>
-                            <input type="password" size="4" data-conekta="card[cvc]" placeholder="***" required="required">
+                        <div class="checkout-form__field">
+                            <label class="checkout-form__label">Número de tarjeta</label>
+                            <input type="text"
+                                   data-conekta="card[number]"
+                                   placeholder="0000 0000 0000 0000"
+                                   inputmode="numeric"
+                                   maxlength="19"
+                                   pattern="[0-9\s]{13,19}"
+                                   autocomplete="cc-number"
+                                   required="required">
+                        </div>
+                        <div class="checkout-form__row">
+                            <div class="checkout-form__field checkout-form__field--expiry">
+                                <label class="checkout-form__label">Vigencia</label>
+                                <div class="checkout-form__expiry-selects">
+                                    <select data-conekta="card[exp_month]" required="required">
+                                        <option value="">Mes</option>
+                                        {% for i in 1..12 %}
+                                            <option value="{{ '%02d'|format(i) }}">{{ '%02d'|format(i) }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <span class="checkout-form__slash">/</span>
+                                    <select data-conekta="card[exp_year]" required="required">
+                                        <option value="">Año</option>
+                                        {% set startYear = 'now'|date('Y') %}
+                                        {% set endYear = startYear + 10 %}
+                                        {% for i in startYear..endYear %}
+                                            <option value="{{ i }}">{{ i }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="checkout-form__field checkout-form__field--cvv">
+                                <label class="checkout-form__label">CVV</label>
+                                <input type="text"
+                                       data-conekta="card[cvc]"
+                                       placeholder="•••"
+                                       inputmode="numeric"
+                                       maxlength="4"
+                                       pattern="[0-9]{3,4}"
+                                       autocomplete="off"
+                                       required="required">
+                            </div>
                         </div>
                         <div id="frm-coupon">
-                            <input type="text" id="coupon-field" size="20" placeholder="Cupón de descuento">
+                            <input type="text" id="coupon-field" placeholder="Cupón de descuento" maxlength="50" autocomplete="off">
                             <button type="button" id="btn-coupon" data-url="{{ path('coupon_validate', {'id': package.id}) }}">
                                 Aplicar
                             </button>

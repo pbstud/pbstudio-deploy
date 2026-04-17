@@ -60,13 +60,25 @@ class PackageController extends AbstractController
 
         if (!$restrictNewUser && $request->isMethod('POST') && $request->request->has('conekta_card_token')) {
             $json = [];
+
+            // Validar formato del token (solo lo genera Conekta; si llega malformado es manipulación)
+            $token = (string) $request->request->get('conekta_card_token', '');
+            if (!preg_match('/^[a-zA-Z0-9_\-]{10,60}$/', $token)) {
+                return $this->json(['error' => 'Token de pago inválido.']);
+            }
+
+            // Validar cupón si viene (solo alfanumérico + guiones)
+            $couponCode = (string) $request->request->get('coupon', '');
+            if ($couponCode !== '' && !preg_match('/^[a-zA-Z0-9\-]{1,50}$/', $couponCode)) {
+                return $this->json(['error' => 'El código de cupón contiene caracteres no permitidos.']);
+            }
+
             $em->beginTransaction();
             try {
-                $coupon = $request->request->get('coupon');
                 $transaction = $transactionService->create($package, Transaction::CHARGE_METHOD_CARD);
                 $em->persist($transaction);
 
-                $couponService->apply($transaction, $coupon);
+                $couponService->apply($transaction, $couponCode ?: null);
 
                 $em->flush();
                 $em->commit();
@@ -77,7 +89,7 @@ class PackageController extends AbstractController
                 return $this->json($json);
             }
 
-            $transaction = $conekta->chargeCard($transaction, $request->request->get('conekta_card_token'));
+            $transaction = $conekta->chargeCard($transaction, $token);
 
             if ($transaction->isPaid()) {
                 $event = new TransactionSuccessEvent($transaction);

@@ -52,37 +52,38 @@
             <a href="{{ path('package_index') }}" class="btn little">Paquetes</a>
         </div>
     </div>
-    <div class="nav-collapse">
-        <div class="center">
-            <nav>
-                <ul>
-                    <li><a href="{{ path('page', { 'slug': 'quienes-somos' }) }}" title="¿Quiénes somos?">¿Quiénes somos?</a></li>
-                    <li><a href="{{ path('instructors') }}" title="Instructores">Instructores</a></li>
-                    <li><a href="{{ path('class_descriptions_index') }}" title="Clases">Clases</a></li>
-                    <li><a href="{{ path('contact') }}" title="Contacto">Contacto</a></li>
-                    {% if app.user %}
-                        <li><a href="{{ path('profile') }}" title="Mi cuenta">Mi cuenta</a></li>
-                    {% else %}
-                        <li><a href="#login" class="link" data-url="{{ path('app_login') }}" data-remodal>Iniciar sesión</a></li>
-                    {% endif %}
-                    {% if app.user %}
-                        <li><a href="{{ path('app_logout') }}">Cerrar Sesión</a></li>
-                    {% endif %}
-                </ul>
-            </nav>
-            <div class="clearflix">
-                <a href="{{ path('package_index') }}" class="link">Comprar clases</a>
-                <a href="#" class="link reserve-class-toggle">Reservar clase</a>
-            </div>
-            <div class="social">
-                <a href="https://www.facebook.com/pbstudiomx/" target="blank"><i class="bi bi-facebook"></i></a>
-                <a href="https://www.instagram.com/pbstudiomx/" target="blank"><i class="bi bi-instagram"></i></a>
-                <a href="https://wa.me/52552920036" target="blank" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>
-            </div>
-        </div>
-        <ul class="legal">
-            <li><a href="{{ path('page', { 'slug': 'terminos-y-condiciones' }) }}">Términos y condiciones</a></li>
-            <li><a href="{{ path('page', { 'slug': 'aviso-de-privacidad', }) }}">Aviso de privacidad</a></li>
-        </ul>
-    </div>
 </header>
+
+<div class="nav-collapse">
+    <div class="center">
+        <nav>
+            <ul>
+                <li><a href="{{ path('page', { 'slug': 'quienes-somos' }) }}" title="¿Quiénes somos?">¿Quiénes somos?</a></li>
+                <li><a href="{{ path('instructors') }}" title="Instructores">Instructores</a></li>
+                <li><a href="{{ path('class_descriptions_index') }}" title="Clases">Clases</a></li>
+                <li><a href="{{ path('contact') }}" title="Contacto">Contacto</a></li>
+                {% if app.user %}
+                    <li><a href="{{ path('profile') }}" title="Mi cuenta">Mi cuenta</a></li>
+                {% else %}
+                    <li><a href="#login" class="link" data-url="{{ path('app_login') }}" data-remodal>Iniciar sesión</a></li>
+                {% endif %}
+                {% if app.user %}
+                    <li><a href="{{ path('app_logout') }}">Cerrar Sesión</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+        <div class="clearflix">
+            <a href="{{ path('package_index') }}" class="link">Comprar clases</a>
+            <a href="#" class="link reserve-class-toggle">Reservar clase</a>
+        </div>
+        <div class="social">
+            <a href="https://www.facebook.com/pbstudiomx/" target="blank"><i class="bi bi-facebook"></i></a>
+            <a href="https://www.instagram.com/pbstudiomx/" target="blank"><i class="bi bi-instagram"></i></a>
+            <a href="https://wa.me/52552920036" target="blank" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>
+        </div>
+    </div>
+    <ul class="legal">
+        <li><a href="{{ path('page', { 'slug': 'terminos-y-condiciones' }) }}">Términos y condiciones</a></li>
+        <li><a href="{{ path('page', { 'slug': 'aviso-de-privacidad', }) }}">Aviso de privacidad</a></li>
+    </ul>
+</div>
