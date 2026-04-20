@@ -164,9 +164,48 @@ class SessionDayController extends AbstractController
 
             try {
                 $sessions = $request->request->all('session');
+
+                // Protección server-side contra duplicados: solo procesar la pestaña activa.
+                // El campo mode='legacy'|'modern' lo setea el JS antes del submit.
+                // Si no llega (JS deshabilitado), se usa 'legacy' como fallback seguro.
+                $mode = 'legacy';
+                if (isset($sessions['mode']) && 'modern' === $sessions['mode']) {
+                    $mode = 'modern';
+                }
+
+                $this->logger->info('[SessionDay] Modo de pestaña recibido', ['mode' => $mode]);
+
                 $schedules = is_array($sessions['schedules'] ?? null) ? $sessions['schedules'] : [];
                 $scheduleTimes = is_array($sessions['scheduleTimes'] ?? null) ? $sessions['scheduleTimes'] : [];
                 $information = is_array($sessions['information'] ?? null) ? $sessions['information'] : [];
+
+                // Filtrar schedules al modo activo.
+                // Vista clásica: claves son strings de hora ('06:00', '07:00', ...).
+                // Vista dinámica: claves son enteros (0, 1, 2, ...).
+                $schedules = array_filter(
+                    $schedules,
+                    static function (mixed $key) use ($mode): bool {
+                        $isNumeric = ctype_digit((string) $key);
+                        return 'modern' === $mode ? $isNumeric : !$isNumeric;
+                    },
+                    ARRAY_FILTER_USE_KEY
+                );
+                $scheduleTimes = array_filter(
+                    $scheduleTimes,
+                    static function (mixed $key) use ($mode): bool {
+                        $isNumeric = ctype_digit((string) $key);
+                        return 'modern' === $mode ? $isNumeric : !$isNumeric;
+                    },
+                    ARRAY_FILTER_USE_KEY
+                );
+                $information = array_filter(
+                    $information,
+                    static function (mixed $key) use ($mode): bool {
+                        $isNumeric = ctype_digit((string) $key);
+                        return 'modern' === $mode ? $isNumeric : !$isNumeric;
+                    },
+                    ARRAY_FILTER_USE_KEY
+                );
                 $rawDateStarts = [];
                 if (is_array($sessions['dateStarts'] ?? null)) {
                     $rawDateStarts = $sessions['dateStarts'];

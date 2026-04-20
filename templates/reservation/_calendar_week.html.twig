@@ -56,8 +56,7 @@
                    data-event-instructor="{{ session.instructor.profile.firstname }}">
 
                     {% if reserved_places is not empty %}
-                        {% set label = reserved_places|filter(p => p > 0)|join(', ') %}
-                        <span class="class__reserved-badge">{{ label != '' ? label : '✓' }}</span>
+                        <span class="class__reserved-badge">✓</span>
                     {% endif %}
                     <span class="icon-{{  session.individual ? 'individual' : 'group' }}"></span>
                     <h6>{{ session.discipline }}</h6>

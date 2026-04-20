@@ -244,7 +244,7 @@
 {% block content %}
     {% embed 'backend/default/embed/form_common.html.twig' with { 'page_section': page_section, 'page_title': page_title } %}
         {% block body %}
-            <form action="{{ path('backend_session_day_new', {'branch_office': branchOffice.id }) }}" method="post">
+            <form id="session-day-new-form" action="{{ path('backend_session_day_new', {'branch_office': branchOffice.id }) }}" method="post">
                 {% set selectedDates = data.dateStarts is defined and data.dateStarts is iterable ? data.dateStarts : [data.dateStart|default('')] %}
                 <div class="row">
                     <div class="col-md-4 col-sm-6 col-xs-12 form-group session-date-block">
@@ -374,6 +374,8 @@
 
                 <div class="ln_solid"></div>
 
+                <input type="hidden" name="session[mode]" id="session-mode-input" value="legacy">
+
                 <div class="form-group">
                     <div class="col-xs-12">
                         <div class="pull-right">
@@ -405,7 +407,7 @@
             var legacyBody = document.querySelector('#legacy-session-grid tbody');
             var legacyPane = document.querySelector('[data-pane="legacy"]');
             var modernPane = document.querySelector('[data-pane="modern"]');
-            var formEl = document.querySelector('form[action*="backend_session_day_new"]');
+            var formEl = document.getElementById('session-day-new-form');
             var importFromDateUrl = '{{ path('backend_session_day_import_from_date', {'branchOfficeId': branchOffice.id}) }}';
             var roomIds = [{% for exerciseRoom in exerciseRooms %}{{ exerciseRoom.id }}{% if not loop.last %}, {% endif %}{% endfor %}];
             var roomOptionsById = {
@@ -1205,18 +1207,27 @@
                     formEl.addEventListener('submit', function (event) {
                         sortLegacyRowsByTime();
 
-                        if (modernPane.classList.contains('active')) {
+                        var isModern = modernPane.classList.contains('active');
+
+                        if (isModern) {
                             sortRowsByTime();
                             refreshRowIndexes();
                         }
 
-                        var activePane = modernPane.classList.contains('active') ? modernPane : legacyPane;
+                        var activePane = isModern ? modernPane : legacyPane;
                         if (!validateActivePaneData(activePane)) {
                             event.preventDefault();
                             return;
                         }
 
-                        if (modernPane.classList.contains('active')) {
+                        // Registrar el modo activo para que el servidor sepa qué bloque procesar
+                        var modeInput = document.getElementById('session-mode-input');
+                        if (modeInput) {
+                            modeInput.value = isModern ? 'modern' : 'legacy';
+                        }
+
+                        // Deshabilitar la pestaña inactiva para que el browser no la envíe
+                        if (isModern) {
                             setPaneEnabled(legacyPane, false);
                             setPaneEnabled(modernPane, true);
                         } else {

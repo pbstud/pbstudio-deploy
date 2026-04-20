@@ -40,8 +40,7 @@
                    data-discipline="{{ session.discipline.id }}"
                    data-instructor="{{ session.instructor.id }}">
                     {% if reserved_places is not empty %}
-                        {% set label = reserved_places|filter(p => p > 0)|join(', ') %}
-                        <span class="class__reserved-badge">{{ label != '' ? label : '✓' }}</span>
+                        <span class="class__reserved-badge">✓</span>
                     {% endif %}
                     <i class="bi bi-{{ session.individual ? 'person' : 'people' }}"></i>
                     <h6>{{ session.discipline }}</h6>
