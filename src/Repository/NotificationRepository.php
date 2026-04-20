@@ -51,6 +51,27 @@ class NotificationRepository extends ServiceEntityRepository
         return $count > 0;
     }
 
+    public function existsByTypeCreatedToday(User $user, string $type): bool
+    {
+        $today = new \DateTimeImmutable('today midnight');
+        $tomorrow = $today->modify('+1 day');
+
+        $count = (int) $this->createQueryBuilder('n')
+            ->select('COUNT(n.id)')
+            ->where('n.user = :user')
+            ->andWhere('n.type = :type')
+            ->andWhere('n.createdAt >= :today')
+            ->andWhere('n.createdAt < :tomorrow')
+            ->setParameter('user', $user)
+            ->setParameter('type', $type)
+            ->setParameter('today', $today)
+            ->setParameter('tomorrow', $tomorrow)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $count > 0;
+    }
+
     public function findByUser(User $user, int $page = 1, int $limit = 20): array
     {
         $limit = min(50, max(1, $limit));

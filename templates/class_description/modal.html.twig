@@ -58,7 +58,15 @@
         </div>
 
         <div class="modal-actions class-detail-modal__actions">
-            <a href="#" class="btn reserve-class-toggle" data-remodal-action="close">Reservar clase</a>
+            <a href="#"
+               class="btn reserve-class-toggle"
+               data-remodal-action="close"
+               {% if classDescription.slug == 'clase-privada' %}
+               data-filter-type="i"
+               {% else %}
+               data-filter-discipline="{{ classDescription.name }}"
+               {% endif %}
+               >Reservar clase</a>
         </div>
     </div>
 </section>

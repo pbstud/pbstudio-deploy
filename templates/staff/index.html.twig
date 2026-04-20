@@ -33,7 +33,9 @@
 
                                 <p>{{ instructorDescription }}</p>
 
-                                <a href="#" class="btn reserve-class-toggle">Reservar clase</a>
+                                <a href="#"
+                                   class="btn reserve-class-toggle"
+                                   data-filter-instructor="{{ hasProfile ? instructor.profile.firstname : '' }}">Reservar clase</a>
                             </div>
                         </div>
                     {% else %}

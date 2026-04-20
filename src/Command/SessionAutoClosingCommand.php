@@ -74,9 +74,9 @@ class SessionAutoClosingCommand extends AbstractCommand
                 continue;
             }
 
-            $existsUnread = $this->notificationRepository->existsUnreadByType($user, 'rating_pending');
+            $alreadySentToday = $this->notificationRepository->existsByTypeCreatedToday($user, 'rating_pending');
 
-            if ($existsUnread) {
+            if ($alreadySentToday) {
                 continue;
             }
 
