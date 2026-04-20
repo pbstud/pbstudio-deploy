@@ -68,6 +68,9 @@ class HomeContentController extends AbstractController
         $homeContent->setContactInstagram(trim((string) ($raw['contactInstagram'] ?? '')));
         $homeContent->setContactWhatsapp(trim((string) ($raw['contactWhatsapp'] ?? '')));
 
+        // Actualizar timestamp en cada guardado (no solo al subir imagen)
+        $homeContent->setUpdatedAt(new \DateTimeImmutable());
+
         // Imágenes — solo se actualizan si se sube un archivo nuevo
         if (!empty($files['bannerDesktopFile'])) {
             $homeContent->setBannerDesktopFile($files['bannerDesktopFile']);

@@ -7,6 +7,7 @@ namespace App\Controller\Backend;
 use App\Entity\Post;
 use App\Form\Backend\PageCreateType;
 use App\Form\Backend\PageEditType;
+use App\Repository\HomeContentRepository;
 use App\Repository\PostRepository;
 use App\Service\ClassContentService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -27,6 +28,7 @@ class PageController extends AbstractController
     public function index(
         PaginatorInterface $paginator,
         PostRepository $postRepository,
+        HomeContentRepository $homeContentRepository,
         #[MapQueryParameter] int $page = 1,
     ): Response {
         $pages = array_values(array_filter(
@@ -44,6 +46,7 @@ class PageController extends AbstractController
         return $this->render('backend/page/index.html.twig', [
             'pagination'       => $pagination,
             'classContentPost' => $classContentPost,
+            'homeContent'      => $homeContentRepository->findSingle(),
         ]);
     }
 
