@@ -31,3 +31,27 @@ qc
 yarn.lock
 .gitattributes
 .github/
+
+# Carpetas y archivos de dev que nunca deben ir al deploy
+DOCUMENTACION/
+Especificaciones/
+tests/
+assets/
+webpack.config.js
+package.json
+package-lock.json
+phpunit.xml.dist
+*.ps1
+compose.yaml
+compose.override.yaml
+analyze_*.php
+check_*.php
+check_*.sql
+check_*.sh
+clean_db.php
+configure_mysql.php
+extract_backup.php
+import_*.php
+verify_data.php
+deploy.php.dist
+composer-setup.php
