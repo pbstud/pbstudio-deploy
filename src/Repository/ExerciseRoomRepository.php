@@ -8,6 +8,7 @@ use App\Entity\BranchOffice;
 use App\Entity\ExerciseRoom;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\Query;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -25,12 +26,20 @@ class ExerciseRoomRepository extends ServiceEntityRepository
         parent::__construct($registry, ExerciseRoom::class);
     }
 
-    public function getQueryAll(): Query
+    public function getQueryAll(bool $sorted = false): QueryBuilder
     {
         $qb = $this->createQueryBuilder('er');
-        $qb->orderBy('er.id', 'DESC');
 
-        return $qb->getQuery();
+        if (!$sorted) {
+            $qb
+                ->addSelect('CASE WHEN er.isActive = true THEN 0 ELSE 1 END AS HIDDEN sort_group')
+                ->orderBy('sort_group', 'ASC')
+                ->addOrderBy('er.id', 'DESC');
+        } else {
+            $qb->orderBy('er.id', 'DESC');
+        }
+
+        return $qb;
     }
 
     /**

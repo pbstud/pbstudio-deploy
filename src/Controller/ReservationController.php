@@ -67,11 +67,11 @@ class ReservationController extends AbstractController
             $weekNext = $weekNextStart;
         }
 
-        $userReservedPlaces = [];
+        $userReservedSessionIds = [];
         if ($this->isGranted('ROLE_USER')) {
             /** @var \App\Entity\User $user */
             $user = $this->getUser();
-            $userReservedPlaces = $reservationRepository->getReservedPlacesByUser(
+            $userReservedSessionIds = $reservationRepository->getReservedSessionCountsByUser(
                 $user,
                 $period->start->toDateTimeImmutable(),
                 $period->end->toDateTimeImmutable(),
@@ -95,7 +95,7 @@ class ReservationController extends AbstractController
             'sessions' => $sessions,
             'weekPrev' => $weekPrev,
             'weekNext' => $weekNext,
-            'userReservedPlaces' => $userReservedPlaces,
+            'userReservedSessionIds' => $userReservedSessionIds,
         ]);
     }
 
@@ -211,7 +211,7 @@ class ReservationController extends AbstractController
         try {
             $waitingListService->add($user, $session);
 
-            return $this->json(['success' => true, 'message' => '¡Ya estás en la lista de espera! Te notificaremos si se libera un lugar.']);
+            return $this->json(['success' => true, 'notif' => true, 'message' => '¡Ya estás en la lista de espera! Te notificaremos si se libera un lugar.']);
         } catch (WaitingListException $e) {
             $json['error'] = $e->getMessage();
 

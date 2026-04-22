@@ -38,6 +38,12 @@ class TransactionType extends AbstractType
                 'label' => 'label.branch_office',
                 'class' => BranchOffice::class,
                 'placeholder' => 'placeholder.select',
+                'query_builder' => function (EntityRepository $er) {
+                    return $er->createQueryBuilder('bo')
+                        ->where('bo.public = :public')
+                        ->setParameter('public', true)
+                        ->orderBy('bo.name', 'ASC');
+                },
             ])
             ->add('user', HiddenType::class, [
                 'label' => 'label.user',

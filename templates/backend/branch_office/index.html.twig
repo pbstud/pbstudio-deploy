@@ -15,14 +15,14 @@
 
 {% block table_thead %}
     <tr>
-        <th>#</th>
-        <th>Nombre</th>
+        <th>{{ knp_pagination_sortable(pagination, '#', 'bo.id') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Nombre', 'bo.name') }}</th>
         <th>Sede</th>
         <th>Zona</th>
         <th>Plaza</th>
-        <th>Telefono</th>
-        <th>Pública</th>
-        <th>F. creación</th>
+        <th>Teléfono</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Pública', 'bo.public') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'F. creación', 'bo.createdAt') }}</th>
     </tr>
 {% endblock %}
 

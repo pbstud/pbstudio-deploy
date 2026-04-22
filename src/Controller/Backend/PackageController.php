@@ -26,12 +26,13 @@ class PackageController extends AbstractController
 {
     #[Route('/', name: 'backend_package', methods: ['GET'])]
     public function index(
+        Request $request,
         PaginatorInterface $paginator,
         PackageRepository $packageRepository,
         #[MapQueryParameter] array $filters = [],
         #[MapQueryParameter] int $page = 1,
     ): Response {
-        $packages = $packageRepository->findWithFilters($filters);
+        $packages = $packageRepository->findWithFilters($filters, $request->query->has('sort'));
 
         $pagination = $paginator->paginate($packages, $page, Package::NUMBER_OF_ITEMS);
 

@@ -73,16 +73,16 @@
 
 {% block table_thead %}
     <tr>
-        <th>#</th>
-        <th>Núm. de clases</th>
+        <th>{{ knp_pagination_sortable(pagination, '#', 'p.id') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Núm. de clases', 'p.totalClasses') }}</th>
         <th>Descripción</th>
-        <th>Precio</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Precio', 'p.amount') }}</th>
         <th>Precio Espcial</th>
         <th>Modalidad</th>
-        <th>Vigencia</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Vigencia', 'p.daysExpiry') }}</th>
         <th>Nuevo usuario</th>
-        <th>Público</th>
-        <th>Estado</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Público', 'p.public') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Estado', 'p.isActive') }}</th>
     </tr>
 {% endblock %}
 

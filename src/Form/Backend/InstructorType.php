@@ -6,6 +6,7 @@ namespace App\Form\Backend;
 
 use App\Entity\Discipline;
 use App\Entity\Staff;
+use Doctrine\ORM\EntityRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
@@ -38,6 +39,12 @@ class InstructorType extends AbstractType
                 'label' => 'label.disciplines',
                 'class' => Discipline::class,
                 'multiple' => 'true',
+                'query_builder' => function (EntityRepository $er) {
+                    return $er->createQueryBuilder('d')
+                        ->where('d.isActive = :active')
+                        ->setParameter('active', true)
+                        ->orderBy('d.name', 'ASC');
+                },
             ])
         ;
 

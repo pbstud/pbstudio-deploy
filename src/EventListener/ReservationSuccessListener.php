@@ -11,18 +11,19 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 #[AsEventListener]
 final readonly class ReservationSuccessListener
 {
-    public function __construct(private ReservationMailer $mailer)
-    {
+    public function __construct(
+        private ReservationMailer $mailer,
+    ) {
     }
 
     public function __invoke(ReservationSuccessEvent $event): void
     {
+        $reservation = $event->getReservation();
+
         if ($event->getWaitingList()) {
-            $this->mailer->sendWaitingListConfirmationEmail($event->getReservation());
-
-            return;
+            $this->mailer->sendWaitingListConfirmationEmail($reservation);
+        } else {
+            $this->mailer->sendConfirmationEmail($reservation);
         }
-
-        $this->mailer->sendConfirmationEmail($event->getReservation());
     }
 }

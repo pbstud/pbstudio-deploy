@@ -526,7 +526,7 @@ class ProfileController extends AbstractController
                 
                 $logger->info('[USER_CANCEL] Proceso completo');
 
-                return $this->json(['success' => true, 'message' => '¡Tu cancelación fue exitosa! Tu lugar quedó liberado correctamente.']);
+                return $this->json(['success' => true, 'notif' => true, 'message' => '¡Tu cancelación fue exitosa! Tu lugar quedó liberado correctamente.']);
             } catch (ReservationException $e) {
                 $json['error'] = $e->getMessage();
 
@@ -695,7 +695,7 @@ class ProfileController extends AbstractController
             'weekNext'    => $weekNext,
             'weekStart'   => $reqWeekStart,
             'weekEnd'     => $reqWeekStart->modify('+6 days'),
-            'userReservedPlaces' => $reservationRepository->getReservedPlacesByUser(
+            'userReservedSessionIds' => $reservationRepository->getReservedSessionCountsByUser(
                 $loggedUser,
                 $reqWeekStart,
                 $reqWeekEnd,
@@ -820,7 +820,10 @@ class ProfileController extends AbstractController
 
                 $logger->info('[USER_CHANGE] Proceso de cambio completo');
 
-                return $this->render('profile/reservation_change_session_success.html.twig');
+                return $this->json([
+                    'notif'     => true,
+                    'targetUrl' => $this->generateUrl('reserved_sessions', ['_fragment' => 'section-content']),
+                ]);
             } catch (ReservationException $e) {
                 $json['error'] = $e->getMessage();
 

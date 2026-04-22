@@ -31,6 +31,32 @@ class SessionRepository extends ServiceEntityRepository
         parent::__construct($registry, Session::class);
     }
 
+    public function getQueryBuilderForBackendList(array $filters = []): QueryBuilder
+    {
+        $qb = $this->createQueryBuilder('s');
+
+        $qb
+            ->select('s.id, s.type, s.dateStart, s.timeStart, s.availableCapacity')
+            ->addSelect('e.name exerciseRoom, b.name branchOffice, d.name discipline')
+            ->addSelect('ip.firstname instructor, s.status')
+            ->addSelect('COUNT(r.session) reservations')
+            ->join('s.exerciseRoom', 'e')
+            ->join('s.discipline', 'd')
+            ->join('s.instructor', 'i')
+            ->join('i.profile', 'ip')
+            ->join('e.branchOffice', 'b')
+            ->leftJoin('s.reservations', 'r', Join::WITH, $qb->expr()->eq('r.isAvailable', ':isAvailable'))
+            ->setParameter('isAvailable', true)
+            ->groupBy('s.id')
+            ->orderBy('s.dateStart', 'ASC')
+            ->addOrderBy('s.timeStart', 'ASC')
+        ;
+
+        $this->applyBackendListFilters($qb, $filters);
+
+        return $qb;
+    }
+
     public function findForBackendList(array $filters = [], bool $isExport = false, bool $newestFirst = false): array
     {
         $qb = $this->createQueryBuilder('s');
@@ -173,6 +199,114 @@ class SessionRepository extends ServiceEntityRepository
         }
 
         return $qb->getQuery()->getResult();
+    }
+
+    private function applyBackendListFilters(QueryBuilder $qb, array $filters): void
+    {
+        if (!empty($filters['type'])) {
+            $qb
+                ->andWhere('s.type = :type')
+                ->setParameter('type', $filters['type'])
+            ;
+        }
+
+        if (!empty($filters['discipline'])) {
+            $qb
+                ->andWhere('s.discipline = :discipline')
+                ->setParameter('discipline', $filters['discipline'])
+            ;
+        }
+
+        if (!empty($filters['instructor'])) {
+            $qb
+                ->andWhere('s.instructor = :instructor')
+                ->setParameter('instructor', $filters['instructor'])
+            ;
+        }
+
+        if (!empty($filters['branchOffice'])) {
+            $qb
+                ->andWhere('s.branchOffice = :branchOffice')
+                ->setParameter('branchOffice', $filters['branchOffice'])
+            ;
+        }
+
+        $dateStart = null;
+        if (!empty($filters['date_start']) && is_string($filters['date_start'])) {
+            $dateStartInput = trim($filters['date_start']);
+            $parsedDateStart = \DateTimeImmutable::createFromFormat('!d/m/Y', $dateStartInput);
+            $dateStartErrors = \DateTimeImmutable::getLastErrors();
+            $hasDateStartErrors = is_array($dateStartErrors)
+                && (($dateStartErrors['warning_count'] ?? 0) > 0 || ($dateStartErrors['error_count'] ?? 0) > 0);
+
+            if (false !== $parsedDateStart && !$hasDateStartErrors && $parsedDateStart->format('d/m/Y') === $dateStartInput) {
+                $dateStart = $parsedDateStart;
+            }
+        }
+
+        if ($dateStart) {
+            $qb
+                ->andWhere($qb->expr()->gte('s.dateStart', ':date_start'))
+                ->setParameter('date_start', $dateStart->format('Y-m-d 00:00:00'))
+            ;
+        }
+
+        $dateEnd = null;
+        if (!empty($filters['date_end']) && is_string($filters['date_end'])) {
+            $dateEndInput = trim($filters['date_end']);
+            $parsedDateEnd = \DateTimeImmutable::createFromFormat('!d/m/Y', $dateEndInput);
+            $dateEndErrors = \DateTimeImmutable::getLastErrors();
+            $hasDateEndErrors = is_array($dateEndErrors)
+                && (($dateEndErrors['warning_count'] ?? 0) > 0 || ($dateEndErrors['error_count'] ?? 0) > 0);
+
+            if (false !== $parsedDateEnd && !$hasDateEndErrors && $parsedDateEnd->format('d/m/Y') === $dateEndInput) {
+                $dateEnd = $parsedDateEnd;
+            }
+        }
+
+        if ($dateEnd) {
+            $qb
+                ->andWhere($qb->expr()->lte('s.dateStart', ':date_end'))
+                ->setParameter('date_end', $dateEnd->format('Y-m-d 23:59:59'))
+            ;
+        }
+
+        if (isset($filters['status']) && '' !== $filters['status']) {
+            $status = (int) $filters['status'];
+
+            if (Session::STATUS_NOT_CANCELED === $status) {
+                $qb
+                    ->andWhere('s.status != :statusCancel')
+                    ->setParameter('statusCancel', Session::STATUS_CANCEL)
+                ;
+            } else {
+                $qb
+                    ->andWhere('s.status = :status')
+                    ->setParameter('status', $filters['status'])
+                ;
+            }
+        }
+
+        if (!empty($filters['assigned_branches'])) {
+            $qb
+                ->andWhere($qb->expr()->in('s.branchOffice', ':branches'))
+                ->setParameter('branches', $filters['assigned_branches'])
+            ;
+        }
+
+        if (!empty($filters['exerciseRoom'])) {
+            $qb
+                ->andWhere('s.exerciseRoom = :exerciseRoom')
+                ->setParameter('exerciseRoom', $filters['exerciseRoom'])
+            ;
+        }
+
+        if (!empty($filters['schedule'])) {
+            $qb
+                ->andWhere('s.timeStart = :timeStart')
+                ->setParameter('timeStart', $filters['schedule'])
+            ;
+        }
     }
 
     /**

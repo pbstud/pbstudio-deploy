@@ -72,7 +72,6 @@ class StaffProfile implements TimestampableInterface
     private ?string $telephone = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
-    #[Assert\NotBlank]
     private ?string $address = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]

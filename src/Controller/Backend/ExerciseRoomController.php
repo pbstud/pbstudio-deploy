@@ -28,12 +28,13 @@ class ExerciseRoomController extends AbstractController
 {
     #[Route('/', name: 'backend_exerciseroom', methods: ['GET'])]
     public function index(
+        Request $request,
         PaginatorInterface $paginator,
         ExerciseRoomRepository $exerciseRoomRepository,
         #[MapQueryParameter] int $page = 1,
     ): Response {
         $pagination = $paginator->paginate(
-            $exerciseRoomRepository->getQueryAll(),
+            $exerciseRoomRepository->getQueryAll($request->query->has('sort')),
             $page,
             Exerciseroom::NUMBER_OF_ITEMS
         );

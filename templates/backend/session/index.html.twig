@@ -129,16 +129,16 @@
 
 {% block table_thead %}
     <tr>
-        <th>#</th>
-        <th>Día</th>
-        <th>Hora</th>
-        <th>Salón</th>
+        <th>{{ knp_pagination_sortable(pagination, '#', 's.id') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Día', 's.dateStart') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Hora', 's.timeStart') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Salón', 'e.name') }}</th>
         {% if not is_instructor %}
-            <th>Instructor</th>
+            <th>{{ knp_pagination_sortable(pagination, 'Instructor', 'ip.firstname') }}</th>
         {% endif %}
         <th class="text-center">Reservas</th>
-        <th class="text-center">Sucursal</th>
-        <th class="text-center">Estado</th>
+        <th class="text-center">{{ knp_pagination_sortable(pagination, 'Sucursal', 'b.name') }}</th>
+        <th class="text-center">{{ knp_pagination_sortable(pagination, 'Estado', 's.status') }}</th>
     </tr>
 {% endblock %}
 

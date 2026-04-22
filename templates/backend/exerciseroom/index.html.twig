@@ -15,13 +15,13 @@
 
 {% block table_thead %}
     <tr>
-        <th>#</th>
-        <th>Nombre</th>
+        <th>{{ knp_pagination_sortable(pagination, '#', 'er.id') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Nombre', 'er.name') }}</th>
         <th class="text-center">Capacidad</th>
         <th>Disciplina</th>
         <th>Modalidad</th>
         <th>Sucursal</th>
-        <th>Estado</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Estado', 'er.isActive') }}</th>
     </tr>
 {% endblock %}
 

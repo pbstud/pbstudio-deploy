@@ -27,21 +27,20 @@
         <div class="day" data-day="{{ day.dateKey }}">
             <h6><small>{{ day.date|format_date(null, "EEE d") }}</small></h6>
             {% for session in day.sessions %}
-                {% set reserved_places = userReservedPlaces[session.id] ?? [] %}
+                {% set reserved_count = (userReservedSessionIds ?? {})[session.id] ?? 0 %}
+                {% set is_reserved = reserved_count > 0 %}
                 <a href="#"
                    data-url="{{ path('reservation_change_session', {
                        'id': reservation.id,
                        'sessionId': session.id
                    }) }}"
                    data-remodal
-                   class="class session-item {{ session.discipline|replace({' ': '-'})|lower }}{{ session.full ? ' disabled' : '' }}{{ reserved_places is not empty ? ' class--reserved' : '' }}"
+                   class="class session-item {{ session.discipline|replace({' ': '-'})|lower }}{{ session.full ? ' disabled' : '' }}{{ is_reserved ? ' class--reserved' : '' }}"
                    data-studio="{{ session.branchOffice.id }}"
                    data-type="{{ session.type }}"
                    data-discipline="{{ session.discipline.id }}"
                    data-instructor="{{ session.instructor.id }}">
-                    {% if reserved_places is not empty %}
-                        <span class="class__reserved-badge">✓</span>
-                    {% endif %}
+                    {% if is_reserved %}<span class="class__reserved-badge" title="Ya tienes {{ reserved_count }} reserva{{ reserved_count > 1 ? 's' : '' }} aquí">{{ reserved_count }}</span>{% endif %}
                     <i class="bi bi-{{ session.individual ? 'person' : 'people' }}"></i>
                     <h6>{{ session.discipline }}</h6>
                     <p>{{ session.timeStart|date('h:i a') }}</p>

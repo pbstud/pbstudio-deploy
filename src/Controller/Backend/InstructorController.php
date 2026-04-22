@@ -24,13 +24,16 @@ class InstructorController extends AbstractController
 {
     #[Route('/', name: 'backend_instructor', methods: ['GET'])]
     public function index(
+        Request $request,
         PaginatorInterface $paginator,
         StaffRepository $staffRepository,
         #[MapQueryParameter] int $page = 1,
     ): Response {
-        $instructors = $staffRepository->getAllInstructors();
-
-        $pagination = $paginator->paginate($instructors, $page, Staff::NUMBER_OF_ITEMS);
+        $pagination = $paginator->paginate(
+            $staffRepository->getQueryBuilderInstructors($request->query->has('sort')),
+            $page,
+            Staff::NUMBER_OF_ITEMS
+        );
         $instructorPhotoAvailable = $this->buildInstructorPhotoAvailability($pagination->getItems());
 
         return $this->render('backend/instructor/index.html.twig', [

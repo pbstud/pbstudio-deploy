@@ -25,18 +25,15 @@ class DisciplineController extends AbstractController
 {
     #[Route('/', name: 'backend_discipline', methods: ['GET'])]
     public function index(
+        Request $request,
         PaginatorInterface $paginator,
         DisciplineRepository $disciplineRepository,
         #[MapQueryParameter] int $page = 1
     ): Response {
         $pagination = $paginator->paginate(
-            $disciplineRepository->paginate(),
+            $disciplineRepository->paginate($request->query->has('sort')),
             $page,
             Discipline::NUMBER_OF_ITEMS,
-            [
-                PaginatorInterface::DEFAULT_SORT_FIELD_NAME => 'd.id',
-                PaginatorInterface::DEFAULT_SORT_DIRECTION => 'desc',
-            ]
         );
 
         $paginationFilter = [

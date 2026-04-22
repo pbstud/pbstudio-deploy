@@ -25,12 +25,20 @@ class BranchOfficeRepository extends ServiceEntityRepository
         parent::__construct($registry, BranchOffice::class);
     }
 
-    public function getQueryAll(): Query
+    public function getQueryAll(bool $sorted = false): QueryBuilder
     {
         $qb = $this->createQueryBuilder('bo');
-        $qb->orderBy('bo.id', 'DESC');
 
-        return $qb->getQuery();
+        if (!$sorted) {
+            $qb
+                ->addSelect('CASE WHEN bo.public = true THEN 0 ELSE 1 END AS HIDDEN sort_group')
+                ->orderBy('sort_group', 'ASC')
+                ->addOrderBy('bo.id', 'DESC');
+        } else {
+            $qb->orderBy('bo.id', 'DESC');
+        }
+
+        return $qb;
     }
 
     /**

@@ -16,13 +16,13 @@
 
 {% block table_thead %}
     <tr>
-        <th>#</th>
+        <th>{{ knp_pagination_sortable(pagination, '#', 's.id') }}</th>
         <th>Foto</th>
-        <th>Nombre</th>
-        <th>Email</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Nombre', 'p.firstname') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Email', 's.email') }}</th>
         <th>Teléfono</th>
         <th>Disciplinas</th>
-        <th>Estado</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Estado', 's.isActive') }}</th>
         {% if allowDelete %}
             <th></th>
         {% endif %}

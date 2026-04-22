@@ -75,9 +75,6 @@ class InstructorProfileType extends AbstractType
                 ],
                 'help' => 'Se usa para sombrear suavemente el instructor en la grilla.',
             ])
-            ->add('address', null, [
-                'label' => 'label.address',
-            ])
         ;
     }
 

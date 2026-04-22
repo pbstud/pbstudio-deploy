@@ -47,17 +47,16 @@
                 {# session \App\Entity\Session #}
                 {% set class_full = session.full ? 'disabled' : '' %}
                 {% set class_description = session.information is not null ? session.information|trim : '' %}
-                {% set reserved_places = userReservedPlaces[session.id] ?? [] %}
+                {% set reserved_count = (userReservedSessionIds ?? {})[session.id] ?? 0 %}
+                {% set is_reserved = reserved_count > 0 %}
                 <a href="#" data-url="{{ path('reservation_confirm', { 'id': session.id }) }}"
-                   class="class {{ class_full }} {{ session.discipline|slug|lower }}{{ class_description != '' ? ' class--with-description' : '' }}{{ reserved_places is not empty ? ' class--reserved' : '' }}"
+                   class="class {{ class_full }} {{ session.discipline|slug|lower }}{{ class_description != '' ? ' class--with-description' : '' }}{{ is_reserved ? ' class--reserved' : '' }}"
                    data-remodal
                    data-event data-event-type="{{ session.type }}"
                    data-event-discipline="{{ session.discipline }}"
                    data-event-instructor="{{ session.instructor.profile.firstname }}">
 
-                    {% if reserved_places is not empty %}
-                        <span class="class__reserved-badge">✓</span>
-                    {% endif %}
+                    {% if is_reserved %}<span class="class__reserved-badge" title="Ya tienes {{ reserved_count }} reserva{{ reserved_count > 1 ? 's' : '' }} aquí">{{ reserved_count }}</span>{% endif %}
                     <span class="icon-{{  session.individual ? 'individual' : 'group' }}"></span>
                     <h6>{{ session.discipline }}</h6>
                     <p>{{ session.timeStart|date('h:i a') }}</p>

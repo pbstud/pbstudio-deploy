@@ -120,10 +120,10 @@ class SessionController extends AbstractController
         $filters['assigned_branches'] = $assignedBranches;
 
         $isExport = $request->query->has('export');
-        $sessions = $sessionRepository->findForBackendList($filters, $isExport, false);
 
         // Export
         if ($isExport) {
+            $sessions = $sessionRepository->findForBackendList($filters, true, false);
             $filename = sprintf('Sesiones_%s.xlsx', date('Y-m-d_H-i'));
             $tmpFile = sys_get_temp_dir() . '/' . uniqid('sessions_export_', true) . '.xlsx';
 
@@ -184,7 +184,11 @@ class SessionController extends AbstractController
             }
         }
 
-        $pagination = $paginator->paginate($sessions, $page, Session::NUMBER_OF_ITEMS);
+        $pagination = $paginator->paginate(
+            $sessionRepository->getQueryBuilderForBackendList($filters),
+            $page,
+            Session::NUMBER_OF_ITEMS
+        );
         $urlExport = $this->generateUrl('backend_session', [
             'filters' => $filters,
             'export' => true,

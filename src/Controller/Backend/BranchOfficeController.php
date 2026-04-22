@@ -23,13 +23,14 @@ class BranchOfficeController extends AbstractController
 {
     #[Route('/', name: 'backend_branchoffice', methods: ['GET'])]
     public function index(
+        Request $request,
         PaginatorInterface $paginator,
         BranchOfficeRepository $branchOfficeRepository,
         #[MapQueryParameter] int $page = 1
     ): Response {
 
         $pagination = $paginator->paginate(
-            $branchOfficeRepository->getQueryAll(),
+            $branchOfficeRepository->getQueryAll($request->query->has('sort')),
             $page,
             BranchOffice::NUMBER_OF_ITEMS,
         );

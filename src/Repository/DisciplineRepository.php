@@ -24,9 +24,20 @@ class DisciplineRepository extends ServiceEntityRepository
         parent::__construct($registry, Discipline::class);
     }
 
-    public function paginate(): QueryBuilder
+    public function paginate(bool $sorted = false): QueryBuilder
     {
-        return $this->createQueryBuilder('d');
+        $qb = $this->createQueryBuilder('d');
+
+        if (!$sorted) {
+            $qb
+                ->addSelect('CASE WHEN d.isActive = true THEN 0 ELSE 1 END AS HIDDEN sort_group')
+                ->orderBy('sort_group', 'ASC')
+                ->addOrderBy('d.id', 'DESC');
+        } else {
+            $qb->orderBy('d.id', 'DESC');
+        }
+
+        return $qb;
     }
 
     /**

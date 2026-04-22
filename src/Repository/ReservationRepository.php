@@ -234,16 +234,15 @@ class ReservationRepository extends ServiceEntityRepository
      * @return Reservation[]|int
      */
     /**
-     * Devuelve un mapa [sessionId => [placeNumbers]] para las reservas activas
-     * del usuario dentro del rango de fechas dado.
-     * placeNumber = 0 en sesiones individuales (sin asiento).
+     * Devuelve los IDs de sesiones en las que el usuario ya tiene reserva activa
+     * dentro del rango de fechas dado.
      *
-     * @return array<int, int[]>
+     * @return int[]
      */
-    public function getReservedPlacesByUser(User $user, \DateTimeInterface $dateStart, \DateTimeInterface $dateEnd): array
+    public function getReservedSessionIdsByUser(User $user, \DateTimeInterface $dateStart, \DateTimeInterface $dateEnd): array
     {
-        $rows = $this->createQueryBuilder('r')
-            ->select('IDENTITY(r.session) as sessionId', 'r.placeNumber')
+        return $this->createQueryBuilder('r')
+            ->select('IDENTITY(r.session) as sessionId')
             ->join('r.session', 's')
             ->where('r.user = :user')
             ->andWhere('r.isAvailable = true')
@@ -255,16 +254,40 @@ class ReservationRepository extends ServiceEntityRepository
             ->setParameter('dateEnd', $dateEnd)
             ->setParameter('statuses', [Session::STATUS_OPEN, Session::STATUS_FULL])
             ->getQuery()
+            ->getSingleColumnResult()
+        ;
+    }
+
+    /**
+     * Returns [sessionId => count] for active reservations of a user in a date range.
+     *
+     * @return array<int, int>
+     */
+    public function getReservedSessionCountsByUser(User $user, \DateTimeInterface $dateStart, \DateTimeInterface $dateEnd): array
+    {
+        $rows = $this->createQueryBuilder('r')
+            ->select('IDENTITY(r.session) as sessionId, COUNT(r.id) as cnt')
+            ->join('r.session', 's')
+            ->where('r.user = :user')
+            ->andWhere('r.isAvailable = true')
+            ->andWhere('s.dateStart >= :dateStart')
+            ->andWhere('s.dateStart <= :dateEnd')
+            ->andWhere('s.status IN (:statuses)')
+            ->groupBy('r.session')
+            ->setParameter('user', $user)
+            ->setParameter('dateStart', $dateStart)
+            ->setParameter('dateEnd', $dateEnd)
+            ->setParameter('statuses', [Session::STATUS_OPEN, Session::STATUS_FULL])
+            ->getQuery()
             ->getArrayResult()
         ;
 
-        $map = [];
+        $counts = [];
         foreach ($rows as $row) {
-            $sid = (int) $row['sessionId'];
-            $map[$sid][] = (int) $row['placeNumber'];
+            $counts[(int) $row['sessionId']] = (int) $row['cnt'];
         }
 
-        return $map;
+        return $counts;
     }
 
     public function getReservedSessionsByUser(User $user, bool $count = false): array|int

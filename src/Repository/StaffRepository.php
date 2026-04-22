@@ -7,6 +7,7 @@ namespace App\Repository;
 use App\Entity\Staff;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -78,6 +79,28 @@ class StaffRepository extends ServiceEntityRepository implements PasswordUpgrade
     public function getAllInstructors(): array
     {
         return $this->findByRole('ROLE_INSTRUCTOR');
+    }
+
+    public function getQueryBuilderInstructors(bool $sorted = false): QueryBuilder
+    {
+        $qb = $this->createQueryBuilder('s')
+            ->addSelect('p')
+            ->leftJoin('s.profile', 'p')
+            ->where('s.roles LIKE :roles')
+            ->andWhere('s.deleted = :deleted')
+            ->setParameter('roles', '%"ROLE_INSTRUCTOR"%')
+            ->setParameter('deleted', false);
+
+        if (!$sorted) {
+            $qb
+                ->addSelect('CASE WHEN s.isActive = true THEN 0 ELSE 1 END AS HIDDEN sort_group')
+                ->orderBy('sort_group', 'ASC')
+                ->addOrderBy('s.id', 'DESC');
+        } else {
+            $qb->orderBy('s.id', 'DESC');
+        }
+
+        return $qb;
     }
 
     /**

@@ -24,10 +24,18 @@ class PackageRepository extends ServiceEntityRepository
         parent::__construct($registry, Package::class);
     }
 
-    public function findWithFilters(array $filters): QueryBuilder
+    public function findWithFilters(array $filters, bool $sorted = false): QueryBuilder
     {
         $qb = $this->createQueryBuilder('p');
-        $qb->orderBy('p.id');
+
+        if (!$sorted) {
+            $qb
+                ->addSelect('CASE WHEN p.isActive = true THEN 0 ELSE 1 END AS HIDDEN sort_group')
+                ->orderBy('sort_group', 'ASC')
+                ->addOrderBy('p.id', 'DESC');
+        } else {
+            $qb->orderBy('p.id', 'DESC');
+        }
 
         foreach ($this->getFilterMap($filters, 'p') as $key => $filter) {
             $qb
