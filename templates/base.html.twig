@@ -54,6 +54,17 @@
     </div>
 </div>
 
+<a
+    class="floating-whatsapp"
+    data-floating-whatsapp
+    href="{{ config_whatsapp_url()|trim }}"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="Contactar por WhatsApp"
+>
+    <i class="bi bi-whatsapp" aria-hidden="true"></i>
+</a>
+
 {% block javascripts %}
     {{ encore_entry_script_tags('app') }}
 {% endblock %}

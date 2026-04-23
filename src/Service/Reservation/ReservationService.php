@@ -33,6 +33,7 @@ readonly class ReservationService
     public const CONSUMPTION_SOURCE_AUTO = 'auto';
     public const CONSUMPTION_SOURCE_UNLIMITED = 'unlimited';
     public const CONSUMPTION_SOURCE_PACKAGE = 'package';
+    public const CONSUMPTION_SOURCE_TRANSACTION = 'transaction';
 
     public function __construct(
         private EntityManagerInterface $em,
@@ -114,17 +115,30 @@ readonly class ReservationService
                 throw new ReservationException('Tu paquete ilimitado ya alcanzo el limite diario. Puedes reservar con paquetes por clase activos.');
             }
 
-            $excludeUnlimited = self::CONSUMPTION_SOURCE_PACKAGE === $consumptionSource
-                || (self::CONSUMPTION_SOURCE_AUTO === $consumptionSource && ($hasUserReservations || $isFullUnlimited));
+            // Fuente especifica por ID de transaccion (ej. 'transaction:42')
+            if (1 === preg_match('/^transaction:(\d+)$/', $consumptionSource, $matches)) {
+                $txnId = (int) $matches[1];
+                $specificTransaction = $this->transactionRepository->findTransactionByIdForUser($txnId, $user);
+                if (null === $specificTransaction) {
+                    throw new ReservationException('El paquete seleccionado no es válido o no está disponible.');
+                }
+                if ($specificTransaction->getExpirationAt() < $session->getDateStart()) {
+                    throw new ReservationException('El paquete seleccionado ya venció para la fecha de esta clase.');
+                }
+                $transaction = $specificTransaction;
+            } else {
+                $excludeUnlimited = self::CONSUMPTION_SOURCE_PACKAGE === $consumptionSource
+                    || (self::CONSUMPTION_SOURCE_AUTO === $consumptionSource && ($hasUserReservations || $isFullUnlimited));
 
-            $onlyUnlimited = self::CONSUMPTION_SOURCE_UNLIMITED === $consumptionSource;
+                $onlyUnlimited = self::CONSUMPTION_SOURCE_UNLIMITED === $consumptionSource;
 
-            $transaction = $this->findTransactionForSession(
-                $user,
-                $session,
-                $excludeUnlimited,
-                $onlyUnlimited ? true : null
-            );
+                $transaction = $this->findTransactionForSession(
+                    $user,
+                    $session,
+                    $excludeUnlimited,
+                    $onlyUnlimited ? true : null
+                );
+            }
         } catch (NoResultException $e) {
             if ($forcedPackageByUnlimitedInSession) {
                 $msg = 'Ya usaste tu cupo ilimitado en esta sesion. Necesitas un paquete por clase activo y compatible para esta reserva.';
@@ -241,9 +255,19 @@ readonly class ReservationService
         }
 
         $canUsePackage = false;
+        $regularTransactions = [];
         try {
             $this->findTransactionForSession($user, $session, true, null);
             $canUsePackage = true;
+            // Cargar todas las transacciones regulares elegibles para el selector
+            $packageType = $session->isIndividual() ? PackageSessionType::TYPE_INDIVIDUAL : PackageSessionType::TYPE_GROUP;
+            $regularTransactions = $this->transactionRepository->findAllTransactionsAvailableByUserAndExpirationAt(
+                $user,
+                $session->getDateStart(),
+                $packageType,
+                false,
+                true,
+            );
         } catch (NoResultException) {
         }
 
@@ -257,10 +281,28 @@ readonly class ReservationService
             $unlimitedDailyLimitNotice = 'Por hoy ya consumiste tus 2 cupos de ilimitado. Esta reserva se consumira de tus paquetes activos por clase.';
         }
 
+        // Construir lista de opciones para el selector de paquetes
+        $availableTransactions = [];
+        if ($canUseUnlimited) {
+            $availableTransactions[] = [
+                'value' => self::CONSUMPTION_SOURCE_UNLIMITED,
+                'label' => 'Paquete ilimitado',
+                'isUnlimited' => true,
+            ];
+        }
+        foreach ($regularTransactions as $txn) {
+            $availableTransactions[] = [
+                'value' => 'transaction:' . $txn->getId(),
+                'label' => ($txn->getPackageTotalClasses() ?? '?') . ' clases — Vence ' . ($txn->getExpirationAt()?->format('d/m/Y') ?? 'N/A'),
+                'isUnlimited' => false,
+            ];
+        }
+
         return [
             'canUseUnlimited' => $canUseUnlimited,
             'canUsePackage' => $canUsePackage,
             'hasBothSources' => $canUseUnlimited && $canUsePackage,
+            'availableTransactions' => $availableTransactions,
             'unlimitedBlockedReason' => $unlimitedBlockedReason,
             'forcedPackageNotice' => $forcedPackageNotice,
             'unlimitedDailyLimitNotice' => $unlimitedDailyLimitNotice,
@@ -543,11 +585,20 @@ readonly class ReservationService
     {
         $normalized = strtolower(trim($consumptionSource));
 
-        return in_array($normalized, [
+        if (in_array($normalized, [
             self::CONSUMPTION_SOURCE_AUTO,
             self::CONSUMPTION_SOURCE_UNLIMITED,
             self::CONSUMPTION_SOURCE_PACKAGE,
-        ], true) ? $normalized : self::CONSUMPTION_SOURCE_AUTO;
+        ], true)) {
+            return $normalized;
+        }
+
+        // Formato 'transaction:{id}' — fuente especifica por ID de transaccion
+        if (1 === preg_match('/^transaction:\d+$/', $normalized)) {
+            return $normalized;
+        }
+
+        return self::CONSUMPTION_SOURCE_AUTO;
     }
 
     private function findTransactionForSession(

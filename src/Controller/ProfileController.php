@@ -13,6 +13,7 @@ use App\Event\SecurityCredentialChangedEvent;
 use App\Event\WaitingListRemovedEvent;
 use App\Form\ProfileFormType;
 use App\Repository\BranchOfficeRepository;
+use App\Repository\ConfigurationRepository;
 use App\Repository\DisciplineRepository;
 use App\Repository\ReservationRepository;
 use App\Repository\SessionAuditRepository;
@@ -586,6 +587,7 @@ class ProfileController extends AbstractController
         DisciplineRepository $disciplineRepository,
         StaffRepository $staffRepository,
         ReservationRepository $reservationRepository,
+        ConfigurationRepository $configurationRepository,
     ): Response {
         /** @var User $loggedUser */
         $loggedUser = $this->getUser();
@@ -612,11 +614,9 @@ class ProfileController extends AbstractController
 
         $today = new \DateTimeImmutable('today');
         $dow = (int) $today->format('N'); // 1=Mon, 7=Sun
-        $showNextWeek = $dow >= 5;
 
-        // Current ISO week start (Monday) and max allowed week start
+        // Current ISO week start (Monday)
         $curWeekStart = $today->modify(sprintf('-%d days', $dow - 1))->setTime(0, 0, 0);
-        $maxWeekStart = $showNextWeek ? $curWeekStart->modify('+7 days') : $curWeekStart;
 
         // Parse requested week from query params (defaults to current week)
         $curIsoWeek = (int) $curWeekStart->format('W');
@@ -631,16 +631,12 @@ class ProfileController extends AbstractController
         if ($reqWeekStart < $curWeekStart) {
             $reqWeekStart = $curWeekStart;
         }
-        if ($reqWeekStart > $maxWeekStart) {
-            $reqWeekStart = $maxWeekStart;
-        }
 
         $reqWeekEnd = $reqWeekStart->modify('+6 days')->setTime(23, 59, 59);
 
-        // On initial non-AJAX load verify at least one session exists in the whole window
+        // On initial non-AJAX load verify at least one session exists from today onwards
         if (!$request->isXmlHttpRequest()) {
-            $windowEnd   = $maxWeekStart->modify('+6 days')->setTime(23, 59, 59);
-            $allSessions = $sessionRepository->getForChange($today, $windowEnd);
+            $allSessions = $sessionRepository->getForChange($today, null);
             $allFiltered = array_filter($allSessions, fn(Session $s) => $this->isSessionAllowedForChangeTarget($reservation, $s));
 
             if (!$allFiltered) {
@@ -683,10 +679,16 @@ class ProfileController extends AbstractController
         ] : null;
 
         $nextWeekStart = $reqWeekStart->modify('+7 days');
-        $weekNext = $nextWeekStart <= $maxWeekStart ? [
+        $nextWeekEnd   = $nextWeekStart->modify('+6 days')->setTime(23, 59, 59);
+        $sessionsNext  = $sessionRepository->getForChange($nextWeekStart, $nextWeekEnd);
+        $filteredNext  = array_filter($sessionsNext, fn(Session $s) => $this->isSessionAllowedForChangeTarget($reservation, $s));
+        $weekNext = $filteredNext ? [
             'weekno' => (int) $nextWeekStart->format('W'),
             'year'   => (int) $nextWeekStart->format('o'),
         ] : null;
+
+        $sessionsConfig = $configurationRepository->findSessions()?->getData() ?? [];
+        $emptyDayText = trim((string) ($sessionsConfig['calendar_empty_day_text'] ?? ''));
 
         $partialParams = [
             'reservation' => $reservation,
@@ -695,6 +697,7 @@ class ProfileController extends AbstractController
             'weekNext'    => $weekNext,
             'weekStart'   => $reqWeekStart,
             'weekEnd'     => $reqWeekStart->modify('+6 days'),
+            'emptyDayText' => $emptyDayText,
             'userReservedSessionIds' => $reservationRepository->getReservedSessionCountsByUser(
                 $loggedUser,
                 $reqWeekStart,

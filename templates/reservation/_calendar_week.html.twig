@@ -5,7 +5,7 @@
             'weekno': weekPrev.weekOfYear,
             'year': weekPrev.yearIso
         }) }}" id="lwprev" title="{{ branchOffice.name }} | Semana {{ weekPrev.weekOfYear }} {{ weekPrev.yearIso }}">
-            <span class="icon-flecha-izq"></span>
+            <span class="icon-flecha-izq"></span> Semana anterior
         </a>
     {% endif %}
 
@@ -17,7 +17,7 @@
             'weekno': weekNext.weekOfYear,
             'year': weekNext.yearIso
         }) }}" id="lwnext" title="{{ branchOffice.name }} | Semana {{ weekNext.weekOfYear }} {{ weekNext.yearIso }}">
-            <span class="icon-flecha-der"></span>
+            Siguiente semana <span class="icon-flecha-der"></span>
         </a>
     {% endif %}
 </div>
@@ -31,9 +31,11 @@
 <div class="clearfix" id="day-content">
     <div class="wrapper">
         {% for day in period %}
+            {% if day.format('Y-m-d') >= "now"|date("Y-m-d") %}
             <div class="day">
                 <h6><small>{{ day.dayName[:3] ~ ' ' ~ day.day }}</small></h6>
             </div>
+            {% endif %}
         {% endfor %}
     </div>
 </div>
@@ -41,9 +43,16 @@
 <div class="calendar clearfix">
     {% for day in period %}
         {# day \Carbon\Carbon #}
+        {% if day.format('Y-m-d') >= "now"|date("Y-m-d") %}
         <div class="day">
             <h6><small>{{ day.dayName[:3] ~ ' ' ~ day.day }}</small></h6>
-            {% for session in sessions[day.toDateString] ?? [] %}
+            {% set daySessions = sessions[day.toDateString] ?? [] %}
+            {% if daySessions is empty %}
+                {% if emptyDayText is defined and emptyDayText != '' %}
+                    <p class="calendar__empty-day">{{ emptyDayText }}</p>
+                {% endif %}
+            {% else %}
+                {% for session in daySessions %}
                 {# session \App\Entity\Session #}
                 {% set class_full = session.full ? 'disabled' : '' %}
                 {% set class_description = session.information is not null ? session.information|trim : '' %}
@@ -68,7 +77,9 @@
                         </div>
                     {% endif %}
                 </a>
-            {% endfor %}
+                {% endfor %}
+            {% endif %}
         </div>
+        {% endif %}
     {% endfor %}
 </div>

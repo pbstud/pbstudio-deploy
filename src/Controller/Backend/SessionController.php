@@ -226,7 +226,7 @@ class SessionController extends AbstractController
 
     #[Route('/new', name: 'backend_session_new', methods: ['GET', 'POST'])]
     #[IsGranted('ALLOWED_ROUTE_ACCESS')]
-    public function new(Request $request, EntityManagerInterface $em): Response
+    public function new(Request $request, EntityManagerInterface $em, SessionRepository $sessionRepository): Response
     {
         $session = new Session();
         $form = $this->createForm(SessionType::class, $session, [
@@ -235,6 +235,21 @@ class SessionController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $instructorConflict = $this->findInstructorTimeConflictSession($sessionRepository, $session);
+            if ($instructorConflict instanceof Session) {
+                $this->addFlash('danger', sprintf(
+                    'No se guardó la clase: %s ya tiene una clase el %s a las %s.',
+                    (string) ($session->getInstructor()?->getProfile()?->getFirstname() ?? 'Este instructor'),
+                    (string) ($session->getDateStart()?->format('d/m/Y') ?? ''),
+                    (string) ($session->getTimeStart()?->format('H:i') ?? '')
+                ));
+
+                return $this->render('backend/session/new.html.twig', [
+                    'session' => $session,
+                    'form' => $form->createView(),
+                ]);
+            }
+
             /** @var ExerciseRoom $exerciseRoom */
             $exerciseRoom = $session->getExerciseRoom();
             $capacity = (int) ($exerciseRoom->getCapacity() ?? 0);
@@ -271,12 +286,85 @@ class SessionController extends AbstractController
         ]);
     }
 
+    #[Route('/validate-instructor-conflict', name: 'backend_session_validate_instructor_conflict', methods: ['POST'])]
+    #[IsGranted('ALLOWED_ROUTE_ACCESS')]
+    public function validateInstructorConflict(
+        Request $request,
+        SessionRepository $sessionRepository,
+        BranchOfficeRepository $branchOfficeRepository,
+        StaffRepository $staffRepository,
+    ): JsonResponse {
+        try {
+            $payload = $request->request->all('session');
+
+            $branchOfficeId = (int) ($payload['branchOffice'] ?? 0);
+            $instructorId = (int) ($payload['instructor'] ?? 0);
+            $excludeSessionId = (int) ($payload['id'] ?? 0);
+
+            $dateStart = $this->parseDateInput($payload['dateStart'] ?? null);
+            $timeStart = $this->parseTimeInput($payload['timeStart'] ?? null);
+
+            if ($branchOfficeId <= 0 || $instructorId <= 0 || !$dateStart || !$timeStart) {
+                return new JsonResponse([
+                    'success' => true,
+                ]);
+            }
+
+            $branchOffice = $branchOfficeRepository->find($branchOfficeId);
+            $instructor = $staffRepository->find($instructorId);
+            if (!$branchOffice || !$instructor) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'No fue posible validar instructor o sucursal.',
+                ], 422);
+            }
+
+            $probeSession = new Session();
+            $probeSession
+                ->setBranchOffice($branchOffice)
+                ->setInstructor($instructor)
+                ->setDateStart($dateStart)
+                ->setTimeStart($timeStart)
+            ;
+
+            $conflict = $this->findInstructorTimeConflictSession(
+                $sessionRepository,
+                $probeSession,
+                $excludeSessionId > 0 ? $excludeSessionId : null,
+            );
+
+            if ($conflict instanceof Session) {
+                $instructorName = (string) ($instructor->getProfile()?->getFirstname() ?? ('Instructor #' . $instructorId));
+
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => sprintf(
+                        '%s ya tiene una clase el %s a las %s.',
+                        $instructorName,
+                        $dateStart->format('d/m/Y'),
+                        $timeStart->format('H:i')
+                    ),
+                ], 422);
+            }
+
+            return new JsonResponse([
+                'success' => true,
+            ]);
+        } catch (\Throwable $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'No fue posible validar conflictos de horario.',
+            ], 500);
+        }
+    }
+
     #[Route('/{id}/edit', name: 'backend_session_edit', methods: ['GET', 'POST'])]
     #[IsGranted('ALLOWED_ROUTE_ACCESS')]
     public function edit(
         Request $request,
         Session $session,
         EntityManagerInterface $em,
+        SessionRepository $sessionRepository,
         ReservationRepository $reservationRepository,
         WaitingListService $waitingListService,
         ReservationMailer $reservationMailer,
@@ -302,6 +390,22 @@ class SessionController extends AbstractController
         $editForm->handleRequest($request);
 
         if ($editForm->isSubmitted() && $editForm->isValid()) {
+            $instructorConflict = $this->findInstructorTimeConflictSession($sessionRepository, $session, (int) $session->getId());
+            if ($instructorConflict instanceof Session) {
+                $this->addFlash('danger', sprintf(
+                    'No se guardó la clase: %s ya tiene una clase el %s a las %s.',
+                    (string) ($session->getInstructor()?->getProfile()?->getFirstname() ?? 'Este instructor'),
+                    (string) ($session->getDateStart()?->format('d/m/Y') ?? ''),
+                    (string) ($session->getTimeStart()?->format('H:i') ?? '')
+                ));
+
+                return $this->render('backend/session/edit.html.twig', [
+                    'session' => $session,
+                    'edit_form' => $editForm->createView(),
+                    'cancel_form' => $cancelForm->createView(),
+                ]);
+            }
+
             $capacity = (int) ($session->getExerciseRoomCapacity() ?? 0);
             $session->setSeatLayout(
                 $this->completeSeatLayout(
@@ -1050,6 +1154,105 @@ class SessionController extends AbstractController
             ]))
             ->getForm()
         ;
+    }
+
+    private function findInstructorTimeConflictSession(
+        SessionRepository $sessionRepository,
+        Session $session,
+        ?int $excludeSessionId = null,
+    ): ?Session {
+        $branchOffice = $session->getBranchOffice();
+        $instructor = $session->getInstructor();
+        $dateStart = $session->getDateStart();
+        $timeStart = $session->getTimeStart();
+
+        if (!$branchOffice || !$instructor || !$dateStart || !$timeStart) {
+            return null;
+        }
+
+        $candidates = $sessionRepository->findBy([
+            'branchOffice' => $branchOffice,
+            'instructor' => $instructor,
+            'dateStart' => $dateStart,
+            'timeStart' => $timeStart,
+            'status' => [
+                Session::STATUS_OPEN,
+                Session::STATUS_FULL,
+                Session::STATUS_CLOSED,
+            ],
+        ]);
+
+        foreach ($candidates as $candidate) {
+            if (!$candidate instanceof Session) {
+                continue;
+            }
+
+            if (null !== $excludeSessionId && (int) $candidate->getId() === $excludeSessionId) {
+                continue;
+            }
+
+            return $candidate;
+        }
+
+        return null;
+    }
+
+    private function parseDateInput(mixed $value): ?\DateTime
+    {
+        if (is_string($value)) {
+            $raw = trim($value);
+            if ('' === $raw) {
+                return null;
+            }
+
+            $date = \DateTime::createFromFormat('d/m/Y', $raw)
+                ?: \DateTime::createFromFormat('d-m-Y', $raw)
+                ?: \DateTime::createFromFormat('Y-m-d', $raw);
+
+            if ($date instanceof \DateTime) {
+                $date->setTime(0, 0, 0);
+
+                return $date;
+            }
+        }
+
+        if (is_array($value)) {
+            $year = (int) ($value['year'] ?? 0);
+            $month = (int) ($value['month'] ?? 0);
+            $day = (int) ($value['day'] ?? 0);
+            if ($year > 0 && $month > 0 && $day > 0) {
+                return (new \DateTime())->setDate($year, $month, $day)->setTime(0, 0, 0);
+            }
+        }
+
+        return null;
+    }
+
+    private function parseTimeInput(mixed $value): ?\DateTime
+    {
+        if (is_string($value)) {
+            $raw = trim($value);
+            if ('' === $raw) {
+                return null;
+            }
+
+            $time = \DateTime::createFromFormat('H:i', $raw)
+                ?: \DateTime::createFromFormat('H:i:s', $raw);
+
+            if ($time instanceof \DateTime) {
+                return $time;
+            }
+        }
+
+        if (is_array($value)) {
+            $hour = (int) ($value['hour'] ?? 0);
+            $minute = (int) ($value['minute'] ?? 0);
+            if ($hour >= 0 && $hour <= 23 && $minute >= 0 && $minute <= 59) {
+                return (new \DateTime())->setTime($hour, $minute, 0);
+            }
+        }
+
+        return null;
     }
 
     private function resolveSeatLayoutData(Session $session): array

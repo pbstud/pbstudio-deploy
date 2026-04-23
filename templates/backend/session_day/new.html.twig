@@ -389,6 +389,29 @@
             </form>
         {% endblock %}
     {% endembed %}
+
+    {# Modal: resolución de colisiones al importar clases #}
+    <div class="modal fade" id="import-collision-modal" tabindex="-1" role="dialog" aria-labelledby="importCollisionModalLabel">
+        <div class="modal-dialog modal-sm" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="importCollisionModalLabel">
+                        <i class="fa fa-exclamation-triangle text-warning"></i>
+                        Clases en conflicto
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <p id="import-collision-msg"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" id="import-collision-cancel" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-warning" id="import-collision-skip">Solo llenar vacías</button>
+                    <button type="button" class="btn btn-danger" id="import-collision-force">Reemplazar todo</button>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block javascripts %}
@@ -409,6 +432,7 @@
             var modernPane = document.querySelector('[data-pane="modern"]');
             var formEl = document.getElementById('session-day-new-form');
             var importFromDateUrl = '{{ path('backend_session_day_import_from_date', {'branchOfficeId': branchOffice.id}) }}';
+            var validateInstructorConflictsUrl = '{{ path('backend_session_day_validate_instructor_conflicts', {'branchOfficeId': branchOffice.id}) }}';
             var roomIds = [{% for exerciseRoom in exerciseRooms %}{{ exerciseRoom.id }}{% if not loop.last %}, {% endif %}{% endfor %}];
             var roomOptionsById = {
                 {% for exerciseRoom in exerciseRooms %}
@@ -418,6 +442,7 @@
             var firstSchedule = '{{ schedules|first }}';
             var rowIndex = 0;
             var legacyDynamicIndex = 0;
+            var isSubmittingAfterServerValidation = false;
 
             function initDatepickerInput(inputEl) {
                 if (!inputEl || !window.jQuery || !window.jQuery.fn || !window.jQuery.fn.daterangepicker) {
@@ -787,6 +812,64 @@
                     return 'legacy';
                 }
 
+                function detectCollisions(items, mode) {
+                    var seen = {};
+                    var collisions = [];
+                    items.forEach(function (item) {
+                        var timeValue = normalizeTimeValue(item.timeStart || '');
+                        if (!timeValue) { return; }
+                        var roomId = String(item.exerciseRoomId || '');
+                        var key = timeValue + '|' + roomId;
+                        if (seen[key]) { return; }
+                        var selectEl = null;
+                        if (mode === 'modern') {
+                            var row = findModernRowByTime(timeValue);
+                            if (row) {
+                                selectEl = row.querySelector('.js-modern-instructor[data-room-id="' + roomId + '"]');
+                            }
+                        } else {
+                            var legacyRow = findLegacyRowByTime(timeValue);
+                            if (legacyRow) {
+                                selectEl = legacyRow.querySelector('.js-legacy-instructor[data-room-id="' + roomId + '"]');
+                            }
+                        }
+                        seen[key] = true;
+                        if (selectEl && selectEl.value && selectEl.value !== '') {
+                            collisions.push({ time: timeValue, roomId: roomId });
+                        }
+                    });
+                    return collisions;
+                }
+
+                function applyImport(items, mode, forceOverwrite) {
+                    var filtered = forceOverwrite ? items : items.filter(function (item) {
+                        var timeValue = normalizeTimeValue(item.timeStart || '');
+                        var roomId = String(item.exerciseRoomId || '');
+                        var selectEl = null;
+                        if (mode === 'modern') {
+                            var row = findModernRowByTime(timeValue);
+                            if (row) { selectEl = row.querySelector('.js-modern-instructor[data-room-id="' + roomId + '"]'); }
+                        } else {
+                            var legacyRow = findLegacyRowByTime(timeValue);
+                            if (legacyRow) { selectEl = legacyRow.querySelector('.js-legacy-instructor[data-room-id="' + roomId + '"]'); }
+                        }
+                        return !(selectEl && selectEl.value && selectEl.value !== '');
+                    });
+
+                    if (mode === 'modern') {
+                        applyImportedItemsToModern(filtered);
+                    } else {
+                        applyImportedItemsToLegacy(filtered);
+                    }
+
+                    var skipped = items.length - filtered.length;
+                    if (skipped > 0 && !forceOverwrite) {
+                        showClientFlash('warning', 'Se importaron ' + filtered.length + ' clase(s). Se omitieron ' + skipped + ' por conflicto.');
+                    } else {
+                        showClientFlash('success', 'Clases importadas correctamente.');
+                    }
+                }
+
                 function runImportForSelectedDate() {
                     var selectedDate = normalizeTimeValue((importDateInput && importDateInput.value) || '');
                     if (!selectedDate) {
@@ -810,10 +893,7 @@
                     })
                         .then(function (response) {
                             return response.json().then(function (payload) {
-                                return {
-                                    ok: response.ok,
-                                    payload: payload,
-                                };
+                                return { ok: response.ok, payload: payload };
                             });
                         })
                         .then(function (result) {
@@ -829,13 +909,40 @@
                             }
 
                             var activeMode = getActivePaneMode();
-                            if (activeMode === 'modern') {
-                                applyImportedItemsToModern(items);
-                            } else {
-                                applyImportedItemsToLegacy(items);
+                            var collisions = detectCollisions(items, activeMode);
+
+                            if (collisions.length === 0) {
+                                applyImport(items, activeMode, true);
+                                return;
                             }
 
-                            showClientFlash('success', 'Clases importadas correctamente.');
+                            // Mostrar modal de resolución de conflictos
+                            var msgEl = document.getElementById('import-collision-msg');
+                            if (msgEl) {
+                                var collisionTimes = collisions.reduce(function (acc, c) {
+                                    if (acc.indexOf(c.time) === -1) { acc.push(c.time); }
+                                    return acc;
+                                }, []);
+                                var timeList = collisionTimes.join(', ');
+                                msgEl.innerHTML =
+                                    '<strong>' + collisionTimes.length + ' horario(s) ya tienen instructor asignado:</strong><br>' +
+                                    '<span style="font-size:0.92em;color:#555;">' + timeList + '</span><br><br>' +
+                                    '¿Qué deseas hacer con estas clases?';
+                            }
+
+                            var $modal = window.jQuery && window.jQuery('#import-collision-modal');
+                            if ($modal) {
+                                // Limpiar listeners previos
+                                window.jQuery('#import-collision-skip').off('click').on('click', function () {
+                                    $modal.modal('hide');
+                                    applyImport(items, activeMode, false);
+                                });
+                                window.jQuery('#import-collision-force').off('click').on('click', function () {
+                                    $modal.modal('hide');
+                                    applyImport(items, activeMode, true);
+                                });
+                                $modal.modal('show');
+                            }
                         })
                         .catch(function () {
                             showClientFlash('danger', 'Ocurrió un error al importar las clases.');
@@ -1146,6 +1253,43 @@
                     return;
                 }
 
+                function detectInstructorConflicts(activePane) {
+                    if (!activePane) { return []; }
+
+                    var rows = activePane.querySelectorAll('tbody tr');
+                    var conflicts = [];
+
+                    rows.forEach(function (row) {
+                        var timeInput = row.querySelector('td:first-child input[type="time"], .js-modern-time');
+                        if (!timeInput) { return; }
+                        var timeValue = normalizeTimeValue(timeInput.value || '');
+                        if (!timeValue) { return; }
+
+                        var rowInstructorCounts = {};
+                        var selects = row.querySelectorAll('.js-instructor-select');
+                        selects.forEach(function (selectEl) {
+                            var instructorId = (selectEl.value || '').trim();
+                            if (!instructorId || parseInt(instructorId, 10) <= 0) { return; }
+
+                            if (!rowInstructorCounts[instructorId]) {
+                                rowInstructorCounts[instructorId] = 0;
+                            }
+                            rowInstructorCounts[instructorId] += 1;
+                        });
+
+                        Object.keys(rowInstructorCounts).forEach(function (instructorId) {
+                            if (rowInstructorCounts[instructorId] > 1) {
+                                conflicts.push({
+                                    instructorId: instructorId,
+                                    times: [timeValue],
+                                });
+                            }
+                        });
+                    });
+
+                    return conflicts;
+                }
+
                 function getCellContext(cell) {
                     var row = cell.closest('tr');
                     var table = cell.closest('table');
@@ -1200,7 +1344,56 @@
                         }
                     }
 
+                    var instructorConflicts = detectInstructorConflicts(activePane);
+                    if (instructorConflicts.length > 0) {
+                        var lines = instructorConflicts.map(function (c) {
+                            var nameOpt = activePane.querySelector('.js-instructor-select option[value="' + c.instructorId + '"]');
+                            var name = nameOpt ? (nameOpt.textContent || '').trim() : ('Instructor #' + c.instructorId);
+                            return name + ': ' + c.times.join(', ');
+                        });
+                        var msgEl = document.getElementById('import-collision-msg');
+                        if (msgEl) {
+                            msgEl.innerHTML =
+                                '<strong>' + instructorConflicts.length + ' instructor(es) con clases en conflicto de horario:</strong><br><br>' +
+                                '<span style="font-size:0.92em;color:#555;">' + lines.join('<br>') + '</span><br><br>' +
+                                'Un instructor no puede impartir dos clases al mismo tiempo.<br>Revisa los horarios antes de guardar.';
+                        }
+                        var $modal = window.jQuery && window.jQuery('#import-collision-modal');
+                        if ($modal) {
+                            window.jQuery('#import-collision-skip').hide();
+                            window.jQuery('#import-collision-force').hide();
+                            window.jQuery('#import-collision-cancel').text('Cerrar');
+                            $modal.one('hidden.bs.modal', function () {
+                                window.jQuery('#import-collision-skip').show();
+                                window.jQuery('#import-collision-force').show();
+                                window.jQuery('#import-collision-cancel').text('Cancelar');
+                            });
+                            $modal.modal('show');
+                        }
+                        return false;
+                    }
+
                     return true;
+                }
+
+                function showBlockingConflictModal(messageHtml) {
+                    var msgEl = document.getElementById('import-collision-msg');
+                    if (msgEl) {
+                        msgEl.innerHTML = messageHtml;
+                    }
+
+                    var $modal = window.jQuery && window.jQuery('#import-collision-modal');
+                    if ($modal) {
+                        window.jQuery('#import-collision-skip').hide();
+                        window.jQuery('#import-collision-force').hide();
+                        window.jQuery('#import-collision-cancel').text('Cerrar');
+                        $modal.one('hidden.bs.modal', function () {
+                            window.jQuery('#import-collision-skip').show();
+                            window.jQuery('#import-collision-force').show();
+                            window.jQuery('#import-collision-cancel').text('Cancelar');
+                        });
+                        $modal.modal('show');
+                    }
                 }
 
                 if (formEl) {
@@ -1226,14 +1419,55 @@
                             modeInput.value = isModern ? 'modern' : 'legacy';
                         }
 
-                        // Deshabilitar la pestaña inactiva para que el browser no la envíe
-                        if (isModern) {
-                            setPaneEnabled(legacyPane, false);
-                            setPaneEnabled(modernPane, true);
-                        } else {
-                            setPaneEnabled(legacyPane, true);
-                            setPaneEnabled(modernPane, false);
+                        if (isSubmittingAfterServerValidation) {
+                            isSubmittingAfterServerValidation = false;
+
+                            if (isModern) {
+                                setPaneEnabled(legacyPane, false);
+                                setPaneEnabled(modernPane, true);
+                            } else {
+                                setPaneEnabled(legacyPane, true);
+                                setPaneEnabled(modernPane, false);
+                            }
+
+                            return;
                         }
+
+                        event.preventDefault();
+
+                        fetch(validateInstructorConflictsUrl, {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                            },
+                            body: new FormData(formEl),
+                        })
+                            .then(function (response) {
+                                return response.json().then(function (payload) {
+                                    return { ok: response.ok, payload: payload };
+                                });
+                            })
+                            .then(function (result) {
+                                if (result.ok && result.payload && result.payload.success) {
+                                    isSubmittingAfterServerValidation = true;
+                                    formEl.requestSubmit();
+                                    return;
+                                }
+
+                                var backendMessage = (result.payload && result.payload.message)
+                                    ? result.payload.message
+                                    : 'Existe un conflicto de instructor con clases ya registradas en ese horario.';
+
+                                showBlockingConflictModal(
+                                    '<strong>Conflicto de horario detectado:</strong><br><br>' +
+                                    '<span style="font-size:0.92em;color:#555;">' + backendMessage + '</span><br><br>' +
+                                    'Un instructor no puede impartir dos clases al mismo tiempo.<br>Revisa los horarios antes de guardar.'
+                                );
+                            })
+                            .catch(function () {
+                                showClientFlash('danger', 'No fue posible validar conflictos de horario. Intenta nuevamente.');
+                            });
                     });
                 }
             }

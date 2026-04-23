@@ -129,6 +129,181 @@ class SessionDayController extends AbstractController
         ]);
     }
 
+    #[Route('/validate-instructor-conflicts/{branchOfficeId}', name: 'backend_session_day_validate_instructor_conflicts', methods: ['POST'])]
+    #[IsGranted('ALLOWED_ROUTE_ACCESS')]
+    public function validateInstructorConflicts(
+        Request $request,
+        int $branchOfficeId,
+        BranchOfficeRepository $branchOfficeRepository,
+        SessionRepository $sessionRepository,
+        StaffRepository $instructorRepository,
+    ): JsonResponse {
+        /** @var BranchOffice|null $branchOffice */
+        $branchOffice = $branchOfficeRepository->find($branchOfficeId);
+        if (!$branchOffice) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Sucursal invalida.',
+            ], 404);
+        }
+
+        try {
+            $sessions = $request->request->all('session');
+
+            $mode = 'legacy';
+            if (isset($sessions['mode']) && 'modern' === $sessions['mode']) {
+                $mode = 'modern';
+            }
+
+            $schedules = is_array($sessions['schedules'] ?? null) ? $sessions['schedules'] : [];
+            $scheduleTimes = is_array($sessions['scheduleTimes'] ?? null) ? $sessions['scheduleTimes'] : [];
+            $information = is_array($sessions['information'] ?? null) ? $sessions['information'] : [];
+            $capacities = is_array($sessions['capacity'] ?? null) ? $sessions['capacity'] : [];
+
+            $schedules = array_filter(
+                $schedules,
+                static function (mixed $key) use ($mode): bool {
+                    $isNumeric = ctype_digit((string) $key);
+                    return 'modern' === $mode ? $isNumeric : !$isNumeric;
+                },
+                ARRAY_FILTER_USE_KEY
+            );
+            $scheduleTimes = array_filter(
+                $scheduleTimes,
+                static function (mixed $key) use ($mode): bool {
+                    $isNumeric = ctype_digit((string) $key);
+                    return 'modern' === $mode ? $isNumeric : !$isNumeric;
+                },
+                ARRAY_FILTER_USE_KEY
+            );
+
+            // En edición: considerar solo filas nuevas o realmente modificadas.
+            // Filas intactas (hash válido) no se tratan como "nuevas" para evitar falsos positivos.
+            $normalizedSchedules = [];
+            $hasStructuredSlots = false;
+            $editedSessionIds = [];
+            foreach ($schedules as $timeKey => $schedule) {
+                if (!is_array($schedule)) {
+                    continue;
+                }
+
+                foreach ($schedule as $exerciseRoomId => $slotData) {
+                    if (!is_array($slotData)) {
+                        $normalizedSchedules[$timeKey][$exerciseRoomId] = $slotData;
+                        continue;
+                    }
+
+                    $hasStructuredSlots = true;
+
+                    $instructorId = (int) ($slotData['instructor'] ?? 0);
+                    if ($instructorId <= 0) {
+                        continue;
+                    }
+
+                    $time = !empty($scheduleTimes[$timeKey]) ? (string) $scheduleTimes[$timeKey] : (string) $timeKey;
+                    $info = (string) ($information[$timeKey][$exerciseRoomId] ?? '');
+                    $capacity = (string) ($capacities[$timeKey][$exerciseRoomId] ?? '');
+
+                    if (isset($slotData['hash'], $slotData['session'])) {
+                        $sessionId = (int) $slotData['session'];
+                        $expectedHash = hash('md5', $sessionId.$instructorId.$info.$capacity.$time.$this->getParameter('secret'));
+
+                        // Sin cambios reales: no se valida como nueva/edición.
+                        if ($sessionId > 0 && hash_equals($expectedHash, (string) $slotData['hash'])) {
+                            continue;
+                        }
+
+                        if ($sessionId > 0) {
+                            $editedSessionIds[] = $sessionId;
+                        }
+                    }
+
+                    $normalizedSchedules[$timeKey][$exerciseRoomId] = [
+                        'instructor' => $instructorId,
+                    ];
+                }
+            }
+
+            // En estructura de edición ignoramos excludedSessionIds del frontend,
+            // y excluimos solo sesiones realmente editadas.
+            $excludedSessionIds = [];
+            if ($hasStructuredSlots) {
+                $excludedSessionIds = array_values(array_unique(array_filter(
+                    array_map(static fn ($id): int => (int) $id, $editedSessionIds),
+                    static fn (int $id): bool => $id > 0
+                )));
+            } elseif (is_array($sessions['excludedSessionIds'] ?? null)) {
+                $excludedSessionIds = array_values(array_unique(array_filter(
+                    array_map(static fn ($id): int => (int) $id, $sessions['excludedSessionIds']),
+                    static fn (int $id): bool => $id > 0
+                )));
+            }
+
+            $schedules = $normalizedSchedules;
+
+            $rawDateStarts = [];
+            if (is_array($sessions['dateStarts'] ?? null)) {
+                $rawDateStarts = $sessions['dateStarts'];
+            } elseif (!empty($sessions['dateStart'])) {
+                $rawDateStarts = [(string) $sessions['dateStart']];
+            }
+
+            $rawDateStarts = array_values(array_unique(array_filter(array_map(
+                static fn ($date): string => trim((string) $date),
+                $rawDateStarts
+            ), static fn (string $date): bool => '' !== $date)));
+
+            if ([] === $rawDateStarts) {
+                throw new \InvalidArgumentException('Debes seleccionar al menos una fecha.');
+            }
+
+            $targetDates = [];
+            $today = new \DateTime('today');
+            foreach ($rawDateStarts as $rawDateStart) {
+                $newDate = \DateTime::createFromFormat('d/m/Y', $rawDateStart);
+                if (!$newDate || $newDate->format('d/m/Y') !== $rawDateStart) {
+                    throw new \InvalidArgumentException(sprintf('Fecha invalida: %s', $rawDateStart));
+                }
+
+                $newDate->setTime(0, 0, 0);
+                if ($newDate <= $today) {
+                    throw new \InvalidArgumentException('Solo se pueden programar fechas futuras.');
+                }
+
+                $targetDates[] = $newDate;
+            }
+
+            $this->validateInstructorConflictsForNewDay(
+                $schedules,
+                $scheduleTimes,
+                $targetDates,
+                $branchOffice,
+                $sessionRepository,
+                $instructorRepository,
+                $excludedSessionIds,
+            );
+
+            return new JsonResponse([
+                'success' => true,
+            ]);
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (\Throwable $e) {
+            $this->logger->error('[SessionDay] Error validando conflictos de instructor', [
+                'mensaje' => $e->getMessage(),
+                'clase' => get_class($e),
+            ]);
+
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'No fue posible validar conflictos de horario. Intenta nuevamente.',
+            ], 500);
+        }
+    }
+
     #[Route('/new', name: 'backend_session_day_new', methods: ['GET', 'POST'])]
     #[IsGranted('ALLOWED_ROUTE_ACCESS')]
     public function newDay(
@@ -136,6 +311,7 @@ class SessionDayController extends AbstractController
         Schedule $scheduleUtil,
         BranchOfficeRepository $branchOfficeRepository,
         ExerciseRoomRepository $exerciseRoomRepository,
+        SessionRepository $sessionRepository,
         StaffRepository $instructorRepository,
         SessionInterface $sessionRequest,
         EntityManagerInterface $em
@@ -251,6 +427,15 @@ class SessionDayController extends AbstractController
                     'parsed'    => array_map(static fn (\DateTime $date): string => $date->format('Y-m-d'), $targetDates),
                 ]);
 
+                $this->validateInstructorConflictsForNewDay(
+                    $schedules,
+                    $scheduleTimes,
+                    $targetDates,
+                    $branchOffice,
+                    $sessionRepository,
+                    $instructorRepository,
+                );
+
                 $connection = $em->getConnection();
                 $connection->beginTransaction();
 
@@ -351,6 +536,21 @@ class SessionDayController extends AbstractController
                     'applyDates' => array_map(static fn (\DateTime $date): string => $date->format('d-m-Y'), $targetDates),
                     'fromCreation' => 1,
                 ]);
+            } catch (\InvalidArgumentException $e) {
+                if (isset($connection) && $connection->isTransactionActive()) {
+                    $connection->rollBack();
+                }
+
+                $this->logger->warning('[SessionDay] Validación de negocio en newDay', [
+                    'mensaje' => $e->getMessage(),
+                ]);
+
+                $message = trim($e->getMessage());
+                if ('' !== $message) {
+                    $this->addFlash('danger', $message);
+                }
+
+                $data['data'] = $request->request->all('session');
             } catch (\Exception $e) {
                 if (isset($connection) && $connection->isTransactionActive()) {
                     $connection->rollBack();
@@ -379,6 +579,188 @@ class SessionDayController extends AbstractController
         }
 
         return $this->render('backend/session_day/new.html.twig', $data);
+    }
+
+    /**
+     * Evita conflictos de horario por instructor antes de persistir:
+     * 1) Duplicado en el mismo payload (misma fecha/hora/instructor en dos salones)
+     * 2) Cruce contra sesiones ya existentes en BD para la misma fecha/hora/instructor
+     *
+     * @param array<string|int, mixed> $schedules
+     * @param array<string|int, mixed> $scheduleTimes
+     * @param array<int, \DateTime> $targetDates
+     * @param array<int, int> $excludedSessionIds IDs de sesiones a excluir en validación (para ediciones)
+     */
+    private function validateInstructorConflictsForNewDay(
+        array $schedules,
+        array $scheduleTimes,
+        array $targetDates,
+        BranchOffice $branchOffice,
+        SessionRepository $sessionRepository,
+        StaffRepository $instructorRepository,
+        array $excludedSessionIds = [],
+    ): void {
+        $plannedSlots = [];
+
+        foreach ($targetDates as $targetDate) {
+            foreach ($schedules as $timeKey => $schedule) {
+                if (!is_array($schedule)) {
+                    continue;
+                }
+
+                $time = !empty($scheduleTimes[$timeKey]) ? (string) $scheduleTimes[$timeKey] : (string) $timeKey;
+                [$timeHour, $timeMinute] = $this->extractHourMinute($time);
+                $dateTimeForSchedule = (clone $targetDate)->setTime($timeHour, $timeMinute);
+                $dateKey = $dateTimeForSchedule->format('Y-m-d');
+                $timeKeyNormalized = $dateTimeForSchedule->format('H:i');
+
+                foreach ($schedule as $slotData) {
+                    $instructorRaw = $slotData;
+                    if (is_array($slotData)) {
+                        $instructorRaw = $slotData['instructor'] ?? null;
+                    }
+
+                    $instructorId = (int) $instructorRaw;
+                    if ($instructorId <= 0) {
+                        continue;
+                    }
+
+                    $slotKey = sprintf('%s|%s|%d', $dateKey, $timeKeyNormalized, $instructorId);
+                    if (!isset($plannedSlots[$slotKey])) {
+                        $plannedSlots[$slotKey] = [
+                            'date' => $dateKey,
+                            'time' => $timeKeyNormalized,
+                            'instructorId' => $instructorId,
+                            'count' => 0,
+                        ];
+                    }
+
+                    $plannedSlots[$slotKey]['count']++;
+                }
+            }
+        }
+
+        if ([] === $plannedSlots) {
+            return;
+        }
+
+        $instructorIds = array_values(array_unique(array_map(
+            static fn (array $slot): int => (int) $slot['instructorId'],
+            array_values($plannedSlots)
+        )));
+
+        $instructorNames = [];
+        if ([] !== $instructorIds) {
+            $instructors = $instructorRepository->findBy(['id' => $instructorIds]);
+            foreach ($instructors as $instructor) {
+                if (!$instructor instanceof Staff) {
+                    continue;
+                }
+                $instructorNames[(int) $instructor->getId()] = (string) ($instructor->getProfile()?->getFirstname() ?? ('Instructor #' . $instructor->getId()));
+            }
+        }
+
+        $payloadConflicts = array_values(array_filter(
+            array_values($plannedSlots),
+            static fn (array $slot): bool => (int) $slot['count'] > 1
+        ));
+
+        if ([] !== $payloadConflicts) {
+            throw new \InvalidArgumentException($this->buildInstructorConflictMessage(
+                $payloadConflicts,
+                $instructorNames,
+                'el mismo instructor está repetido en dos salones para el mismo horario'
+            ));
+        }
+
+        $targetDateStrings = array_values(array_unique(array_map(
+            static fn (\DateTime $targetDate): string => $targetDate->format('Y-m-d'),
+            $targetDates
+        )));
+
+        $existingSessions = $sessionRepository->createQueryBuilder('s')
+            ->andWhere('s.branchOffice = :branchOffice')
+            ->andWhere('s.instructor IN (:instructorIds)')
+            ->andWhere('s.dateStart IN (:targetDates)')
+            ->andWhere('s.status IN (:statuses)');
+        
+        // Excluir sesiones si se está en modo edición
+        if ([] !== $excludedSessionIds) {
+            $existingSessions->andWhere('s.id NOT IN (:excludedIds)')
+                ->setParameter('excludedIds', $excludedSessionIds);
+        }
+        
+        $existingSessions
+            ->setParameter('branchOffice', $branchOffice)
+            ->setParameter('instructorIds', $instructorIds)
+            ->setParameter('targetDates', $targetDateStrings)
+            ->setParameter('statuses', [
+                Session::STATUS_OPEN,
+                Session::STATUS_FULL,
+                Session::STATUS_CLOSED,
+            ]);
+        
+        $result = $existingSessions->getQuery()->getResult();
+
+        $existingMap = [];
+        foreach ($result as $existingSession) {
+            if (!$existingSession instanceof Session || !$existingSession->getInstructor()) {
+                continue;
+            }
+
+            $existingKey = sprintf(
+                '%s|%s|%d',
+                $existingSession->getDateStart()?->format('Y-m-d'),
+                $existingSession->getTimeStart()?->format('H:i'),
+                (int) $existingSession->getInstructor()->getId()
+            );
+            $existingMap[$existingKey] = true;
+        }
+
+        $databaseConflicts = [];
+        foreach ($plannedSlots as $slotKey => $slot) {
+            if (isset($existingMap[$slotKey])) {
+                $databaseConflicts[] = $slot;
+            }
+        }
+
+        if ([] !== $databaseConflicts) {
+            throw new \InvalidArgumentException($this->buildInstructorConflictMessage(
+                $databaseConflicts,
+                $instructorNames,
+                'el instructor ya tiene una clase registrada en ese mismo horario'
+            ));
+        }
+    }
+
+    /**
+     * @param array<int, array{date:string,time:string,instructorId:int,count:int}> $conflicts
+     * @param array<int, string> $instructorNames
+     */
+    private function buildInstructorConflictMessage(array $conflicts, array $instructorNames, string $reason): string
+    {
+        $examples = [];
+        $maxExamples = 3;
+
+        foreach (array_slice($conflicts, 0, $maxExamples) as $conflict) {
+            $instructorId = (int) $conflict['instructorId'];
+            $instructorName = $instructorNames[$instructorId] ?? ('Instructor #' . $instructorId);
+            $date = \DateTime::createFromFormat('Y-m-d', (string) $conflict['date']);
+            $dateText = $date ? $date->format('d/m/Y') : (string) $conflict['date'];
+            $timeText = (string) $conflict['time'];
+
+            $examples[] = sprintf('%s (%s %s)', $instructorName, $dateText, $timeText);
+        }
+
+        $remaining = count($conflicts) - count($examples);
+        $extraText = $remaining > 0 ? sprintf(' y %d conflicto(s) adicional(es)', $remaining) : '';
+
+        return sprintf(
+            'No se guardaron las clases: %s. Conflictos: %s%s.',
+            $reason,
+            implode('; ', $examples),
+            $extraText
+        );
     }
 
     #[Route('/edit/{editDate}/{branchOfficeId}', name: 'backend_session_day_edit', methods: ['GET', 'POST'])]

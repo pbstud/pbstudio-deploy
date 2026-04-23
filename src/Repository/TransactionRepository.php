@@ -292,6 +292,53 @@ class TransactionRepository extends ServiceEntityRepository
     }
 
     /**
+     * Devuelve todas las transacciones elegibles para una sesion, ordenadas por vigencia ascendente.
+     * Incluye ilimitados si $includeUnlimited = true; incluye normales si $includeRegular = true.
+     *
+     * @return Transaction[]
+     */
+    public function findAllTransactionsAvailableByUserAndExpirationAt(
+        User $user,
+        \DateTimeInterface $sessionDateStart,
+        string $packageType,
+        bool $includeUnlimited = true,
+        bool $includeRegular = true,
+    ): array {
+        $qb = $this
+            ->findTransactionAvailableByUser($user)
+            ->andWhere('t.packageType = :packageType')
+            ->andWhere('t.haveSessionsAvailable = :haveSessionsAvailable')
+            ->andWhere('t.expirationAt >= :expirationAt')
+            ->setParameter('packageType', $packageType)
+            ->setParameter('haveSessionsAvailable', true)
+            ->setParameter('expirationAt', $sessionDateStart)
+        ;
+
+        if ($includeUnlimited && !$includeRegular) {
+            $qb->andWhere('t.packageIsUnlimited = true');
+        } elseif (!$includeUnlimited && $includeRegular) {
+            $qb->andWhere('t.packageIsUnlimited = false');
+        }
+        // si ambos son true no filtra; si ambos false devuelve vacío (no debería pasar)
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * Busca una transaccion especifica por ID validando que pertenece al usuario y esta activa.
+     */
+    public function findTransactionByIdForUser(int $id, User $user): ?Transaction
+    {
+        return $this->findOneBy([
+            'id' => $id,
+            'user' => $user,
+            'status' => Transaction::STATUS_PAID,
+            'isExpired' => false,
+            'haveSessionsAvailable' => true,
+        ]);
+    }
+
+    /**
      * @return Transaction[]
      */
     public function findAllTransactionAvailableByUser(User $user): array

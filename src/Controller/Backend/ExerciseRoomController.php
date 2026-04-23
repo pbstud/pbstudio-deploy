@@ -9,6 +9,7 @@ use App\Form\Backend\ExerciseRoomType;
 use App\Repository\ExerciseRoomRepository;
 use App\Repository\SessionRepository;
 use App\Service\WaitingList\WaitingListService;
+use App\Util\SeatLayoutMapper;
 use Doctrine\ORM\EntityManagerInterface;
 use Knp\Component\Pager\PaginatorInterface;
 use Psr\Log\LoggerInterface;
@@ -77,6 +78,45 @@ class ExerciseRoomController extends AbstractController
         WaitingListService $waitingListService,
         LoggerInterface $logger,
     ): Response {
+        $capacity = (int) ($exerciseRoom->getCapacity() ?? 0);
+
+        if ($request->isMethod('POST') && $request->request->getBoolean('_seat_editor')) {
+            if (!$this->isCsrfTokenValid('exercise_room_seats_' . $exerciseRoom->getId(), $request->request->get('_token'))) {
+                $this->addFlash('danger', 'Token de seguridad inválido.');
+
+                return $this->redirectToRoute('backend_exerciseroom_edit', [
+                    'id' => $exerciseRoom->getId(),
+                    '_fragment' => 'seat-layout-editor',
+                ]);
+            }
+
+            $layout = SeatLayoutMapper::buildPersistedSeatLayout(
+                $this->sanitizeSeatLayout($request->request->get('seat_layout'), $capacity),
+                $capacity
+            );
+
+            $rawPlacesNotAvailable = $request->request->get('places_not_available', '');
+            $placesNotAvailable = SeatLayoutMapper::buildPersistedPlacesNotAvailable(
+                array_filter(array_map('intval', array_filter(explode(',', (string) $rawPlacesNotAvailable), 'strlen'))),
+                $capacity,
+                $capacity,
+            );
+
+            $exerciseRoom
+                ->setSeatLayout($layout)
+                ->setPlacesNotAvailable($placesNotAvailable)
+            ;
+
+            $em->flush();
+
+            $this->addFlash('success', 'La disposición de asientos del salón ha sido actualizada.');
+
+            return $this->redirectToRoute('backend_exerciseroom_edit', [
+                'id' => $exerciseRoom->getId(),
+                '_fragment' => 'seat-layout-editor',
+            ]);
+        }
+
         $editForm = $this->createForm(ExerciseRoomType::class, $exerciseRoom);
         $editForm->handleRequest($request);
 
@@ -104,6 +144,8 @@ class ExerciseRoomController extends AbstractController
                 return $this->render('backend/exerciseroom/edit.html.twig', [
                     'exerciseRoom' => $exerciseRoom,
                     'form' => $editForm->createView(),
+                    'seat_layout' => SeatLayoutMapper::buildPersistedSeatLayout($exerciseRoom->getSeatLayout(), $capacity),
+                    'not_available' => SeatLayoutMapper::buildPersistedPlacesNotAvailable($exerciseRoom->getPlacesNotAvailable(), $capacity, $capacity) ?? [],
                 ]);
             }
 
@@ -123,6 +165,48 @@ class ExerciseRoomController extends AbstractController
         return $this->render('backend/exerciseroom/edit.html.twig', [
             'exerciseRoom' => $exerciseRoom,
             'form' => $editForm->createView(),
+            'seat_layout' => SeatLayoutMapper::buildPersistedSeatLayout($exerciseRoom->getSeatLayout(), $capacity),
+            'not_available' => SeatLayoutMapper::buildPersistedPlacesNotAvailable($exerciseRoom->getPlacesNotAvailable(), $capacity, $capacity) ?? [],
         ]);
+    }
+
+    private function sanitizeSeatLayout(mixed $rawLayout, int $capacity): ?array
+    {
+        if (is_string($rawLayout)) {
+            $rawLayout = '' !== trim($rawLayout) ? json_decode($rawLayout, true) : null;
+        }
+
+        if (!is_array($rawLayout)) {
+            return null;
+        }
+
+        $maxSlots = 36;
+        $maxSeats = max(0, $capacity);
+        $usedSlots = [];
+        $layout = [];
+
+        foreach ($rawLayout as $seat => $slot) {
+            $seatNumber = (int) $seat;
+            $slotNumber = (int) $slot;
+
+            if ($seatNumber < 1 || $seatNumber > $maxSeats) {
+                continue;
+            }
+
+            if ($slotNumber < 1 || $slotNumber > $maxSlots || isset($usedSlots[$slotNumber])) {
+                continue;
+            }
+
+            $layout[(string) $seatNumber] = $slotNumber;
+            $usedSlots[$slotNumber] = true;
+        }
+
+        if ([] === $layout) {
+            return null;
+        }
+
+        ksort($layout, SORT_NUMERIC);
+
+        return $layout;
     }
 }

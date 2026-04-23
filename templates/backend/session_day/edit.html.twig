@@ -177,6 +177,26 @@
             </form>
         {% endblock %}
     {% endembed %}
+    {# Modal: conflicto de instructor al guardar #}
+    <div class="modal fade" id="instructor-conflict-modal" tabindex="-1" role="dialog" aria-labelledby="instructorConflictModalLabel">
+        <div class="modal-dialog modal-sm" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="instructorConflictModalLabel">
+                        <i class="fa fa-exclamation-triangle text-warning"></i>
+                        Conflicto de horario
+                    </h4>
+                </div>
+                <div class="modal-body">
+                    <p id="instructor-conflict-msg"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}
 
 {% block javascripts %}
@@ -417,6 +437,76 @@
                 cell.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
 
+            function normalizeTimeValue(timeValue) {
+                var value = (timeValue || '').trim();
+                if (/^\d{2}:\d{2}:\d{2}$/.test(value)) {
+                    return value.slice(0, 5);
+                }
+                return value;
+            }
+
+            function detectInstructorConflicts() {
+                var rows = editGridBody ? editGridBody.querySelectorAll('tr') : [];
+                var slotUsage = {};
+                var conflicts = [];
+
+                rows.forEach(function (row) {
+                    var timeInput = row.querySelector('td:first-child input[type="time"]');
+                    if (!timeInput) { return; }
+                    var timeValue = normalizeTimeValue(timeInput.value || '');
+                    if (!timeValue) { return; }
+
+                    var selects = row.querySelectorAll('.js-instructor-select');
+                    selects.forEach(function (selectEl) {
+                        var instructorId = (selectEl.value || '').trim();
+                        if (!instructorId || parseInt(instructorId, 10) <= 0) { return; }
+                        var cell = selectEl.closest('.js-instructor-cell');
+                        var sessionInput = cell ? cell.querySelector('input[name*="[session]"]') : null;
+                        var isExisting = !!(sessionInput && parseInt((sessionInput.value || '').trim(), 10) > 0);
+
+                        var slotKey = instructorId + '|' + timeValue;
+                        if (!slotUsage[slotKey]) {
+                            slotUsage[slotKey] = {
+                                instructorId: instructorId,
+                                time: timeValue,
+                                count: 0,
+                                existingCount: 0,
+                                newCount: 0
+                            };
+                        }
+
+                        slotUsage[slotKey].count += 1;
+                        if (isExisting) {
+                            slotUsage[slotKey].existingCount += 1;
+                        } else {
+                            slotUsage[slotKey].newCount += 1;
+                        }
+                    });
+                });
+
+                var conflictsByInstructor = {};
+                Object.keys(slotUsage).forEach(function (slotKey) {
+                    var slot = slotUsage[slotKey];
+                    if (slot.count > 1) {
+                        if (!conflictsByInstructor[slot.instructorId]) {
+                            conflictsByInstructor[slot.instructorId] = {
+                                instructorId: slot.instructorId,
+                                times: []
+                            };
+                        }
+                        if (conflictsByInstructor[slot.instructorId].times.indexOf(slot.time) === -1) {
+                            conflictsByInstructor[slot.instructorId].times.push(slot.time);
+                        }
+                    }
+                });
+
+                Object.keys(conflictsByInstructor).forEach(function (instructorId) {
+                    conflicts.push(conflictsByInstructor[instructorId]);
+                });
+
+                return conflicts;
+            }
+
             formEl.addEventListener('submit', function (event) {
                 sortEditRowsByTime();
                 clearValidationMarks();
@@ -446,6 +536,172 @@
                     }
                     firstInvalidCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     event.preventDefault();
+                    return;
+                }
+
+                // Detener el submit inicial
+                event.preventDefault();
+
+                // Validación de conflictos de instructor contra BD (pre-AJAX)
+                var validateInstructorConflictsUrl = '{{ path('backend_session_day_validate_instructor_conflicts', {'branchOfficeId': data.branchOffice.id}) }}';
+
+                // Extraer IDs de sesiones existentes a excluir de la validación
+                var excludedSessionIds = [];
+                var sessionIdInputs = formEl.querySelectorAll('input[name*="[session]"]');
+                sessionIdInputs.forEach(function (input) {
+                    var sessionId = (input.value || '').trim();
+                    if (sessionId && parseInt(sessionId, 10) > 0) {
+                        if (excludedSessionIds.indexOf(sessionId) === -1) {
+                            excludedSessionIds.push(sessionId);
+                        }
+                    }
+                });
+
+                // Hacer AJAX para validar conflictos contra BD
+                var formData = new FormData(formEl);
+
+                // El backend busca session[dateStarts][] en d/m/Y,
+                // pero el formulario tiene session[applyDates][] en d-m-Y.
+                // Agregar las fechas con el nombre y formato correctos.
+                var applyDateInputs = formEl.querySelectorAll('input[name="session[applyDates][]"]');
+                applyDateInputs.forEach(function (input) {
+                    var dateValue = (input.value || '').trim();
+                    if (dateValue) {
+                        // Convertir d-m-Y a d/m/Y (26-04-2026 → 26/04/2026)
+                        formData.append('session[dateStarts][]', dateValue.replace(/-/g, '/'));
+                    }
+                });
+
+                // Agregar IDs a excluir
+                excludedSessionIds.forEach(function (id) {
+                    formData.append('session[excludedSessionIds][]', id);
+                });
+
+                if (window.jQuery) {
+                    window.jQuery.ajax({
+                        url: validateInstructorConflictsUrl,
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        success: function (payload) {
+                            if (payload && payload.success) {
+                                // Validación BD pasó, ahora validar conflictos locales
+                                var instructorConflicts = detectInstructorConflicts();
+                                if (instructorConflicts.length > 0) {
+                                    var lines = instructorConflicts.map(function (c) {
+                                        var nameOpt = formEl.querySelector('.js-instructor-select option[value="' + c.instructorId + '"]');
+                                        var name = nameOpt ? (nameOpt.textContent || '').trim() : ('Instructor #' + c.instructorId);
+                                        return name + ': ' + c.times.join(', ');
+                                    });
+                                    var msgEl = document.getElementById('instructor-conflict-msg');
+                                    if (msgEl) {
+                                        msgEl.innerHTML =
+                                            '<strong>' + instructorConflicts.length + ' instructor(es) con clases en conflicto de horario:</strong><br><br>' +
+                                            '<span style="font-size:0.92em;color:#555;">' + lines.join('<br>') + '</span><br><br>' +
+                                            'Un instructor no puede impartir dos clases al mismo tiempo.<br>Revisa los horarios antes de guardar.';
+                                    }
+                                    window.jQuery('#instructor-conflict-modal').modal('show');
+                                } else {
+                                    // Todo bien, enviar formulario
+                                    formEl.submit();
+                                }
+                                return;
+                            }
+
+                            // Hay conflicto con BD
+                            var msgEl = document.getElementById('instructor-conflict-msg');
+                            if (msgEl) {
+                                msgEl.innerHTML =
+                                    '<strong>Conflicto de horario detectado:</strong><br><br>' +
+                                    '<span style="font-size:0.92em;color:#555;">' + ((payload && payload.message) ? payload.message : 'Existe un conflicto de horario con otra clase registrada.') + '</span><br><br>' +
+                                    'Un instructor no puede impartir dos clases al mismo tiempo.';
+                            }
+                            window.jQuery('#instructor-conflict-modal').modal('show');
+                        },
+                        error: function (xhr) {
+                            var payload = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+                            var msgEl = document.getElementById('instructor-conflict-msg');
+                            if (msgEl) {
+                                if (payload && payload.message) {
+                                    msgEl.innerHTML =
+                                        '<strong>Conflicto de horario detectado:</strong><br><br>' +
+                                        '<span style="font-size:0.92em;color:#555;">' + payload.message + '</span><br><br>' +
+                                        'Un instructor no puede impartir dos clases al mismo tiempo.';
+                                } else {
+                                    msgEl.innerHTML =
+                                        '<strong>Error:</strong><br><br>' +
+                                        '<span style="font-size:0.92em;color:#555;">No fue posible validar conflictos de horario. Intenta nuevamente.</span>';
+                                }
+                            }
+                            window.jQuery('#instructor-conflict-modal').modal('show');
+                        }
+                    });
+                } else {
+                    // Fallback sin jQuery
+                    fetch(validateInstructorConflictsUrl, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                    .then(function (response) { return response.json(); })
+                    .then(function (payload) {
+                        if (payload && payload.success) {
+                            // Validación BD pasó, ahora validar conflictos locales
+                            var instructorConflicts = detectInstructorConflicts();
+                            if (instructorConflicts.length > 0) {
+                                var lines = instructorConflicts.map(function (c) {
+                                    var nameOpt = formEl.querySelector('.js-instructor-select option[value="' + c.instructorId + '"]');
+                                    var name = nameOpt ? (nameOpt.textContent || '').trim() : ('Instructor #' + c.instructorId);
+                                    return name + ': ' + c.times.join(', ');
+                                });
+                                var msgEl = document.getElementById('instructor-conflict-msg');
+                                if (msgEl) {
+                                    msgEl.innerHTML =
+                                        '<strong>' + instructorConflicts.length + ' instructor(es) con clases en conflicto de horario:</strong><br><br>' +
+                                        '<span style="font-size:0.92em;color:#555;">' + lines.join('<br>') + '</span><br><br>' +
+                                        'Un instructor no puede impartir dos clases al mismo tiempo.<br>Revisa los horarios antes de guardar.';
+                                }
+                                var modal = document.getElementById('instructor-conflict-modal');
+                                if (modal && window.jQuery) {
+                                    window.jQuery(modal).modal('show');
+                                }
+                            } else {
+                                // Todo bien, enviar formulario
+                                formEl.submit();
+                            }
+                            return;
+                        }
+
+                        var msgEl = document.getElementById('instructor-conflict-msg');
+                        if (msgEl) {
+                            msgEl.innerHTML =
+                                '<strong>Conflicto de horario detectado:</strong><br><br>' +
+                                '<span style="font-size:0.92em;color:#555;">' + ((payload && payload.message) ? payload.message : 'Existe un conflicto de horario con otra clase registrada.') + '</span><br><br>' +
+                                'Un instructor no puede impartir dos clases al mismo tiempo.';
+                        }
+                        var modal = document.getElementById('instructor-conflict-modal');
+                        if (modal && window.jQuery) {
+                            window.jQuery(modal).modal('show');
+                        }
+                    })
+                    .catch(function (error) {
+                        var msgEl = document.getElementById('instructor-conflict-msg');
+                        if (msgEl) {
+                            msgEl.innerHTML =
+                                '<strong>Error:</strong><br><br>' +
+                                '<span style="font-size:0.92em;color:#555;">No fue posible validar conflictos de horario. Intenta nuevamente.</span>';
+                        }
+                        var modal = document.getElementById('instructor-conflict-modal');
+                        if (modal && window.jQuery) {
+                            window.jQuery(modal).modal('show');
+                        }
+                    });
                 }
             });
 

@@ -7,12 +7,16 @@ namespace App\Twig\Runtime;
 use App\Entity\Configuration;
 use App\Model\ConfigurationFileModel;
 use App\Repository\ConfigurationRepository;
+use App\Service\HomeContentService;
 use Twig\Environment;
 use Twig\Extension\RuntimeExtensionInterface;
 
 readonly class ConfigExtensionRuntime implements RuntimeExtensionInterface
 {
-    public function __construct(private ConfigurationRepository $configurationRepository)
+    public function __construct(
+        private ConfigurationRepository $configurationRepository,
+        private HomeContentService $homeContentService,
+    )
     {
     }
 
@@ -65,5 +69,12 @@ readonly class ConfigExtensionRuntime implements RuntimeExtensionInterface
         $notice['image'] = $configFile;
 
         return $twig->render('default/_modal_notice.html.twig', $notice);
+    }
+
+    public function getWhatsappUrl(): string
+    {
+        $data = $this->homeContentService->getTemplateData();
+
+        return (string) ($data['contactWhatsapp'] ?? HomeContentService::DEFAULT_CONTACT_WHATSAPP);
     }
 }

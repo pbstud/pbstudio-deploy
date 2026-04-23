@@ -173,29 +173,38 @@
         var controlsLeft   = document.querySelector('.notifications-controls-row__left');
         var pageList       = document.querySelector('.notifications-page-list');
         var selectControls = document.querySelector('.notifications-select-controls');
+        var btnRead        = document.querySelector('[data-bulk-read]');
+        var btnUnread      = document.querySelector('[data-bulk-unread]');
+        var btnDelete      = document.querySelector('[data-bulk-delete]');
+        var btnCancel      = document.querySelector('[data-bulk-cancel]');
+
+        function setBulkButtonsState(enabled) {
+            [btnRead, btnUnread, btnDelete, btnCancel].forEach(function (btn) {
+                if (!btn) { return; }
+                btn.disabled = !enabled;
+            });
+        }
 
         function updateToolbar() {
             var n = selectedIds.size;
             if (n > 0) {
                 toolbarCount.textContent = n + (n === 1 ? ' seleccionada' : ' seleccionadas');
                 if (controlsLeft) { controlsLeft.classList.add('show-count'); }
+                setBulkButtonsState(true);
             } else {
                 toolbarCount.textContent = '';
                 if (controlsLeft) { controlsLeft.classList.remove('show-count'); }
+                setBulkButtonsState(false);
                 if (selectionMode) { exitSelectionMode(); }
             }
         }
 
         /* ── Modo seleccion ─────────────────────────────────────────────────── */
         function showSelectionUI() {
-            if (toolbar)        { toolbar.style.display        = 'flex'; }
-            if (selectControls) { selectControls.style.display = 'flex'; }
             if (pageList)       { pageList.classList.add('is-selection-mode'); }
         }
 
         function hideSelectionUI() {
-            if (toolbar)        { toolbar.style.display        = ''; }
-            if (selectControls) { selectControls.style.display = ''; }
             if (pageList)       { pageList.classList.remove('is-selection-mode'); }
         }
 
@@ -273,7 +282,6 @@
             updateToolbar();
         }
 
-        var btnCancel = document.querySelector('[data-bulk-cancel]');
         if (btnCancel) { btnCancel.addEventListener('click', exitSelectionMode); }
 
         /* ── Accion bulk ───────────────────────────────────────────────────── */
@@ -339,10 +347,6 @@
             }).catch(function () {});
         }
 
-        var btnRead   = document.querySelector('[data-bulk-read]');
-        var btnUnread = document.querySelector('[data-bulk-unread]');
-        var btnDelete = document.querySelector('[data-bulk-delete]');
-
         if (btnRead)   { btnRead.addEventListener('click',   function () { doBulk('read'); }); }
         if (btnUnread) { btnUnread.addEventListener('click', function () { doBulk('unread'); }); }
         if (btnDelete) {
@@ -350,6 +354,8 @@
                 doBulk('delete');
             });
         }
+
+        updateToolbar();
 
         /* ── Interaccion individual: long press = seleccion, click = accion ── */
         document.querySelectorAll('[data-notification-page-item]').forEach(function (btn) {

@@ -65,10 +65,6 @@
                         }
                     </style>
                     <div class="classroom-layout">
-                    <div class="instructor-seat" title="Instructor">
-                        <span class="icon-individual"></span>
-
-                    </div>
                     <div class="seat-map-frame">
                     <div id="place_container" class="seat-map-grid">
                         {% for slot in 1..36 %}
@@ -143,12 +139,13 @@
                 </div>
             {% endif %}
 
-            {% if consumption_options.hasBothSources %}
+            {% if consumption_options.availableTransactions|length > 1 %}
                 <div class="consumption-source-box">
                     <label for="consumption_source_selector"><strong>¿Con qué paquete deseas reservar?</strong></label>
                     <select id="consumption_source_selector" class="consumption-source-selector">
-                        <option value="unlimited">Paquete ilimitado</option>
-                        <option value="package">Paquetes por clase activos</option>
+                        {% for option in consumption_options.availableTransactions %}
+                            <option value="{{ option.value }}">{{ option.label }}</option>
+                        {% endfor %}
                     </select>
                     <small>Elige cómo deseas consumir tu reserva.</small>
                 </div>

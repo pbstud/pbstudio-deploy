@@ -35,12 +35,12 @@ class ClassContentController extends AbstractController
 
         // Cargar datos del editor: primero de BD, si no existe devuelve vacío (el seed aun no se ejecuto)
         $editorData = $this->classContentService->loadEditorPayload();
+        $editorData = $this->normalizeEditorPayload($editorData);
 
         return $this->render('backend/class_content/edit.html.twig', [
             'data'         => $editorData,
             'slugs'        => ClassContentService::KNOWN_SLUGS,
             'scalarFields' => ClassContentService::SCALAR_FIELDS,
-            'arrayFields'  => ClassContentService::ARRAY_FIELDS,
             'post'         => $post,
         ]);
     }
@@ -66,16 +66,36 @@ class ClassContentController extends AbstractController
                 $entry[$field] = trim((string) ($classRaw[$field] ?? ''));
             }
 
-            foreach (ClassContentService::ARRAY_FIELDS as $field) {
-                $items = $classRaw[$field] ?? [];
-                if (!is_array($items)) {
-                    $items = [];
+            $sectionsRaw = $classRaw['sections'] ?? [];
+            $sections = [];
+
+            if (is_array($sectionsRaw)) {
+                foreach ($sectionsRaw as $sectionRaw) {
+                    if (!is_array($sectionRaw)) {
+                        continue;
+                    }
+
+                    $title = trim((string) ($sectionRaw['title'] ?? ''));
+                    $itemsRaw = $sectionRaw['items'] ?? [];
+                    if (!is_array($itemsRaw)) {
+                        $itemsRaw = [];
+                    }
+
+                    $items = array_values(array_filter(
+                        array_map(static fn ($v) => trim((string) $v), $itemsRaw),
+                        static fn ($v) => '' !== $v,
+                    ));
+
+                    if ('' !== $title || count($items) > 0) {
+                        $sections[] = [
+                            'title' => $title,
+                            'items' => $items,
+                        ];
+                    }
                 }
-                $entry[$field] = array_values(array_filter(
-                    array_map(static fn ($v) => trim((string) $v), $items),
-                    static fn ($v) => '' !== $v,
-                ));
             }
+
+            $entry['sections'] = $sections;
 
             $data['classes'][$slug] = $entry;
         }
@@ -96,5 +116,37 @@ class ClassContentController extends AbstractController
         $this->addFlash('success', 'El contenido de la página de clases ha sido guardado.');
 
         return $this->redirectToRoute('backend_class_content');
+    }
+
+    /**
+     * @param array<string, mixed> $editorData
+     *
+     * @return array<string, mixed>
+     */
+    private function normalizeEditorPayload(array $editorData): array
+    {
+        if (!isset($editorData['classes']) || !is_array($editorData['classes'])) {
+            $editorData['classes'] = [];
+        }
+
+        foreach (ClassContentService::KNOWN_SLUGS as $slug) {
+            $classData = $editorData['classes'][$slug] ?? [];
+            if (!is_array($classData)) {
+                $classData = [];
+            }
+
+            $sections = $this->classContentService->normalizeSectionsForEditor($classData);
+            if ([] === $sections) {
+                $sections = [[
+                    'title' => '',
+                    'items' => [''],
+                ]];
+            }
+
+            $classData['sections'] = $sections;
+            $editorData['classes'][$slug] = $classData;
+        }
+
+        return $editorData;
     }
 }

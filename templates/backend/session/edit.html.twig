@@ -35,13 +35,51 @@
     <script>
       $(function () {
         var $branchOffice = $('#session_branchOffice');
+        var $form = $('#frm-session');
+        var validateInstructorConflictUrl = '{{ path('backend_session_validate_instructor_conflict') }}';
+        var isSubmittingAfterServerValidation = false;
+
+        function showConflictModal(message) {
+          var $msg = $('#single-session-conflict-msg');
+          if (!$msg.length) {
+            // Crear el modal si no existe en edit.html.twig
+            var modalHtml = '<div class="modal fade" id="single-session-conflict-modal" tabindex="-1" role="dialog">' +
+              '<div class="modal-dialog modal-sm" role="document">' +
+              '<div class="modal-content">' +
+              '<div class="modal-header">' +
+              '<button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>' +
+              '<h4 class="modal-title">Conflicto de horario</h4>' +
+              '</div>' +
+              '<div class="modal-body">' +
+              '<p id="single-session-conflict-msg"></p>' +
+              '</div>' +
+              '<div class="modal-footer">' +
+              '<button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>' +
+              '</div>' +
+              '</div>' +
+              '</div>' +
+              '</div>';
+            $('body').append(modalHtml);
+            $msg = $('#single-session-conflict-msg');
+          }
+          if ($msg.length) {
+            $msg.html(
+              '<strong>Conflicto de horario detectado:</strong><br><br>' +
+              '<span style="font-size:0.92em;color:#555;">' + message + '</span><br><br>' +
+              'Un instructor no puede impartir dos clases al mismo tiempo.'
+            );
+          }
+
+          $('#single-session-conflict-modal').modal('show');
+        }
+
         $branchOffice.change(function() {
-          var $form = $(this).closest('form');
+          var $localForm = $(this).closest('form');
           var data = {};
           data[$branchOffice.attr('name')] = $branchOffice.val();
           $.ajax({
-            url : $form.attr('action'),
-            type: $form.attr('method'),
+            url : $localForm.attr('action'),
+            type: $localForm.attr('method'),
             data : data,
             success: function(html) {
               $('#session_exerciseRoom').replaceWith(
@@ -59,7 +97,6 @@
           });
         });
 
-        var $form = $('#frm-session');
         $form.on('change', '#session_exerciseRoom', function () {
           var $exerciseRoom = $(this);
           var data = {};
@@ -79,6 +116,43 @@
               $('#session_instructor').replaceWith(
                 $(html).find('#session_instructor')
               );
+            }
+          });
+        });
+
+        // Validación pre-submit: detectar conflictos antes de guardar
+        $form.on('submit', function (event) {
+          if (isSubmittingAfterServerValidation) {
+            isSubmittingAfterServerValidation = false;
+            return;
+          }
+
+          event.preventDefault();
+
+          $.ajax({
+            url: validateInstructorConflictUrl,
+            type: 'POST',
+            data: $form.serialize(),
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function (payload) {
+              if (payload && payload.success) {
+                isSubmittingAfterServerValidation = true;
+                $form.trigger('submit');
+                return;
+              }
+
+              showConflictModal((payload && payload.message) ? payload.message : 'Existe un conflicto de horario con otra clase registrada.');
+            },
+            error: function (xhr) {
+              var payload = xhr && xhr.responseJSON ? xhr.responseJSON : null;
+              if (payload && payload.message) {
+                showConflictModal(payload.message);
+                return;
+              }
+
+              showConflictModal('No fue posible validar conflictos de horario. Intenta nuevamente.');
             }
           });
         });

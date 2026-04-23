@@ -2,4 +2,17 @@
 
 {% block form %}
     {{ include('backend/exerciseroom/_form.html.twig', {'button_label': 'btn.update'}) }}
+
+    <div class="ln_solid"></div>
+    <h3 id="seat-layout-editor" style="margin-top: 0;">Disposición de Asientos del Salón</h3>
+    <p style="margin-bottom: 12px; color: #4d6475;">
+        Configura la plantilla base de asientos para el salón <strong>{{ exerciseRoom.name }}</strong>.
+        Esta disposición se usará en clases nuevas que usen este salón.
+    </p>
+
+    {{ include('backend/exerciseroom/_seats_editor.html.twig', {
+        exerciseRoom: exerciseRoom,
+        seat_layout: seat_layout,
+        not_available: not_available
+    }) }}
 {% endblock %}

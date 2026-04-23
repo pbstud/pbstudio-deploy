@@ -24,6 +24,7 @@ class ConfigExtension extends AbstractExtension
                 'is_safe' => ['html'],
                 'needs_environment' => true,
             ]),
+            new TwigFunction('config_whatsapp_url', [ConfigExtensionRuntime::class, 'getWhatsappUrl']),
         ];
     }
 }

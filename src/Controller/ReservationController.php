@@ -8,6 +8,7 @@ use App\Entity\Discipline;
 use App\Entity\Session;
 use App\Entity\User;
 use App\Repository\BranchOfficeRepository;
+use App\Repository\ConfigurationRepository;
 use App\Repository\DisciplineRepository;
 use App\Repository\ReservationRepository;
 use App\Repository\SessionRepository;
@@ -30,7 +31,6 @@ class ReservationController extends AbstractController
 {
     // 24-hour format
     private const NEXT_WEEK_HOUR = 14;
-    private const NEXT_WEEK_FROM_ISO_DAY = 5;
 
     #[Route('/reservar-clase/{slug}', name: 'reservation_calendar')]
     public function calendar(
@@ -40,6 +40,7 @@ class ReservationController extends AbstractController
         DisciplineRepository $disciplineRepository,
         StaffRepository $staffRepository,
         ReservationRepository $reservationRepository,
+        ConfigurationRepository $configurationRepository,
         ?string $slug = null,
     ): Response {
         $branchOffice = null;
@@ -61,9 +62,7 @@ class ReservationController extends AbstractController
         $weekNext = null;
         $weekNextStart = $period->start->copy()->addWeek()->startOfWeek(CarbonInterface::MONDAY);
         $periodNext = $weekNextStart->toPeriod($weekNextStart->copy()->endOfWeek(CarbonInterface::SUNDAY));
-        if ($weekNextStart->lessThanOrEqualTo($this->getMaxAllowedWeekStart())
-            && $sessionRepository->hasSessionsInPeriod($periodNext, $branchOffice)
-        ) {
+        if ($sessionRepository->hasSessionsInPeriod($periodNext, $branchOffice)) {
             $weekNext = $weekNextStart;
         }
 
@@ -88,6 +87,9 @@ class ReservationController extends AbstractController
             $template = 'calendar';
         }
 
+        $sessionsConfig = $configurationRepository->findSessions()?->getData() ?? [];
+        $emptyDayText = trim((string) ($sessionsConfig['calendar_empty_day_text'] ?? ''));
+
         return $this->render(sprintf('reservation/%s.html.twig', $template), [
             'filter' => $filter,
             'branchOffice' => $branchOffice,
@@ -96,6 +98,7 @@ class ReservationController extends AbstractController
             'weekPrev' => $weekPrev,
             'weekNext' => $weekNext,
             'userReservedSessionIds' => $userReservedSessionIds,
+            'emptyDayText' => $emptyDayText,
         ]);
     }
 
@@ -237,32 +240,7 @@ class ReservationController extends AbstractController
         $now->setISODate($year, $weekNo);
         $start = $now->copy()->startOfWeek(CarbonInterface::MONDAY);
 
-        $maxAllowedWeekStart = $this->getMaxAllowedWeekStart();
-        if ($start->greaterThan($maxAllowedWeekStart)) {
-            $start = $maxAllowedWeekStart->copy();
-        }
-
         return $start->toPeriod($start->copy()->endOfWeek(CarbonInterface::SUNDAY));
-    }
-
-    private function canIncludeNextWeek(): bool
-    {
-        return Carbon::now()->dayOfWeekIso >= self::NEXT_WEEK_FROM_ISO_DAY;
-    }
-
-    private function getMaxAllowedWeekStart(): CarbonInterface
-    {
-        [$curWeek, $curYear] = $this->getCurWeekYear();
-
-        $base = Carbon::now();
-        $base->setISODate($curYear, $curWeek);
-        $base = $base->startOfWeek(CarbonInterface::MONDAY);
-
-        if ($this->canIncludeNextWeek()) {
-            return $base->copy()->addWeek();
-        }
-
-        return $base;
     }
 
     private function getWeekPrev(CarbonInterface $carbon): ?CarbonInterface
