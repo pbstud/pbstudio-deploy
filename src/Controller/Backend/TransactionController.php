@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Backend;
 
 use App\Entity\Package;
+use App\Entity\Staff;
 use App\Entity\Transaction;
 use App\Entity\User;
 use App\Event\TransactionFailedEvent;
@@ -13,6 +14,7 @@ use App\Form\Backend\TransactionType;
 use App\Model\TransactionModel;
 use App\Repository\BranchOfficeRepository;
 use App\Repository\PackageRepository;
+use App\Repository\TransactionFreezeLogRepository;
 use App\Repository\TransactionRepository;
 use App\Repository\UserRepository;
 use App\Service\Conekta\ConektaService;
@@ -211,11 +213,102 @@ class TransactionController extends AbstractController
     }
 
     #[Route('/{id}', name: 'backend_transaction_show', methods: ['GET'])]
-    public function show(Transaction $transaction): Response
+    public function show(Transaction $transaction, TransactionFreezeLogRepository $freezeLogRepository): Response
     {
         return $this->render('backend/transaction/show.html.twig', [
             'transaction' => $transaction,
+            'freezeLogs' => $freezeLogRepository->findByTransaction($transaction->getId()),
         ]);
+    }
+
+    #[Route('/{id}/freeze', name: 'backend_transaction_freeze', methods: ['POST'])]
+    public function freeze(Request $request, Transaction $transaction, TransactionService $transactionService): Response
+    {
+        if (!$this->isCsrfTokenValid('backend_transaction_freeze_' . $transaction->getId(), (string) $request->request->get('_token'))) {
+            return $this->json([
+                'error' => [
+                    'message' => 'Token CSRF inválido.',
+                ],
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $staff = $this->getUser();
+        if (!$staff instanceof Staff) {
+            return $this->json([
+                'error' => [
+                    'message' => 'Solo el personal administrativo puede congelar transacciones.',
+                ],
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $reason = (string) $request->request->get('reason', '');
+
+        try {
+            $transactionService->freeze($transaction, $staff, $reason);
+
+            return $this->json([
+                'success' => [
+                    'message' => 'La transacción fue congelada correctamente.',
+                ],
+            ]);
+        } catch (\InvalidArgumentException | \LogicException $e) {
+            return $this->json([
+                'error' => [
+                    'message' => $e->getMessage(),
+                ],
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\Throwable $e) {
+            return $this->json([
+                'error' => [
+                    'message' => 'No se pudo congelar la transacción: ' . $e->getMessage(),
+                ],
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route('/{id}/unfreeze', name: 'backend_transaction_unfreeze', methods: ['POST'])]
+    public function unfreeze(Request $request, Transaction $transaction, TransactionService $transactionService): Response
+    {
+        if (!$this->isCsrfTokenValid('backend_transaction_unfreeze_' . $transaction->getId(), (string) $request->request->get('_token'))) {
+            return $this->json([
+                'error' => [
+                    'message' => 'Token CSRF inválido.',
+                ],
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $staff = $this->getUser();
+        if (!$staff instanceof Staff) {
+            return $this->json([
+                'error' => [
+                    'message' => 'Solo el personal administrativo puede descongelar transacciones.',
+                ],
+            ], Response::HTTP_FORBIDDEN);
+        }
+
+        $reason = (string) $request->request->get('reason', '');
+
+        try {
+            $transactionService->unfreeze($transaction, $staff, $reason);
+
+            return $this->json([
+                'success' => [
+                    'message' => 'La transacción fue descongelada correctamente.',
+                ],
+            ]);
+        } catch (\InvalidArgumentException | \LogicException $e) {
+            return $this->json([
+                'error' => [
+                    'message' => $e->getMessage(),
+                ],
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\Throwable $e) {
+            return $this->json([
+                'error' => [
+                    'message' => 'No se pudo descongelar la transacción: ' . $e->getMessage(),
+                ],
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     #[Route('/{id}/cancel', name: 'backend_transaction_cancel', methods: ['POST'])]

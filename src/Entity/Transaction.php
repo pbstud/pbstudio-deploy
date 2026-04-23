@@ -37,6 +37,8 @@ class Transaction implements TimestampableInterface
     public const STATUS_DENIED = -1;
     public const STATUS_CANCEL = 2;
 
+    public const STATUS_FROZEN = 3;
+
     public const DATE_START = '2017-06-01 00:00:00';
 
     public const WITH_DISCOUNT = 1;
@@ -95,6 +97,18 @@ class Transaction implements TimestampableInterface
     #[ORM\Column]
     private ?bool $isExpired = false;
 
+    #[ORM\Column]
+    private ?bool $isFrozen = false;
+
+    #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $frozenAt = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $frozenDaysRemaining = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $frozenSecondsRemaining = null;
+
     #[ORM\Column(type: Types::DATETIME_MUTABLE, nullable: true)]
     private ?\DateTimeInterface $expirationAt = null;
 
@@ -151,6 +165,7 @@ class Transaction implements TimestampableInterface
             self::STATUS_PAID => 'transaction_status.paid',
             self::STATUS_DENIED => 'transaction_status.denied',
             self::STATUS_CANCEL => 'transaction_status.cancel',
+            self::STATUS_FROZEN => 'transaction_status.frozen',
         ];
     }
 
@@ -384,6 +399,95 @@ class Transaction implements TimestampableInterface
         return $this;
     }
 
+    public function isIsFrozen(): ?bool
+    {
+        return $this->isFrozen;
+    }
+
+    public function setIsFrozen(bool $isFrozen): static
+    {
+        $this->isFrozen = $isFrozen;
+
+        return $this;
+    }
+
+    public function getFrozenAt(): ?\DateTimeInterface
+    {
+        return $this->frozenAt;
+    }
+
+    public function setFrozenAt(?\DateTimeInterface $frozenAt): static
+    {
+        $this->frozenAt = $frozenAt;
+
+        return $this;
+    }
+
+    public function getFrozenDaysRemaining(): ?int
+    {
+        return $this->frozenDaysRemaining;
+    }
+
+    public function setFrozenDaysRemaining(?int $frozenDaysRemaining): static
+    {
+        $this->frozenDaysRemaining = $frozenDaysRemaining;
+
+        return $this;
+    }
+
+    public function getFrozenSecondsRemaining(): ?int
+    {
+        return $this->frozenSecondsRemaining;
+    }
+
+    public function setFrozenSecondsRemaining(?int $frozenSecondsRemaining): static
+    {
+        $this->frozenSecondsRemaining = $frozenSecondsRemaining;
+
+        return $this;
+    }
+
+    public function getFrozenRemainingSeconds(): int
+    {
+        if (null !== $this->frozenSecondsRemaining && $this->frozenSecondsRemaining > 0) {
+            return $this->frozenSecondsRemaining;
+        }
+
+        if (null !== $this->frozenAt && null !== $this->expirationAt) {
+            $seconds = $this->expirationAt->getTimestamp() - $this->frozenAt->getTimestamp();
+
+            if ($seconds > 0) {
+                return $seconds;
+            }
+        }
+
+        return max(0, (int) ($this->frozenDaysRemaining ?? 0)) * 86400;
+    }
+
+    public function getFrozenRemainingDetailed(): string
+    {
+        return self::formatSecondsToDaysHoursMinutes($this->getFrozenRemainingSeconds());
+    }
+
+    public function freeze(?\DateTimeInterface $frozenAt = null, ?int $daysRemaining = null): static
+    {
+        $this->isFrozen = true;
+        $this->frozenAt = $frozenAt ?? new \DateTime();
+        $this->frozenDaysRemaining = $daysRemaining;
+
+        return $this;
+    }
+
+    public function unfreeze(): static
+    {
+        $this->isFrozen = false;
+        $this->frozenAt = null;
+        $this->frozenDaysRemaining = null;
+        $this->frozenSecondsRemaining = null;
+
+        return $this;
+    }
+
     public function getExpirationAt(): ?\DateTimeInterface
     {
         return $this->expirationAt;
@@ -580,5 +684,17 @@ class Transaction implements TimestampableInterface
         $this->expiredAt = $expiredAt;
 
         return $this;
+    }
+
+    private static function formatSecondsToDaysHoursMinutes(int $seconds): string
+    {
+        $seconds = max(0, $seconds);
+
+        $days = intdiv($seconds, 86400);
+        $remainder = $seconds % 86400;
+        $hours = intdiv($remainder, 3600);
+        $minutes = intdiv($remainder % 3600, 60);
+
+        return sprintf('%dd %02dh %02dm', $days, $hours, $minutes);
     }
 }

@@ -334,6 +334,7 @@ class TransactionRepository extends ServiceEntityRepository
             'user' => $user,
             'status' => Transaction::STATUS_PAID,
             'isExpired' => false,
+            'isFrozen' => false,
             'haveSessionsAvailable' => true,
         ]);
     }
@@ -527,9 +528,11 @@ class TransactionRepository extends ServiceEntityRepository
             ->where('t.user = :user')
             ->andWhere('t.status = :status')
             ->andWhere('t.isExpired = :isExpired')
+            ->andWhere('t.isFrozen = :isFrozen')
             ->setParameters([
                 'status' => Transaction::STATUS_PAID,
                 'isExpired' => false,
+                'isFrozen' => false,
                 'user' => $user,
             ])
             ->orderBy('t.expirationAt', 'ASC')

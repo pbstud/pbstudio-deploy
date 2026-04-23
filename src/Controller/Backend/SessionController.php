@@ -25,7 +25,9 @@ use App\Service\ReservationCancellationService;
 use App\Service\WaitingList\WaitingListService;
 use App\Util\SeatLayoutMapper;
 use App\Util\Schedule;
+use App\Util\SessionStatusDescription;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\QueryBuilder;
 use Knp\Component\Pager\PaginatorInterface;
 use OpenSpout\Writer\XLSX\Writer;
 use OpenSpout\Common\Entity\Row;
@@ -47,6 +49,16 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/backend/session')]
 class SessionController extends AbstractController
 {
+    private const SESSION_EXPORT_ALLOWED_SORTS = [
+        's.id',
+        's.dateStart',
+        's.timeStart',
+        'e.name',
+        'ip.firstname',
+        'b.name',
+        's.status',
+    ];
+
     #[Route('/get', name: 'backend_session_get', methods: ['GET'])]
     public function getJson(
         SessionRepository $sessionRepository,
@@ -118,12 +130,17 @@ class SessionController extends AbstractController
         }
 
         $filters['assigned_branches'] = $assignedBranches;
+        $sort = (string) $request->query->get('sort', 's.dateStart');
+        $direction = strtolower((string) $request->query->get('direction', 'asc'));
 
         $isExport = $request->query->has('export');
 
         // Export
         if ($isExport) {
-            $sessions = $sessionRepository->findForBackendList($filters, true, false);
+            $sessionsQb = $sessionRepository->getQueryBuilderForBackendList($filters);
+            $this->applySessionListOrdering($sessionsQb, $sort, $direction);
+            $sessions = $sessionsQb->getQuery()->getArrayResult();
+
             $filename = sprintf('Sesiones_%s.xlsx', date('Y-m-d_H-i'));
             $tmpFile = sys_get_temp_dir() . '/' . uniqid('sessions_export_', true) . '.xlsx';
 
@@ -141,9 +158,9 @@ class SessionController extends AbstractController
                     'Hora',
                     'Salón',
                     'Instructor',
+                    'Reservas',
                     'Sucursal',
-                    'Alumno',
-                    'Lugar',
+                    'Estado',
                 ]));
 
                 // Data rows
@@ -154,9 +171,9 @@ class SessionController extends AbstractController
                         $session['timeStart']->format('H:i'),
                         $session['exerciseRoom'],
                         $session['instructor'],
+                        $session['reservations'].'/'.$session['availableCapacity'],
                         $session['branchOffice'],
-                        sprintf('%s %s', $session['userName'], $session['userLastname']),
-                        $session['placeNumber'],
+                        SessionStatusDescription::getDescription($session['status']),
                     ]));
                 }
 
@@ -166,9 +183,9 @@ class SessionController extends AbstractController
                 $sheet->setColumnWidth(12, 3); // Hora
                 $sheet->setColumnWidth(16, 4); // Salón
                 $sheet->setColumnWidth(20, 5); // Instructor
-                $sheet->setColumnWidth(16, 6); // Sucursal
-                $sheet->setColumnWidth(20, 7); // Alumno
-                $sheet->setColumnWidth(8, 8); // Lugar
+                $sheet->setColumnWidth(14, 6); // Reservas
+                $sheet->setColumnWidth(16, 7); // Sucursal
+                $sheet->setColumnWidth(14, 8); // Estado
 
                 $writer->close();
 
@@ -192,6 +209,8 @@ class SessionController extends AbstractController
         $urlExport = $this->generateUrl('backend_session', [
             'filters' => $filters,
             'export' => true,
+            'sort' => $sort,
+            'direction' => $direction,
         ]);
         $instructors = $staffRepository->getAllInstructors();
         $branchOffices = $branchOfficeRepository->findAll();
@@ -222,6 +241,26 @@ class SessionController extends AbstractController
             'filter_schedules' => $schedule->getSchedules(),
             'is_instructor' => $isInstructor,
         ]);
+    }
+
+    private function applySessionListOrdering(QueryBuilder $qb, string $sort, string $direction): void
+    {
+        $direction = 'desc' === strtolower($direction) ? 'DESC' : 'ASC';
+        $sort = in_array($sort, self::SESSION_EXPORT_ALLOWED_SORTS, true) ? $sort : 's.dateStart';
+
+        $qb->orderBy($sort, $direction);
+
+        if ('s.dateStart' !== $sort) {
+            $qb->addOrderBy('s.dateStart', $direction);
+        }
+
+        if ('s.timeStart' !== $sort) {
+            $qb->addOrderBy('s.timeStart', $direction);
+        }
+
+        if ('s.id' !== $sort) {
+            $qb->addOrderBy('s.id', $direction);
+        }
     }
 
     #[Route('/new', name: 'backend_session_new', methods: ['GET', 'POST'])]

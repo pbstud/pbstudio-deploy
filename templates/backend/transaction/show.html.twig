@@ -15,6 +15,21 @@
 
             <div class="title_right">
                 <div class="form-group pull-right">
+                    {% if is_allowed_route('backend_transaction_freeze')
+                        and constant('App\\Entity\\Transaction::STATUS_PAID') == transaction.status
+                        and not transaction.isExpired
+                        and not transaction.isFrozen
+                    %}
+                        <button type="button" class="btn btn-warning" data-loading-text="<i class='fa fa-circle-o-notch fa-spin'></i> Congelando ..." data-btn-freeze disabled>Congelar transacción</button>
+                    {% endif %}
+
+                    {% if is_allowed_route('backend_transaction_unfreeze')
+                        and constant('App\\Entity\\Transaction::STATUS_FROZEN') == transaction.status
+                        and transaction.isFrozen
+                    %}
+                        <button type="button" class="btn btn-success" data-loading-text="<i class='fa fa-circle-o-notch fa-spin'></i> Descongelando ..." data-btn-unfreeze disabled>Descongelar transacción</button>
+                    {% endif %}
+
                     {% if is_allowed_route('backend_transaction_cancel')
                         and constant('App\\Entity\\Transaction::STATUS_PAID') == transaction.status
                     %}
@@ -120,6 +135,26 @@
                                             {% endif %}
                                         </td>
                                     </tr>
+                                    <tr>
+                                        <th>Congelada:</th>
+                                        <td>
+                                            {% if transaction.isFrozen %}
+                                                <span class="label label-warning">Sí</span>
+                                            {% else %}
+                                                <span class="label label-default">No</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% if transaction.isFrozen %}
+                                        <tr>
+                                            <th>F. congelación:</th>
+                                            <td>{{ transaction.frozenAt ? transaction.frozenAt|date('d/m/Y H:i:s') : '-' }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Tiempo restante al congelar:</th>
+                                            <td>{{ transaction.frozenRemainingDetailed }}</td>
+                                        </tr>
+                                    {% endif %}
                                     {% if constant('App\\Entity\\Transaction::STATUS_CANCEL') == transaction.status %}
                                         <tr>
                                             <th>F. devolución:</th>
@@ -239,6 +274,50 @@
                     </div>
                 </div>
 
+                <div class="x_panel x_panel_widget">
+                    <div class="x_title">
+                        <h2>Auditoría de congelación</h2>
+
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        {% if freezeLogs is empty %}
+                            <p class="text-muted">No hay registros de congelación/descongelación.</p>
+                        {% else %}
+                            <div class="table-responsive">
+                                <table class="table table_inner">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Acción</th>
+                                            <th>Staff</th>
+                                            <th>Tiempo restante</th>
+                                            <th>Motivo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for log in freezeLogs %}
+                                            <tr>
+                                                <td>{{ log.createdAt ? log.createdAt|date('d/m/Y H:i:s') : '-' }}</td>
+                                                <td>
+                                                    {% if log.action == constant('App\\Entity\\TransactionFreezeLog::ACTION_FREEZE') %}
+                                                        <span class="label label-warning">Congelar</span>
+                                                    {% else %}
+                                                        <span class="label label-success">Descongelar</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>{{ log.staff ? log.staff.username : '-' }}</td>
+                                                <td>{{ log.remainingDetailed }}</td>
+                                                <td>{{ log.reason }}</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -338,6 +417,119 @@
                                 },
                             });
                         }
+                    })
+                    .prop('disabled', false)
+                ;
+            });
+        {% endif %}
+
+        {% if is_allowed_route('backend_transaction_freeze')
+            and constant('App\\Entity\\Transaction::STATUS_PAID') == transaction.status
+            and not transaction.isExpired
+            and not transaction.isFrozen
+        %}
+            $(function () {
+                var csrfFreezeToken = '{{ csrf_token('backend_transaction_freeze_' ~ transaction.id) }}';
+
+                $('[data-btn-freeze]')
+                    .on('click', function (e) {
+                        e.preventDefault();
+
+                        var link = $(this);
+                        var reason = prompt('Motivo de congelación:');
+
+                        if (reason === null) {
+                            return;
+                        }
+
+                        reason = $.trim(reason || '');
+                        if (!reason.length) {
+                            $.flash.danger('El motivo de congelación es obligatorio.');
+                            return;
+                        }
+
+                        link.button('loading');
+
+                        $.ajax({
+                            'url': '{{ path('backend_transaction_freeze', { 'id': transaction.id }) }}',
+                            'type': 'post',
+                            'dataType': 'json',
+                            'data': {
+                                '_token': csrfFreezeToken,
+                                'reason': reason,
+                            },
+                            'success': function (response) {
+                                link.button('reset');
+
+                                if (response.error) {
+                                    $.flash.danger(response.error.message || 'No se pudo congelar la transacción.');
+                                    return;
+                                }
+
+                                $.flash.success(response.success && response.success.message ? response.success.message : 'La transacción fue congelada.');
+                                window.location.reload();
+                            },
+                            'error': function () {
+                                link.button('reset');
+                                $.flash.danger('Ocurrió un error al congelar la transacción. Intenta nuevamente.');
+                            },
+                        });
+                    })
+                    .prop('disabled', false)
+                ;
+            });
+        {% endif %}
+
+        {% if is_allowed_route('backend_transaction_unfreeze')
+            and constant('App\\Entity\\Transaction::STATUS_FROZEN') == transaction.status
+            and transaction.isFrozen
+        %}
+            $(function () {
+                var csrfUnfreezeToken = '{{ csrf_token('backend_transaction_unfreeze_' ~ transaction.id) }}';
+
+                $('[data-btn-unfreeze]')
+                    .on('click', function (e) {
+                        e.preventDefault();
+
+                        var link = $(this);
+                        var reason = prompt('Motivo de descongelación:');
+
+                        if (reason === null) {
+                            return;
+                        }
+
+                        reason = $.trim(reason || '');
+                        if (!reason.length) {
+                            $.flash.danger('El motivo de descongelación es obligatorio.');
+                            return;
+                        }
+
+                        link.button('loading');
+
+                        $.ajax({
+                            'url': '{{ path('backend_transaction_unfreeze', { 'id': transaction.id }) }}',
+                            'type': 'post',
+                            'dataType': 'json',
+                            'data': {
+                                '_token': csrfUnfreezeToken,
+                                'reason': reason,
+                            },
+                            'success': function (response) {
+                                link.button('reset');
+
+                                if (response.error) {
+                                    $.flash.danger(response.error.message || 'No se pudo descongelar la transacción.');
+                                    return;
+                                }
+
+                                $.flash.success(response.success && response.success.message ? response.success.message : 'La transacción fue descongelada.');
+                                window.location.reload();
+                            },
+                            'error': function () {
+                                link.button('reset');
+                                $.flash.danger('Ocurrió un error al descongelar la transacción. Intenta nuevamente.');
+                            },
+                        });
                     })
                     .prop('disabled', false)
                 ;

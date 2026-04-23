@@ -21,5 +21,9 @@ class TransactionStatusDescription extends BaseDescription
             'description' => 'Cancelada',
             'label' => 'warning',
         ],
+        Transaction::STATUS_FROZEN => [
+            'description' => 'Congelada',
+            'label' => 'info',
+        ],
     ];
 }
