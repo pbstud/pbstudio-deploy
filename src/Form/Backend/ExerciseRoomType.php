@@ -12,6 +12,7 @@ use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -67,6 +68,9 @@ class ExerciseRoomType extends AbstractType
                     'data-role' => 'tagsinput',
                 ],
             ])
+            ->add('seatLayout', HiddenType::class, [
+                'required' => false,
+            ])
         ;
 
         $builder->get('placesNotAvailable')
@@ -75,7 +79,34 @@ class ExerciseRoomType extends AbstractType
                     return implode(',', is_array($arrayAsString) ? $arrayAsString : []);
                 },
                 static function ($stringAsArray) {
-                    return !empty($stringAsArray) ? explode(',', $stringAsArray) : [];
+                    if (empty($stringAsArray)) {
+                        return [];
+                    }
+
+                    $tokens = preg_split('/[^0-9]+/', (string) $stringAsArray) ?: [];
+
+                    return array_values(array_filter($tokens, static fn ($value) => '' !== $value));
+                }
+            ))
+        ;
+
+        $builder->get('seatLayout')
+            ->addModelTransformer(new CallbackTransformer(
+                static function ($layout): string {
+                    return is_array($layout) ? (string) json_encode($layout) : '';
+                },
+                static function ($layout): ?array {
+                    if (is_array($layout)) {
+                        return $layout;
+                    }
+
+                    if (!is_string($layout) || '' === trim($layout)) {
+                        return null;
+                    }
+
+                    $decoded = json_decode($layout, true);
+
+                    return is_array($decoded) ? $decoded : null;
                 }
             ))
         ;

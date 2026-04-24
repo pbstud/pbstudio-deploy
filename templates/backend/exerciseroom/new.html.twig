@@ -1,5 +1,9 @@
 {% extends 'backend/default/edit.html.twig' %}
 
 {% block form %}
-    {{ include('backend/exerciseroom/_form.html.twig') }}
+    {{ include('backend/exerciseroom/_form.html.twig', {
+        show_seat_editor: true,
+        seat_layout: seat_layout,
+        not_available: not_available
+    }) }}
 {% endblock %}

@@ -292,6 +292,85 @@
     var hint        = document.getElementById('pool-empty-hint');
     var poolWarning = document.getElementById('seat-pool-warning');
     var cells       = Array.prototype.slice.call(document.querySelectorAll('.grid-cell'));
+    var capacityField = document.querySelector('[name$="[capacity]"]');
+    var placesField = document.querySelector('[name$="[placesNotAvailable]"]');
+
+    function parseCapacity(value) {
+        var number = parseInt(value, 10);
+        if (!Number.isFinite(number) || number < 0) {
+            return 0;
+        }
+
+        return Math.min(number, 36);
+    }
+
+    function parseCsvNumbers(raw) {
+        if (!raw) {
+            return [];
+        }
+
+        return String(raw)
+            .split(/[^0-9]+/)
+            .map(function (item) { return parseInt(String(item).trim(), 10); })
+            .filter(function (item) { return Number.isFinite(item); });
+    }
+
+    function parseLooseNumbers(raw) {
+        if (!raw) {
+            return [];
+        }
+
+        return String(raw)
+            .split(/[^0-9]+/)
+            .map(function (item) { return parseInt(String(item).trim(), 10); })
+            .filter(function (item) { return Number.isFinite(item); });
+    }
+
+    function normalizeDisabledFromInput(rawValues) {
+        var normalized = new Set();
+
+        (rawValues || []).forEach(function (value) {
+            var seat = parseInt(value, 10);
+            if (!Number.isFinite(seat) || seat < 1 || seat > capacity) {
+                return;
+            }
+
+            normalized.add(seat);
+        });
+
+        return normalized;
+    }
+
+    function getDisabledFromUi() {
+        var values = placesField ? parseCsvNumbers(placesField.value) : [];
+        var tagsContainer = placesField ? placesField.nextElementSibling : null;
+
+        if ((!tagsContainer || !tagsContainer.classList || !tagsContainer.classList.contains('bootstrap-tagsinput')) && window.jQuery && placesField) {
+            var jqContainer = window.jQuery(placesField).next('.bootstrap-tagsinput');
+            if (jqContainer.length) {
+                tagsContainer = jqContainer.get(0);
+            }
+        }
+
+        if (!tagsContainer || !tagsContainer.classList || !tagsContainer.classList.contains('bootstrap-tagsinput')) {
+            return normalizeDisabledFromInput(values);
+        }
+
+        tagsContainer.querySelectorAll('.tag').forEach(function (tagNode) {
+            values = values.concat(parseLooseNumbers(tagNode.textContent || ''));
+        });
+
+        var liveInput = tagsContainer.querySelector('input');
+        if (liveInput && liveInput.value) {
+            values = values.concat(parseLooseNumbers(liveInput.value));
+        }
+
+        return normalizeDisabledFromInput(values);
+    }
+
+    function currentDisabledSignature() {
+        return Array.from(getDisabledFromUi()).sort(function (a, b) { return a - b; }).join(',') + '|cap:' + capacity;
+    }
 
     function normalizeLayout(rawLayout) {
         var normalized = {};
@@ -393,21 +472,72 @@
         syncAndCount();
     }
 
-    for (var i = 1; i <= capacity; i++) {
-        var type = reserved.has(i) ? 'reserved' : (disabled.has(i) ? 'disabled' : 'available');
-        var card = makeCard(i, type);
-        var slot = layout[i];
-        var cell = slot ? document.getElementById('cell-' + slot) : null;
+    function captureCurrentLayout() {
+        var currentLayout = {};
 
-        if (cell && !cell.querySelector('.seat-card')) {
-            cell.appendChild(card);
-        } else {
-            pool.appendChild(card);
-        }
+        cells.forEach(function (cell) {
+            var card = cell.querySelector('.seat-card');
+            if (card) {
+                currentLayout[card.dataset.seat] = parseInt(cell.dataset.slot, 10);
+            }
+        });
+
+        return currentLayout;
     }
 
-    refreshHint();
-    syncAndCount();
+    function clearCards() {
+        cells.forEach(function (cell) {
+            cell.innerHTML = '';
+        });
+        pool.querySelectorAll('.seat-card').forEach(function (card) {
+            card.remove();
+        });
+    }
+
+    function rebuildCards() {
+        clearCards();
+        layout = normalizeLayout(layout);
+
+        for (var i = 1; i <= capacity; i++) {
+            var type = reserved.has(i) ? 'reserved' : (disabled.has(i) ? 'disabled' : 'available');
+            var card = makeCard(i, type);
+            var slot = layout[i];
+            var cell = slot ? document.getElementById('cell-' + slot) : null;
+
+            if (cell && !cell.querySelector('.seat-card')) {
+                cell.appendChild(card);
+            } else {
+                pool.appendChild(card);
+            }
+        }
+
+        refreshHint();
+        syncAndCount();
+    }
+
+    function applyDisabledFromInput() {
+        if (!placesField) {
+            return;
+        }
+
+        var inputSeats = getDisabledFromUi();
+        disabled = new Set();
+        reservedDisabled = new Set();
+
+        inputSeats.forEach(function (seat) {
+            if (reserved.has(seat)) {
+                reservedDisabled.add(seat);
+            } else {
+                disabled.add(seat);
+            }
+        });
+
+        layout = captureCurrentLayout();
+        rebuildCards();
+    }
+
+    rebuildCards();
+    var lastSignature = currentDisabledSignature();
 
     if (editable) {
         if (form) {
@@ -486,6 +616,107 @@
             });
         }
 
+        if (capacityField) {
+            ['input', 'change', 'blur'].forEach(function (eventName) {
+                capacityField.addEventListener(eventName, function () {
+                    var nextCapacity = parseCapacity(capacityField.value);
+                    if (nextCapacity === capacity) {
+                        return;
+                    }
+
+                    layout = captureCurrentLayout();
+                    capacity = nextCapacity;
+                    applyDisabledFromInput();
+                    rebuildCards();
+                });
+            });
+        }
+
+        if (placesField) {
+            ['input', 'change', 'blur', 'itemAdded', 'itemRemoved'].forEach(function (eventName) {
+                placesField.addEventListener(eventName, function () {
+                    applyDisabledFromInput();
+                });
+            });
+
+            function isCurrentTagsContainer(node) {
+                if (!node || !node.classList || !node.classList.contains('bootstrap-tagsinput')) {
+                    return false;
+                }
+
+                if (placesField.nextElementSibling === node) {
+                    return true;
+                }
+
+                if (window.jQuery) {
+                    var currentJqContainer = window.jQuery(placesField).next('.bootstrap-tagsinput');
+                    return currentJqContainer.length ? currentJqContainer.get(0) === node : false;
+                }
+
+                return false;
+            }
+
+            document.addEventListener('input', function (event) {
+                var container = event.target && event.target.closest ? event.target.closest('.bootstrap-tagsinput') : null;
+                if (!isCurrentTagsContainer(container)) {
+                    return;
+                }
+
+                applyDisabledFromInput();
+            }, true);
+
+            document.addEventListener('click', function (event) {
+                var removeTrigger = event.target && event.target.closest ? event.target.closest('[data-role="remove"], .bootstrap-tagsinput .tag') : null;
+                if (!removeTrigger) {
+                    return;
+                }
+
+                var container = removeTrigger.closest ? removeTrigger.closest('.bootstrap-tagsinput') : null;
+                if (!isCurrentTagsContainer(container)) {
+                    return;
+                }
+
+                setTimeout(function () {
+                    applyDisabledFromInput();
+                }, 0);
+            }, true);
+
+            if (window.jQuery) {
+                window.jQuery(placesField).on('itemAdded itemRemoved', function () {
+                    applyDisabledFromInput();
+                });
+
+                var jqContainer = window.jQuery(placesField).next('.bootstrap-tagsinput');
+                if (jqContainer.length) {
+                    jqContainer.on('keyup input', 'input', function () {
+                        applyDisabledFromInput();
+                    });
+                }
+            }
+
+            var tagsContainer = placesField.nextElementSibling;
+            if (window.MutationObserver && tagsContainer && tagsContainer.classList && tagsContainer.classList.contains('bootstrap-tagsinput')) {
+                var tagsObserver = new MutationObserver(function () {
+                    applyDisabledFromInput();
+                });
+
+                tagsObserver.observe(tagsContainer, {
+                    childList: true,
+                    subtree: true,
+                    characterData: true,
+                });
+
+                var tagsInputLive = tagsContainer.querySelector('input');
+                if (tagsInputLive) {
+                    ['input', 'keyup', 'change'].forEach(function (eventName) {
+                        tagsInputLive.addEventListener(eventName, function () {
+                            applyDisabledFromInput();
+                        });
+                    });
+                }
+            }
+        }
+
         document.addEventListener('touchmove', function (e) {
             if (!draggedCard || !touchClone) return;
             e.preventDefault();
@@ -520,6 +751,16 @@
             document.querySelectorAll('.drag-over').forEach(function (el) { el.classList.remove('drag-over'); });
             touchCleanup();
         });
+
+        setInterval(function () {
+            var nextSignature = currentDisabledSignature();
+            if (nextSignature === lastSignature) {
+                return;
+            }
+
+            lastSignature = nextSignature;
+            applyDisabledFromInput();
+        }, 180);
 
         function touchDropTarget(touch) {
             touchClone.style.display = 'none';

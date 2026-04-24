@@ -1,0 +1,676 @@
+{{ form_widget(form.seatLayout, {'attr': {'id': form.seatLayout.vars.id}}) }}
+
+<div class="seats-editor-layout">
+    <div class="seats-grid-col">
+        <p class="seats-col-label">
+            <i class="fa fa-th"></i> Tablero
+            <small class="text-muted">- acomoda camillas por posicion</small>
+        </p>
+        <div class="seat-grid" id="seat-grid">
+            {% for i in 0..35 %}
+                {% set slot = i + 1 %}
+                <div class="grid-cell" id="cell-{{ slot }}" data-slot="{{ slot }}"></div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="seats-pool-col">
+        <p class="seats-col-label">
+            <i class="fa fa-clone"></i> Area temporal
+            <small class="text-muted">(usa este panel mientras organizas)</small>
+        </p>
+
+        <div class="seat-pool" id="seat-pool">
+            <div class="pool-empty-hint" id="pool-empty-hint">
+                <i class="fa fa-check-circle" style="color:#7f8c8d; font-size:18px;"></i><br>
+                <small>Panel vacio</small>
+            </div>
+        </div>
+
+        <div class="seat-pool-warning" id="seat-pool-warning" style="display:none;">
+            <small>
+                Tienes tarjetas en el area temporal. Debes terminar de acomodarlas en el tablero antes de guardar.
+            </small>
+        </div>
+
+        <div class="seats-stats">
+            <div class="seats-stat">
+                <span class="stat-dot" style="background:#ffffff; border:1px solid #cfd6dc;"></span>
+                Libres: <strong id="count-available">-</strong>
+            </div>
+            <div class="seats-stat">
+                <span class="stat-dot" style="background:#95a5a6;"></span>
+                Deshabilitadas: <strong id="count-disabled">-</strong>
+            </div>
+        </div>
+
+        <div style="margin-top:10px; display:flex; flex-direction:column; gap:5px;">
+            <button type="button" id="btn-place-all" class="btn btn-xs btn-default btn-block">
+                <i class="fa fa-th"></i> Llevar todas al tablero
+            </button>
+            <button type="button" id="btn-remove-all" class="btn btn-xs btn-default btn-block">
+                <i class="fa fa-columns"></i> Llevar todas al panel
+            </button>
+        </div>
+
+        <div class="seats-legend">
+            <div><span class="legend-dot legend-dot--available"></span> Libre (tarjeta blanca)</div>
+            <div><span class="legend-dot legend-dot--disabled"></span> Deshabilitada (tarjeta gris)</div>
+        </div>
+    </div>
+</div>
+
+<script id="seats-data-inline" type="application/json">
+    {
+        "capacity": {{ (exerciseRoom.capacity ?? 0)|default(0) }},
+        "layout": {{ (seat_layout ?? {})|json_encode|raw }},
+        "notAvailable": {{ (not_available ?? [])|json_encode|raw }}
+    }
+</script>
+
+<style>
+    .seats-editor-layout {
+        display: flex;
+        gap: 28px;
+        align-items: flex-start;
+    }
+    .seats-grid-col  { flex: 0 0 auto; }
+    .seats-pool-col  { flex: 1; min-width: 155px; max-width: 195px; }
+    .seats-col-label { font-weight: bold; margin-bottom: 8px; font-size: 13px; }
+
+    .seat-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 50px);
+        gap: 4px;
+    }
+    .grid-cell {
+        width: 50px;
+        height: 60px;
+        border: 2px dashed #d7dde2;
+        border-radius: 5px;
+        background: #fbfcfd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+    }
+    .grid-cell.drag-over {
+        background: #eef6ff;
+        border: 2px solid #3498db;
+    }
+
+    .seat-pool {
+        min-height: 90px;
+        border: 2px dashed #bdc3c7;
+        border-radius: 6px;
+        padding: 8px;
+        background: #fafafa;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        align-content: flex-start;
+        transition: background .15s, border-color .15s;
+    }
+    .seat-pool.drag-over {
+        background: #eaf2f8;
+        border: 2px solid #2980b9;
+    }
+    .pool-empty-hint {
+        width: 100%;
+        text-align: center;
+        color: #aaa;
+        font-size: 11px;
+        padding: 8px 0;
+        line-height: 1.8;
+    }
+    .seat-pool-warning {
+        margin-top: 8px;
+        padding: 8px;
+        border: 1px solid #f5c16c;
+        background: #fff8ea;
+        border-radius: 5px;
+        color: #6e5321;
+        font-size: 12px;
+        line-height: 1.35;
+    }
+
+    .seat-card {
+        width: 44px;
+        height: 54px;
+        border-radius: 5px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        user-select: none;
+        position: relative;
+        transition: box-shadow .15s;
+        z-index: 1;
+        background: #ffffff;
+        border: 1px solid #cfd6dc;
+        color: #2c3e50;
+        cursor: grab;
+    }
+    .seat-card:active { cursor: grabbing; }
+    .seat-card:hover  { box-shadow: 0 2px 6px rgba(44,62,80,.18); }
+    .seat-card .seat-icon { font-size: 22px; line-height: 1; }
+    .seat-card .seat-num  { font-size: 10px; font-weight: bold; }
+    .seat-card.dragging { opacity: .25; }
+
+    .seat-card--disabled {
+        background: #ecf0f1;
+        border: 1px solid #95a5a6;
+        color: #5d6d7e;
+    }
+
+    .seats-stats { margin-top: 12px; font-size: 12px; display: flex; flex-direction: column; gap: 6px; }
+    .seats-stat  { display: flex; align-items: center; gap: 6px; }
+    .stat-dot    { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    .seats-legend {
+        margin-top: 14px;
+        font-size: 11px;
+        color: #555;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    .legend-dot {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border-radius: 3px;
+        vertical-align: middle;
+        margin-right: 4px;
+    }
+    .legend-dot--available { background: #ffffff; border: 1px solid #cfd6dc; }
+    .legend-dot--disabled  { background: #ecf0f1; border: 1px solid #95a5a6; }
+
+    @media (max-width: 620px) {
+        .seats-editor-layout {
+            flex-direction: column;
+            gap: 20px;
+        }
+        .seats-pool-col {
+            max-width: 100%;
+            min-width: 0;
+            width: 100%;
+        }
+    }
+</style>
+
+<script>
+(function () {
+    var dataNode = document.getElementById('seats-data-inline');
+    if (!dataNode) {
+        return;
+    }
+
+    var capacityInput = document.getElementById('{{ form.capacity.vars.id }}');
+    var placesInput = document.getElementById('{{ form.placesNotAvailable.vars.id }}');
+    var seatLayoutInput = document.getElementById('{{ form.seatLayout.vars.id }}');
+    var form = document.getElementById('form-branch-office');
+
+    if (!capacityInput || !placesInput || !seatLayoutInput || !form) {
+        return;
+    }
+
+    var parsed = JSON.parse(dataNode.textContent || '{}');
+    var capacity = toCapacity(capacityInput.value || parsed.capacity || 0);
+    var initialLayout = normalizeLayout(parsed.layout || {}, capacity);
+    var initialDisabled = normalizeDisabled(parsed.notAvailable || parseCsvNumbers(placesInput.value), capacity);
+
+    var layout = initialLayout;
+    var disabled = new Set(initialDisabled);
+    var draggedCard = null;
+
+    var poolWarningAcknowledged = false;
+    var pool = document.getElementById('seat-pool');
+    var hint = document.getElementById('pool-empty-hint');
+    var poolWarning = document.getElementById('seat-pool-warning');
+    var cells = Array.prototype.slice.call(document.querySelectorAll('.grid-cell'));
+
+    function toCapacity(value) {
+        var number = parseInt(value, 10);
+        if (!Number.isFinite(number) || number < 0) {
+            return 0;
+        }
+
+        return Math.min(number, 36);
+    }
+
+    function parseCsvNumbers(raw) {
+        if (!raw) {
+            return [];
+        }
+
+        return String(raw)
+            .split(/[^0-9]+/)
+            .map(function (item) { return parseInt(String(item).trim(), 10); })
+            .filter(function (item) { return Number.isFinite(item); });
+    }
+
+    function parseLooseNumbers(raw) {
+        if (!raw) {
+            return [];
+        }
+
+        return String(raw)
+            .split(/[^0-9]+/)
+            .map(function (item) { return parseInt(String(item).trim(), 10); })
+            .filter(function (item) { return Number.isFinite(item); });
+    }
+
+    function getDisabledFromUi() {
+        var values = parseCsvNumbers(placesInput.value);
+        var tagsContainer = placesInput.nextElementSibling;
+
+        if ((!tagsContainer || !tagsContainer.classList || !tagsContainer.classList.contains('bootstrap-tagsinput')) && window.jQuery) {
+            var jqContainer = window.jQuery(placesInput).next('.bootstrap-tagsinput');
+            if (jqContainer.length) {
+                tagsContainer = jqContainer.get(0);
+            }
+        }
+
+        if (!tagsContainer || !tagsContainer.classList || !tagsContainer.classList.contains('bootstrap-tagsinput')) {
+            return normalizeDisabled(values, capacity);
+        }
+
+        tagsContainer.querySelectorAll('.tag').forEach(function (tagNode) {
+            values = values.concat(parseLooseNumbers(tagNode.textContent || ''));
+        });
+
+        var liveInput = tagsContainer.querySelector('input');
+        if (liveInput && liveInput.value) {
+            values = values.concat(parseLooseNumbers(liveInput.value));
+        }
+
+        return normalizeDisabled(values, capacity);
+    }
+
+    function currentDisabledSignature() {
+        return getDisabledFromUi().join(',') + '|cap:' + capacity;
+    }
+
+    function applyDisabledFromInput() {
+        disabled = new Set(getDisabledFromUi());
+        layout = captureCurrentLayout();
+        render();
+    }
+
+    function normalizeDisabled(raw, max) {
+        var unique = new Set();
+
+        (raw || []).forEach(function (item) {
+            var num = parseInt(item, 10);
+            if (Number.isFinite(num) && num >= 1 && num <= max) {
+                unique.add(num);
+            }
+        });
+
+        return Array.from(unique).sort(function (a, b) { return a - b; });
+    }
+
+    function normalizeLayout(rawLayout, max) {
+        var normalized = {};
+        var usedSlots = {};
+
+        Object.keys(rawLayout || {}).forEach(function (seatKey) {
+            var seat = parseInt(seatKey, 10);
+            var slot = parseInt(rawLayout[seatKey], 10);
+
+            if (!Number.isFinite(seat) || !Number.isFinite(slot)) {
+                return;
+            }
+
+            if (seat < 1 || seat > max || slot < 1 || slot > 36 || usedSlots[slot]) {
+                return;
+            }
+
+            normalized[seat] = slot;
+            usedSlots[slot] = true;
+        });
+
+        return normalized;
+    }
+
+    function clearGridAndPool() {
+        cells.forEach(function (cell) {
+            cell.innerHTML = '';
+        });
+        pool.querySelectorAll('.seat-card').forEach(function (node) {
+            node.remove();
+        });
+    }
+
+    function makeCard(num) {
+        var card = document.createElement('div');
+        card.className = 'seat-card' + (disabled.has(num) ? ' seat-card--disabled' : '');
+        card.id = 'seat-' + num;
+        card.dataset.seat = String(num);
+        card.draggable = true;
+        card.innerHTML =
+            '<span class="seat-icon"><i class="fa fa-bed"></i></span>' +
+            '<span class="seat-num">' + num + '</span>';
+
+        card.addEventListener('dblclick', function () {
+            if (disabled.has(num)) {
+                disabled.delete(num);
+            } else {
+                disabled.add(num);
+            }
+
+            card.classList.toggle('seat-card--disabled', disabled.has(num));
+            syncAndCount();
+        });
+
+        card.addEventListener('dragstart', function (e) {
+            draggedCard = card;
+            setTimeout(function () { card.classList.add('dragging'); }, 0);
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', String(num));
+        });
+
+        card.addEventListener('dragend', function () {
+            card.classList.remove('dragging');
+            draggedCard = null;
+            document.querySelectorAll('.drag-over').forEach(function (el) {
+                el.classList.remove('drag-over');
+            });
+        });
+
+        return card;
+    }
+
+    function firstEmptyCell() {
+        for (var index = 0; index < cells.length; index++) {
+            if (!cells[index].querySelector('.seat-card')) {
+                return cells[index];
+            }
+        }
+
+        return null;
+    }
+
+    function toGrid(card, targetCell) {
+        var cell = targetCell || firstEmptyCell();
+        if (!cell) {
+            return;
+        }
+
+        cell.appendChild(card);
+        refreshHint();
+        syncAndCount();
+    }
+
+    function toPool(card) {
+        pool.appendChild(card);
+        refreshHint();
+        syncAndCount();
+    }
+
+    function captureCurrentLayout() {
+        var currentLayout = {};
+
+        cells.forEach(function (cell) {
+            var card = cell.querySelector('.seat-card');
+            if (card) {
+                currentLayout[card.dataset.seat] = parseInt(cell.dataset.slot, 10);
+            }
+        });
+
+        return currentLayout;
+    }
+
+    function render() {
+        clearGridAndPool();
+        layout = normalizeLayout(layout, capacity);
+        disabled = new Set(normalizeDisabled(Array.from(disabled), capacity));
+
+        for (var i = 1; i <= capacity; i++) {
+            var card = makeCard(i);
+            var slot = layout[i];
+            var cell = slot ? document.getElementById('cell-' + slot) : null;
+
+            if (cell && !cell.querySelector('.seat-card')) {
+                cell.appendChild(card);
+            } else {
+                pool.appendChild(card);
+            }
+        }
+
+        refreshHint();
+        syncAndCount();
+    }
+
+    cells.forEach(function (cell) {
+        cell.addEventListener('dragover', function (e) {
+            if (draggedCard && !cell.querySelector('.seat-card')) {
+                e.preventDefault();
+                cell.classList.add('drag-over');
+            }
+        });
+        cell.addEventListener('dragleave', function () { cell.classList.remove('drag-over'); });
+        cell.addEventListener('drop', function (e) {
+            e.preventDefault();
+            cell.classList.remove('drag-over');
+            if (draggedCard && !cell.querySelector('.seat-card')) {
+                toGrid(draggedCard, cell);
+            }
+        });
+    });
+
+    pool.addEventListener('dragover', function (e) {
+        if (draggedCard) {
+            e.preventDefault();
+            pool.classList.add('drag-over');
+        }
+    });
+    pool.addEventListener('dragleave', function () { pool.classList.remove('drag-over'); });
+    pool.addEventListener('drop', function (e) {
+        e.preventDefault();
+        pool.classList.remove('drag-over');
+        if (draggedCard) {
+            toPool(draggedCard);
+        }
+    });
+
+    var placeAllButton = document.getElementById('btn-place-all');
+    var removeAllButton = document.getElementById('btn-remove-all');
+
+    if (placeAllButton) {
+        placeAllButton.addEventListener('click', function () {
+            for (var j = 1; j <= capacity; j++) {
+                var c = document.getElementById('seat-' + j);
+                if (c && c.closest('#seat-pool')) {
+                    toGrid(c);
+                }
+            }
+        });
+    }
+
+    if (removeAllButton) {
+        removeAllButton.addEventListener('click', function () {
+            for (var j = 1; j <= capacity; j++) {
+                var c = document.getElementById('seat-' + j);
+                if (c && !c.closest('#seat-pool')) {
+                    toPool(c);
+                }
+            }
+        });
+    }
+
+    capacityInput.addEventListener('input', function () {
+        // Bloquear valores negativos y números > 36 en tiempo real
+        var value = capacityInput.value;
+        
+        // Remover caracteres que no sean números
+        value = value.replace(/[^0-9]/g, '');
+        
+        // Convertir a número
+        var num = parseInt(value, 10);
+        
+        // Si está vacío o es NaN, dejar como está
+        if (!value || isNaN(num)) {
+            capacityInput.value = '';
+            return;
+        }
+        
+        // Limitar a 36
+        if (num > 36) {
+            capacityInput.value = 36;
+        } else {
+            capacityInput.value = num;
+        }
+    });
+
+    capacityInput.addEventListener('change', function () {
+        capacity = toCapacity(capacityInput.value);
+        render();
+    });
+
+    ['input', 'change', 'blur', 'itemAdded', 'itemRemoved'].forEach(function (eventName) {
+        placesInput.addEventListener(eventName, function () {
+            applyDisabledFromInput();
+        });
+    });
+
+    if (window.jQuery) {
+        window.jQuery(placesInput).on('itemAdded itemRemoved', function () {
+            applyDisabledFromInput();
+        });
+
+        var jqContainer = window.jQuery(placesInput).next('.bootstrap-tagsinput');
+        if (jqContainer.length) {
+            jqContainer.on('keyup input', 'input', function () {
+                applyDisabledFromInput();
+            });
+        }
+    }
+
+    function isCurrentTagsContainer(node) {
+        if (!node || !node.classList || !node.classList.contains('bootstrap-tagsinput')) {
+            return false;
+        }
+
+        if (placesInput.nextElementSibling === node) {
+            return true;
+        }
+
+        if (window.jQuery) {
+            var jqContainer = window.jQuery(placesInput).next('.bootstrap-tagsinput');
+            return jqContainer.length ? jqContainer.get(0) === node : false;
+        }
+
+        return false;
+    }
+
+    document.addEventListener('input', function (event) {
+        var container = event.target && event.target.closest ? event.target.closest('.bootstrap-tagsinput') : null;
+        if (!isCurrentTagsContainer(container)) {
+            return;
+        }
+
+        applyDisabledFromInput();
+    }, true);
+
+    document.addEventListener('click', function (event) {
+        var removeTrigger = event.target && event.target.closest ? event.target.closest('[data-role="remove"], .bootstrap-tagsinput .tag') : null;
+        if (!removeTrigger) {
+            return;
+        }
+
+        var container = removeTrigger.closest ? removeTrigger.closest('.bootstrap-tagsinput') : null;
+        if (!isCurrentTagsContainer(container)) {
+            return;
+        }
+
+        setTimeout(function () {
+            applyDisabledFromInput();
+        }, 0);
+    }, true);
+
+    var tagsContainer = placesInput.nextElementSibling;
+    if (window.MutationObserver && tagsContainer && tagsContainer.classList && tagsContainer.classList.contains('bootstrap-tagsinput')) {
+        var tagsObserver = new MutationObserver(function () {
+            applyDisabledFromInput();
+        });
+
+        tagsObserver.observe(tagsContainer, {
+            childList: true,
+            subtree: true,
+            characterData: true,
+        });
+
+        var tagsInputLive = tagsContainer.querySelector('input');
+        if (tagsInputLive) {
+            ['input', 'keyup', 'change'].forEach(function (eventName) {
+                tagsInputLive.addEventListener(eventName, function () {
+                    applyDisabledFromInput();
+                });
+            });
+        }
+    }
+
+    form.addEventListener('submit', function (event) {
+        var cardsInPool = pool.querySelectorAll('.seat-card').length;
+
+        if (cardsInPool > 0) {
+            if (!poolWarningAcknowledged) {
+                event.preventDefault();
+                poolWarningAcknowledged = true;
+
+                if (poolWarning) {
+                    poolWarning.style.display = '';
+                }
+
+                return;
+            }
+        }
+
+        poolWarningAcknowledged = false;
+        syncAndCount();
+    });
+
+    function refreshHint() {
+        hint.style.display = pool.querySelectorAll('.seat-card').length === 0 ? '' : 'none';
+
+        if (poolWarning && pool.querySelectorAll('.seat-card').length === 0) {
+            poolWarning.style.display = 'none';
+            poolWarningAcknowledged = false;
+        }
+    }
+
+    function syncAndCount() {
+        var disabledSeats = normalizeDisabled(Array.from(disabled), capacity);
+        placesInput.value = disabledSeats.join(',');
+
+        var currentLayout = {};
+        cells.forEach(function (cell) {
+            var card = cell.querySelector('.seat-card');
+            if (card) {
+                currentLayout[card.dataset.seat] = parseInt(cell.dataset.slot, 10);
+            }
+        });
+
+        seatLayoutInput.value = JSON.stringify(currentLayout);
+
+        document.getElementById('count-available').textContent = Math.max(capacity - disabledSeats.length, 0);
+        document.getElementById('count-disabled').textContent  = disabledSeats.length;
+    }
+
+    render();
+
+    var lastSignature = currentDisabledSignature();
+    setInterval(function () {
+        var nextSignature = currentDisabledSignature();
+        if (nextSignature === lastSignature) {
+            return;
+        }
+
+        lastSignature = nextSignature;
+        applyDisabledFromInput();
+    }, 180);
+})();
+</script>

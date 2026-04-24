@@ -51,8 +51,26 @@ class ExerciseRoomController extends AbstractController
         $exerciseRoom = new Exerciseroom();
         $form = $this->createForm(ExerciseRoomType::class, $exerciseRoom);
         $form->handleRequest($request);
+        $capacity = (int) ($exerciseRoom->getCapacity() ?? 0);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $capacity = (int) ($exerciseRoom->getCapacity() ?? 0);
+            $seatLayout = SeatLayoutMapper::buildPersistedSeatLayout(
+                $this->sanitizeSeatLayout($exerciseRoom->getSeatLayout(), $capacity),
+                $capacity
+            );
+
+            $placesNotAvailable = SeatLayoutMapper::buildPersistedPlacesNotAvailable(
+                $exerciseRoom->getPlacesNotAvailable(),
+                $capacity,
+                $capacity,
+            );
+
+            $exerciseRoom
+                ->setSeatLayout($seatLayout)
+                ->setPlacesNotAvailable($placesNotAvailable)
+            ;
+
             $em->persist($exerciseRoom);
             $em->flush();
 
@@ -66,6 +84,8 @@ class ExerciseRoomController extends AbstractController
         return $this->render('backend/exerciseroom/new.html.twig', [
             'exerciseRoom' => $exerciseRoom,
             'form' => $form,
+            'seat_layout' => SeatLayoutMapper::buildPersistedSeatLayout($exerciseRoom->getSeatLayout(), $capacity),
+            'not_available' => SeatLayoutMapper::buildPersistedPlacesNotAvailable($exerciseRoom->getPlacesNotAvailable(), $capacity, $capacity) ?? [],
         ]);
     }
 
@@ -121,6 +141,17 @@ class ExerciseRoomController extends AbstractController
         $editForm->handleRequest($request);
 
         if ($editForm->isSubmitted() && $editForm->isValid()) {
+            $capacity = (int) ($exerciseRoom->getCapacity() ?? 0);
+            $exerciseRoom->setSeatLayout(SeatLayoutMapper::buildPersistedSeatLayout(
+                $this->sanitizeSeatLayout($exerciseRoom->getSeatLayout(), $capacity),
+                $capacity
+            ));
+            $exerciseRoom->setPlacesNotAvailable(SeatLayoutMapper::buildPersistedPlacesNotAvailable(
+                $exerciseRoom->getPlacesNotAvailable(),
+                $capacity,
+                $capacity,
+            ));
+
             try {
                 $updatedSessions = $sessionRepository->updateCapacity($exerciseRoom);
                 $em->flush();

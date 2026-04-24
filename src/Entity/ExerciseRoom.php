@@ -29,6 +29,10 @@ class ExerciseRoom implements TimestampableInterface
 
     #[ORM\Column]
     #[Assert\GreaterThan(0)]
+    #[Assert\LessThanOrEqual(
+        value: 36,
+        message: 'La capacidad maxima permitida por salon es 36.'
+    )]
     private ?int $capacity = null;
 
     #[ORM\ManyToOne]

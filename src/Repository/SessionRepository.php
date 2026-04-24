@@ -387,11 +387,15 @@ class SessionRepository extends ServiceEntityRepository
     public function updateCapacity(ExerciseRoom $exerciseRoom): int
     {
         $now = new \DateTime();
-        $notAvailable = $exerciseRoom->getPlacesNotAvailable() ?? [];
         $today = (clone $now)->setTime(0, 0);
         $capacity = (int) ($exerciseRoom->getCapacity() ?? 0);
+        $notAvailable = SeatLayoutMapper::buildPersistedPlacesNotAvailable(
+            $exerciseRoom->getPlacesNotAvailable(),
+            $capacity,
+            $capacity,
+        ) ?? [];
         $seatLayout = SeatLayoutMapper::buildPersistedSeatLayout($exerciseRoom->getSeatLayout(), $capacity);
-        $availableCapacity = $capacity - count($notAvailable);
+        $availableCapacity = max(0, $capacity - count($notAvailable));
 
         $futureSessions = $this->createQueryBuilder('s')
             ->where('s.exerciseRoom = :exerciseRoom')

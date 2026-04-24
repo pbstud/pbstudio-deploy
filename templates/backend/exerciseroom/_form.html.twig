@@ -1,7 +1,7 @@
 {{ form_start(form, {'attr': {'id': 'form-branch-office'}}) }}
     <div class="row">
         {{ form_row(form.name, {'row_attr': {'class': 'col-md-6'}}) }}
-        {{ form_row(form.capacity, {'row_attr': {'class': 'col-md-6'}, 'attr': {'min': 1}}) }}
+        {{ form_row(form.capacity, {'row_attr': {'class': 'col-md-6'}, 'attr': {'min': 1, 'max': 36}}) }}
     </div>
 
     <div class="row">
@@ -17,6 +17,22 @@
     <div class="row">
         {{ form_row(form.isActive, {'row_attr': {'class': 'col-md-6'}}) }}
     </div>
+
+    {% if show_seat_editor|default(false) %}
+        <div class="ln_solid"></div>
+        <h3 id="seat-layout-editor" style="margin-top: 0;">Disposición de Asientos del Salón</h3>
+        <p style="margin-bottom: 12px; color: #4d6475;">
+            Configura la plantilla base de asientos para este salón.
+            Esta disposición se usará en clases nuevas que usen este salón.
+        </p>
+
+        {{ include('backend/exerciseroom/_seats_editor_inline.html.twig', {
+            form: form,
+            exerciseRoom: exerciseRoom,
+            seat_layout: seat_layout|default({}),
+            not_available: not_available|default([])
+        }) }}
+    {% endif %}
 
     <div class="ln_solid"></div>
 
