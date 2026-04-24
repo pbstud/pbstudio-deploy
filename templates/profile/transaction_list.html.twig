@@ -14,7 +14,7 @@
                         <td>Modalidad</td>
                         <td>Costo</td>
                         <td>Método de pago</td>
-                        <td>Fecha</td>
+                        <td>Estado / Fecha</td>
                     </tr>
                     </thead>
                     <tbody>
@@ -30,7 +30,17 @@
                             <td>{{ entity.packageType|PackageSessionType }}</td>
                             <td>${{ entity.total|number_format }}</td>
                             <td>{{ entity.chargeMethod|ChargeMethodDescription }}{{ entity.cardLast4 ? '-' ~ entity.cardLast4 : '' }}</td>
-                            <td>{{ entity.createdAt | date('d/m/Y h:i') }}</td>
+                            <td>
+                                {% if entity.status == constant('App\\Entity\\Transaction::STATUS_CANCEL') %}
+                                    Cancelada
+                                {% elseif entity.status == constant('App\\Entity\\Transaction::STATUS_FROZEN') or entity.isFrozen %}
+                                    Congelada
+                                {% elseif entity.isExpired %}
+                                    Vencida
+                                {% else %}
+                                    {{ entity.createdAt | date('d/m/Y h:i') }}
+                                {% endif %}
+                            </td>
                         </tr>
                     {% else %}
                         <tr>

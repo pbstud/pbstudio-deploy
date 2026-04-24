@@ -3,15 +3,46 @@
 {% block page_title %}Gracias por tu compra | {% endblock %}
 
 {% block content %}
-    <section class="page">
+    <section class="page checkout-success-page">
         <div class="row">
-            <div class="content success-page">
-                <div class="text_box">
-                    <h1>Gracias por tu compra</h1>
-                    <div class="checkout-success center">
-                        <h4>Tu compra se ha realizado con éxito<small>¡Comienza ahora!</small></h4>
-                        <a href="{{ path('reservation_calendar') }}" class="btn">Reservar clase</a>
-                        <a href="{{ path('profile') }}" class="btn secondary">Ir a mi cuenta</a>
+            <div class="content">
+                <div class="checkout-success-shell">
+                    <div class="checkout-success-header center">
+                        <p class="checkout-success-kicker">Paquetes</p>
+                        <h1>Gracias por tu compra</h1>
+                        <p class="checkout-success-lead">
+                            Tu paquete fue activado exitosamente. Ya puedes reservar tus clases.
+                        </p>
+                    </div>
+
+                    <div class="checkout-success-card center">
+                        <div class="checkout-success-summary" aria-label="Resumen de compra">
+                            <div class="checkout-success-summary-item">
+                                <span class="label">Paquete</span>
+                                <strong>{{ packageName }}</strong>
+                            </div>
+                            <div class="checkout-success-summary-item">
+                                <span class="label">Tipo</span>
+                                <strong>{{ packageType }}</strong>
+                            </div>
+                            <div class="checkout-success-summary-item">
+                                <span class="label">Clases</span>
+                                <strong>{{ transaction.packageIsUnlimited ? 'Ilimitadas' : transaction.packageTotalClasses }}</strong>
+                            </div>
+                            <div class="checkout-success-summary-item">
+                                <span class="label">Vigencia</span>
+                                <strong>{{ transaction.packageDaysExpiry }} dias</strong>
+                            </div>
+                            <div class="checkout-success-summary-item">
+                                <span class="label">Total pagado</span>
+                                <strong>${{ transaction.total|number_format(2, '.', ',') }}</strong>
+                            </div>
+                        </div>
+
+                        <div class="checkout-success-actions">
+                            <a href="{{ path('reservation_calendar') }}" class="btn">Reservar clase</a>
+                            <a href="{{ path('profile') }}" class="btn secondary">Ir a mi cuenta</a>
+                        </div>
                     </div>
                 </div>
             </div>

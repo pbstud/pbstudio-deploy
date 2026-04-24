@@ -55,7 +55,7 @@ class ProfileController extends AbstractController
 
         return $this->render('profile/index.html.twig', [
             'user' => $user,
-            'lastTransactions' => $transactionRepository->getLastCompletedByUser($user),
+            'lastTransactions' => $transactionRepository->getLastHistoryByUser($user),
         ]);
     }
 
@@ -445,7 +445,7 @@ class ProfileController extends AbstractController
 
         return $this->render('profile/edit.html.twig', [
             'form' => $form->createView(),
-            'lastTransactions' => $transactionRepository->getLastCompletedByUser($user),
+            'lastTransactions' => $transactionRepository->getLastHistoryByUser($user),
         ]);
     }
 
@@ -456,7 +456,7 @@ class ProfileController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
-        $transactions = $transactionRepository->getAllCompletedByUser($user);
+        $transactions = $transactionRepository->getAllHistoryByUser($user);
 
         return $this->render('profile/transaction_list.html.twig', [
             'transactions' => $transactions,

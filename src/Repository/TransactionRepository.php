@@ -91,6 +91,23 @@ class TransactionRepository extends ServiceEntityRepository
     }
 
     /**
+     * @return Transaction[]
+     */
+    public function getAllHistoryByUser(User $user): array
+    {
+        $qb = $this->getAllByUser($user)
+            ->andWhere('t.status IN (:statuses)')
+            ->setParameter('statuses', [
+                Transaction::STATUS_PAID,
+                Transaction::STATUS_CANCEL,
+                Transaction::STATUS_FROZEN,
+            ])
+        ;
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
      * @return Package[]
      */
     public function getLastCompleted(int $limit = 3): array
@@ -114,6 +131,24 @@ class TransactionRepository extends ServiceEntityRepository
         $qb = $this->getAllByUser($user)
             ->andWhere('t.status = :status')
             ->setParameter('status', Transaction::STATUS_PAID)
+            ->setMaxResults($limit)
+        ;
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * @return Transaction[]
+     */
+    public function getLastHistoryByUser(User $user, int $limit = 3): array
+    {
+        $qb = $this->getAllByUser($user)
+            ->andWhere('t.status IN (:statuses)')
+            ->setParameter('statuses', [
+                Transaction::STATUS_PAID,
+                Transaction::STATUS_CANCEL,
+                Transaction::STATUS_FROZEN,
+            ])
             ->setMaxResults($limit)
         ;
 
