@@ -53,6 +53,7 @@ class Transaction implements TimestampableInterface
     private ?User $user = null;
 
     #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Package $package = null;
 
     #[ORM\Column]
@@ -69,6 +70,24 @@ class Transaction implements TimestampableInterface
 
     #[ORM\Column(type: Types::SMALLINT)]
     private ?int $packageDaysExpiry = null;
+
+    #[ORM\Column(options: ['default' => false])]
+    private ?bool $packageHasRestrictions = false;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $packageRestrictionHours = null;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $packageRestrictionDays = null;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $packageRestrictionInstructorIds = null;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $packageRestrictionDisciplineIds = null;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $packageRestrictionBranchIds = null;
 
     #[ORM\Column(length: 25)]
     private ?string $chargeMethod = null;
@@ -287,6 +306,78 @@ class Transaction implements TimestampableInterface
     public function setPackageDaysExpiry(int $packageDaysExpiry): static
     {
         $this->packageDaysExpiry = $packageDaysExpiry;
+
+        return $this;
+    }
+
+    public function isPackageHasRestrictions(): ?bool
+    {
+        return $this->packageHasRestrictions;
+    }
+
+    public function setPackageHasRestrictions(bool $packageHasRestrictions): static
+    {
+        $this->packageHasRestrictions = $packageHasRestrictions;
+
+        return $this;
+    }
+
+    public function getPackageRestrictionHours(): ?array
+    {
+        return $this->packageRestrictionHours;
+    }
+
+    public function setPackageRestrictionHours(?array $packageRestrictionHours): static
+    {
+        $this->packageRestrictionHours = $packageRestrictionHours;
+
+        return $this;
+    }
+
+    public function getPackageRestrictionDays(): ?array
+    {
+        return $this->packageRestrictionDays;
+    }
+
+    public function setPackageRestrictionDays(?array $packageRestrictionDays): static
+    {
+        $this->packageRestrictionDays = $packageRestrictionDays;
+
+        return $this;
+    }
+
+    public function getPackageRestrictionInstructorIds(): ?array
+    {
+        return $this->packageRestrictionInstructorIds;
+    }
+
+    public function setPackageRestrictionInstructorIds(?array $packageRestrictionInstructorIds): static
+    {
+        $this->packageRestrictionInstructorIds = $packageRestrictionInstructorIds;
+
+        return $this;
+    }
+
+    public function getPackageRestrictionDisciplineIds(): ?array
+    {
+        return $this->packageRestrictionDisciplineIds;
+    }
+
+    public function setPackageRestrictionDisciplineIds(?array $packageRestrictionDisciplineIds): static
+    {
+        $this->packageRestrictionDisciplineIds = $packageRestrictionDisciplineIds;
+
+        return $this;
+    }
+
+    public function getPackageRestrictionBranchIds(): ?array
+    {
+        return $this->packageRestrictionBranchIds;
+    }
+
+    public function setPackageRestrictionBranchIds(?array $packageRestrictionBranchIds): static
+    {
+        $this->packageRestrictionBranchIds = $packageRestrictionBranchIds;
 
         return $this;
     }

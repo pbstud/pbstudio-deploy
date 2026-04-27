@@ -39,6 +39,61 @@ class PackageType extends AbstractType
             ->add('daysExpiry', null, [
                 'label' => 'label.days_expiry',
             ])
+            ->add('hasRestrictions', null, [
+                'label' => 'Restricciones activas',
+                'block_prefix' => 'switch',
+                'required' => false,
+            ])
+            ->add('restrictionHoursSelection', ChoiceType::class, [
+                'mapped' => false,
+                'required' => false,
+                'label' => 'Hora de la clase',
+                'choices' => $options['restriction_hours_choices'],
+                'data' => $options['restriction_hours_selected'],
+                'multiple' => true,
+                'expanded' => false,
+                'attr' => ['class' => 'restriction-select-field'],
+            ])
+            ->add('restrictionDaysSelection', ChoiceType::class, [
+                'mapped' => false,
+                'required' => false,
+                'label' => 'Dia de la semana',
+                'choices' => $options['restriction_days_choices'],
+                'data' => $options['restriction_days_selected'],
+                'multiple' => true,
+                'expanded' => false,
+                'attr' => ['class' => 'restriction-select-field'],
+            ])
+            ->add('restrictionInstructorIdsSelection', ChoiceType::class, [
+                'mapped' => false,
+                'required' => false,
+                'label' => 'Instructores',
+                'choices' => $options['restriction_instructor_choices'],
+                'data' => $options['restriction_instructor_selected'],
+                'multiple' => true,
+                'expanded' => false,
+                'attr' => ['class' => 'restriction-select-field'],
+            ])
+            ->add('restrictionDisciplineIdsSelection', ChoiceType::class, [
+                'mapped' => false,
+                'required' => false,
+                'label' => 'Disciplinas',
+                'choices' => $options['restriction_discipline_choices'],
+                'data' => $options['restriction_discipline_selected'],
+                'multiple' => true,
+                'expanded' => false,
+                'attr' => ['class' => 'restriction-select-field'],
+            ])
+            ->add('restrictionBranchIdsSelection', ChoiceType::class, [
+                'mapped' => false,
+                'required' => false,
+                'label' => 'Sucursales',
+                'choices' => $options['restriction_branch_choices'],
+                'data' => $options['restriction_branch_selected'],
+                'multiple' => true,
+                'expanded' => false,
+                'attr' => ['class' => 'restriction-select-field'],
+            ])
             ->add('isUnlimited', null, [
                 'label' => 'label.is_unlimited',
                 'block_prefix' => 'switch',
@@ -75,6 +130,16 @@ class PackageType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => Package::class,
+            'restriction_hours_choices' => [],
+            'restriction_days_choices' => [],
+            'restriction_instructor_choices' => [],
+            'restriction_discipline_choices' => [],
+            'restriction_branch_choices' => [],
+            'restriction_hours_selected' => [],
+            'restriction_days_selected' => [],
+            'restriction_instructor_selected' => [],
+            'restriction_discipline_selected' => [],
+            'restriction_branch_selected' => [],
         ]);
     }
 }

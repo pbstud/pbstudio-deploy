@@ -6,11 +6,15 @@ namespace App\Controller\Backend;
 
 use App\Entity\Package;
 use App\Form\Backend\PackageType;
+use App\Repository\BranchOfficeRepository;
+use App\Repository\DisciplineRepository;
 use App\Repository\PackageRepository;
+use App\Repository\StaffRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Knp\Component\Pager\PaginatorInterface;
 use OpenSpout\Writer\XLSX\Writer;
 use OpenSpout\Common\Entity\Row;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -24,6 +28,10 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/backend/package')]
 class PackageController extends AbstractController
 {
+    public function __construct(private readonly LoggerInterface $logger)
+    {
+    }
+
     #[Route('/', name: 'backend_package', methods: ['GET'])]
     public function index(
         Request $request,
@@ -46,13 +54,30 @@ class PackageController extends AbstractController
     }
 
     #[Route('/new', name: 'backend_package_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $em): Response
+    public function new(
+        Request $request,
+        EntityManagerInterface $em,
+        StaffRepository $staffRepository,
+        DisciplineRepository $disciplineRepository,
+        BranchOfficeRepository $branchOfficeRepository,
+    ): Response
     {
         $package = new Package();
-        $form = $this->createForm(PackageType::class, $package);
+        $form = $this->createForm(
+            PackageType::class,
+            $package,
+            $this->buildRestrictionFormOptions($package, $staffRepository, $disciplineRepository, $branchOfficeRepository)
+        );
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            if (!$this->applyRestrictionFormData($form, $package)) {
+                return $this->render('backend/package/new.html.twig', [
+                    'package' => $package,
+                    'form' => $form,
+                ]);
+            }
+
             $em->persist($package);
             $em->flush();
 
@@ -70,12 +95,38 @@ class PackageController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'backend_package_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Package $package, EntityManagerInterface $em): Response
+    public function edit(
+        Request $request,
+        Package $package,
+        EntityManagerInterface $em,
+        StaffRepository $staffRepository,
+        DisciplineRepository $disciplineRepository,
+        BranchOfficeRepository $branchOfficeRepository,
+    ): Response
     {
-        $editForm = $this->createForm(PackageType::class, $package);
+        $editForm = $this->createForm(
+            PackageType::class,
+            $package,
+            $this->buildRestrictionFormOptions($package, $staffRepository, $disciplineRepository, $branchOfficeRepository)
+        );
         $editForm->handleRequest($request);
 
         if ($editForm->isSubmitted() && $editForm->isValid()) {
+            if ($package->isHasRestrictions()) {
+                $this->addFlash('warning', 'La edición está bloqueada para paquetes con restricciones.');
+
+                return $this->redirectToRoute('backend_package_edit', [
+                    'id' => $package->getId(),
+                ]);
+            }
+
+            if (!$this->applyRestrictionFormData($editForm, $package)) {
+                return $this->render('backend/package/edit.html.twig', [
+                    'package' => $package,
+                    'form' => $editForm,
+                ]);
+            }
+
             $em->flush();
             $this->addFlash('success', 'El Paquete ha sido actualizado.');
 
@@ -88,6 +139,23 @@ class PackageController extends AbstractController
             'package' => $package,
             'form' => $editForm,
         ]);
+    }
+
+    #[Route('/{id}/delete', name: 'backend_package_delete', methods: ['POST'])]
+    public function delete(Request $request, Package $package, EntityManagerInterface $em): Response
+    {
+        if (!$this->isCsrfTokenValid('delete_package_'.$package->getId(), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'Token de seguridad inválido.');
+
+            return $this->redirectToRoute('backend_package_edit', ['id' => $package->getId()]);
+        }
+
+        $em->remove($package);
+        $em->flush();
+
+        $this->addFlash('success', 'El paquete ha sido eliminado.');
+
+        return $this->redirectToRoute('backend_package');
     }
 
     #[Route('/export', name: 'backend_package_export', methods: ['GET'])]
@@ -169,5 +237,223 @@ class PackageController extends AbstractController
                 'error' => 'Error generando archivo: ' . $e->getMessage(),
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private function buildRestrictionFormOptions(
+        Package $package,
+        StaffRepository $staffRepository,
+        DisciplineRepository $disciplineRepository,
+        BranchOfficeRepository $branchOfficeRepository,
+    ): array
+    {
+        $hoursChoices = [];
+        for ($h = 0; $h <= 23; ++$h) {
+            $label = sprintf('%02d:00', $h);
+            $hoursChoices[$label] = $h;
+        }
+
+        $daysChoices = [
+            'Domingo' => 0,
+            'Lunes' => 1,
+            'Martes' => 2,
+            'Miercoles' => 3,
+            'Jueves' => 4,
+            'Viernes' => 5,
+            'Sabado' => 6,
+        ];
+
+        $instructorChoices = [];
+        foreach ($staffRepository->getAllActiveInstructors() as $instructor) {
+            $profile = $instructor->getProfile();
+            $fullName = trim(sprintf(
+                '%s %s %s',
+                (string) ($profile?->getFirstname() ?? ''),
+                (string) ($profile?->getPaternalSurname() ?? ''),
+                (string) ($profile?->getMaternalSurname() ?? '')
+            ));
+
+            if ('' === $fullName) {
+                $fullName = sprintf('Instructor %d', $instructor->getId());
+            }
+
+            $label = $fullName ?: sprintf('Instructor #%d', $instructor->getId());
+            $instructorChoices[$label] = $instructor->getId();
+        }
+
+        $disciplineChoices = [];
+        foreach ($disciplineRepository->getAllActives() as $discipline) {
+            $disciplineChoices[$discipline->getName()] = $discipline->getId();
+        }
+
+        $branchChoices = [];
+        foreach ($branchOfficeRepository->getPublic() as $branch) {
+            $branchChoices[$branch->getName()] = $branch->getId();
+        }
+
+        $options = [
+            'restriction_hours_choices' => $hoursChoices,
+            'restriction_days_choices' => $daysChoices,
+            'restriction_instructor_choices' => $instructorChoices,
+            'restriction_discipline_choices' => $disciplineChoices,
+            'restriction_branch_choices' => $branchChoices,
+            'restriction_hours_selected' => $this->normalizeSelectionValues($package->getRestrictionHours(), array_values($hoursChoices)),
+            'restriction_days_selected' => $this->normalizeSelectionValues($package->getRestrictionDays(), array_values($daysChoices)),
+            'restriction_instructor_selected' => $this->normalizeSelectionValues($package->getRestrictionInstructorIds(), array_values($instructorChoices)),
+            'restriction_discipline_selected' => $this->normalizeSelectionValues($package->getRestrictionDisciplineIds(), array_values($disciplineChoices)),
+            'restriction_branch_selected' => $this->normalizeSelectionValues($package->getRestrictionBranchIds(), array_values($branchChoices)),
+        ];
+
+        $this->logger->debug('[PackageRestriction][FormOptionsBuilt]', [
+            'package_id' => $package->getId(),
+            'has_restrictions' => $package->isHasRestrictions(),
+            'choice_counts' => [
+                'hours' => count($hoursChoices),
+                'days' => count($daysChoices),
+                'instructors' => count($instructorChoices),
+                'disciplines' => count($disciplineChoices),
+                'branches' => count($branchChoices),
+            ],
+            'selected_values' => [
+                'hours' => $options['restriction_hours_selected'],
+                'days' => $options['restriction_days_selected'],
+                'instructors' => $options['restriction_instructor_selected'],
+                'disciplines' => $options['restriction_discipline_selected'],
+                'branches' => $options['restriction_branch_selected'],
+            ],
+        ]);
+
+        return $options;
+    }
+
+    private function applyRestrictionFormData($form, Package $package): bool
+    {
+        $rawHours = $form->get('restrictionHoursSelection')->getData();
+        $rawDays = $form->get('restrictionDaysSelection')->getData();
+        $rawInstructors = $form->get('restrictionInstructorIdsSelection')->getData();
+        $rawDisciplines = $form->get('restrictionDisciplineIdsSelection')->getData();
+        $rawBranches = $form->get('restrictionBranchIdsSelection')->getData();
+
+        $hours = $this->normalizeSelectionValues($form->get('restrictionHoursSelection')->getData(), range(0, 23));
+        $days = $this->normalizeSelectionValues($form->get('restrictionDaysSelection')->getData(), range(0, 6));
+        $instructors = $this->normalizeSelectionValues($form->get('restrictionInstructorIdsSelection')->getData());
+        $disciplines = $this->normalizeSelectionValues($form->get('restrictionDisciplineIdsSelection')->getData());
+        $branches = $this->normalizeSelectionValues($form->get('restrictionBranchIdsSelection')->getData());
+
+        $this->logger->debug('[PackageRestriction][ApplyFormDataStart]', [
+            'package_id' => $package->getId(),
+            'has_restrictions' => $package->isHasRestrictions(),
+            'raw' => [
+                'hours' => is_array($rawHours) ? array_values($rawHours) : $rawHours,
+                'days' => is_array($rawDays) ? array_values($rawDays) : $rawDays,
+                'instructors' => is_array($rawInstructors) ? array_values($rawInstructors) : $rawInstructors,
+                'disciplines' => is_array($rawDisciplines) ? array_values($rawDisciplines) : $rawDisciplines,
+                'branches' => is_array($rawBranches) ? array_values($rawBranches) : $rawBranches,
+            ],
+            'normalized' => [
+                'hours' => $hours,
+                'days' => $days,
+                'instructors' => $instructors,
+                'disciplines' => $disciplines,
+                'branches' => $branches,
+            ],
+        ]);
+
+        $package->setRestrictionHours($hours);
+        $package->setRestrictionDays($days);
+        $package->setRestrictionInstructorIds($instructors);
+        $package->setRestrictionDisciplineIds($disciplines);
+        $package->setRestrictionBranchIds($branches);
+
+        if (!$package->isHasRestrictions()) {
+            $package->setRestrictionHours(null);
+            $package->setRestrictionDays(null);
+            $package->setRestrictionInstructorIds(null);
+            $package->setRestrictionDisciplineIds(null);
+            $package->setRestrictionBranchIds(null);
+
+            $this->logger->info('[PackageRestriction][ApplyFormDataCleared]', [
+                'package_id' => $package->getId(),
+                'reason' => 'hasRestrictions=false',
+            ]);
+
+            return true;
+        }
+
+        if (($package->getDaysExpiry() ?? 0) <= 0) {
+            $this->logger->warning('[PackageRestriction][ValidationFailed]', [
+                'package_id' => $package->getId(),
+                'reason' => 'days_expiry_required',
+                'days_expiry' => $package->getDaysExpiry(),
+            ]);
+            $this->addFlash('error', 'Days expiry es obligatorio para paquetes con restricciones.');
+
+            return false;
+        }
+
+        $hasAnyCriteria = !empty($hours)
+            || !empty($days)
+            || !empty($instructors)
+            || !empty($disciplines)
+            || !empty($branches);
+
+        if (!$hasAnyCriteria) {
+            $this->logger->warning('[PackageRestriction][ValidationFailed]', [
+                'package_id' => $package->getId(),
+                'reason' => 'at_least_one_criteria_required',
+            ]);
+            $this->addFlash('error', 'Debes configurar al menos una restricción para guardar el paquete restringido.');
+
+            return false;
+        }
+
+        $this->logger->info('[PackageRestriction][ApplyFormDataOk]', [
+            'package_id' => $package->getId(),
+            'has_restrictions' => $package->isHasRestrictions(),
+            'saved' => [
+                'hours' => $package->getRestrictionHours(),
+                'days' => $package->getRestrictionDays(),
+                'instructors' => $package->getRestrictionInstructorIds(),
+                'disciplines' => $package->getRestrictionDisciplineIds(),
+                'branches' => $package->getRestrictionBranchIds(),
+            ],
+        ]);
+
+        return true;
+    }
+
+    /**
+     * @param array<int, int>|null $allowedValues
+     *
+     * @return array<int>|null
+     */
+    private function normalizeSelectionValues($values, ?array $allowedValues = null): ?array
+    {
+        if (!is_array($values) || count($values) === 0) {
+            return null;
+        }
+
+        $numbers = [];
+
+        foreach ($values as $value) {
+            if (!is_numeric($value)) {
+                continue;
+            }
+
+            $number = (int) $value;
+            if ($number <= 0 && null === $allowedValues) {
+                continue;
+            }
+
+            if (null !== $allowedValues && !in_array($number, $allowedValues, true)) {
+                continue;
+            }
+
+            $numbers[] = $number;
+        }
+
+        $numbers = array_values(array_unique($numbers));
+        sort($numbers);
+
+        return count($numbers) > 0 ? $numbers : null;
     }
 }

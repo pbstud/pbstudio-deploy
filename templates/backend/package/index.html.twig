@@ -80,6 +80,7 @@
         <th>Precio Espcial</th>
         <th>Modalidad</th>
         <th>{{ knp_pagination_sortable(pagination, 'Vigencia', 'p.daysExpiry') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Restricciones', 'p.hasRestrictions') }}</th>
         <th>Nuevo usuario</th>
         <th>{{ knp_pagination_sortable(pagination, 'Público', 'p.public') }}</th>
         <th>{{ knp_pagination_sortable(pagination, 'Estado', 'p.isActive') }}</th>
@@ -119,6 +120,13 @@
             </td>
             <td>
                 {{ package.daysExpiry }} días
+            </td>
+            <td>
+                {% if package.hasRestrictions %}
+                    <span class="label label-warning">Restringido</span>
+                {% else %}
+                    <span class="label label-default">Sin restricciones</span>
+                {% endif %}
             </td>
             <td>
                 {% if package.newUser %}

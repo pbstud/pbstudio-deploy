@@ -45,6 +45,7 @@ readonly class ReservationService
         private ReservationRepository $reservationRepository,
         private LoggerInterface $logger,
         private NotificationDispatcher $notificationDispatcher,
+        private PackageRestrictionEvaluator $packageRestrictionEvaluator,
     ) {
     }
 
@@ -125,6 +126,9 @@ readonly class ReservationService
                 if ($specificTransaction->getExpirationAt() < $session->getDateStart()) {
                     throw new ReservationException('El paquete seleccionado ya venció para la fecha de esta clase.');
                 }
+                if (!$this->packageRestrictionEvaluator->isApplicable($specificTransaction, $session)) {
+                    throw new ReservationException('El paquete seleccionado no es válido para esta clase.');
+                }
                 $transaction = $specificTransaction;
             } else {
                 $excludeUnlimited = self::CONSUMPTION_SOURCE_PACKAGE === $consumptionSource
@@ -158,6 +162,10 @@ readonly class ReservationService
         }
 
         /** @var Transaction $transaction */
+
+        if (!$this->packageRestrictionEvaluator->isApplicable($transaction, $session)) {
+            throw new ReservationException('El paquete seleccionado no es válido para esta clase.');
+        }
 
         if (!$transaction->isPackageIsUnlimited()) {
             // Verifica si hay que deshabilitar la transacción porque se ocuparon todas las clases.
@@ -261,14 +269,19 @@ readonly class ReservationService
             $canUsePackage = true;
             // Cargar todas las transacciones regulares elegibles para el selector
             $packageType = $session->isIndividual() ? PackageSessionType::TYPE_INDIVIDUAL : PackageSessionType::TYPE_GROUP;
-            $regularTransactions = $this->transactionRepository->findAllTransactionsAvailableByUserAndExpirationAt(
+            $candidateRegularTransactions = $this->transactionRepository->findAllTransactionsAvailableByUserAndExpirationAt(
                 $user,
                 $session->getDateStart(),
                 $packageType,
                 false,
                 true,
             );
+            $regularTransactions = $this->filterApplicableTransactions($candidateRegularTransactions, $session);
         } catch (NoResultException) {
+        }
+
+        if ($canUsePackage && count($regularTransactions) === 0) {
+            $canUsePackage = false;
         }
 
         $forcedPackageNotice = null;
@@ -281,19 +294,35 @@ readonly class ReservationService
             $unlimitedDailyLimitNotice = 'Por hoy ya consumiste tus 2 cupos de ilimitado. Esta reserva se consumira de tus paquetes activos por clase.';
         }
 
-        // Construir lista de opciones para el selector de paquetes
-        $availableTransactions = [];
+        $allApplicableTransactions = [];
+
         if ($canUseUnlimited) {
-            $availableTransactions[] = [
-                'value' => self::CONSUMPTION_SOURCE_UNLIMITED,
-                'label' => 'Paquete ilimitado',
-                'isUnlimited' => true,
-            ];
+            try {
+                $unlimitedTransaction = $this->findTransactionForSession($user, $session, false, true);
+                $allApplicableTransactions[] = $unlimitedTransaction;
+            } catch (NoResultException) {
+            }
         }
-        foreach ($regularTransactions as $txn) {
+
+        $allApplicableTransactions = array_merge($allApplicableTransactions, $regularTransactions);
+        usort($allApplicableTransactions, [$this, 'compareTransactionsByPriority']);
+
+        $availableTransactions = [];
+        foreach ($allApplicableTransactions as $txn) {
+            if ($txn->isPackageIsUnlimited()) {
+                $availableTransactions[] = [
+                    'value' => self::CONSUMPTION_SOURCE_UNLIMITED,
+                    'label' => 'Paquete ilimitado',
+                    'isUnlimited' => true,
+                ];
+
+                continue;
+            }
+
+            $prefix = $txn->isPackageHasRestrictions() ? 'Restringido · ' : '';
             $availableTransactions[] = [
                 'value' => 'transaction:' . $txn->getId(),
-                'label' => ($txn->getPackageTotalClasses() ?? '?') . ' clases — Vence ' . ($txn->getExpirationAt()?->format('d/m/Y') ?? 'N/A'),
+                'label' => $prefix . ($txn->getPackageTotalClasses() ?? '?') . ' clases — Vence ' . ($txn->getExpirationAt()?->format('d/m/Y') ?? 'N/A'),
                 'isUnlimited' => false,
             ];
         }
@@ -607,20 +636,154 @@ readonly class ReservationService
         bool $excludeUnlimited,
         ?bool $onlyUnlimited,
     ): Transaction {
-        if ($session->isIndividual()) {
-            return $this->transactionRepository->findFirstTransactionIndividualAvailableByUserAndExpirationAt(
-                $user,
-                $session->getDateStart(),
-                $excludeUnlimited,
-                $onlyUnlimited
-            );
+        $packageType = $session->isIndividual()
+            ? PackageSessionType::TYPE_INDIVIDUAL
+            : PackageSessionType::TYPE_GROUP;
+
+        $includeUnlimited = true;
+        $includeRegular = true;
+
+        if (null !== $onlyUnlimited) {
+            $includeUnlimited = $onlyUnlimited;
+            $includeRegular = !$onlyUnlimited;
+        } elseif ($excludeUnlimited) {
+            $includeUnlimited = false;
+            $includeRegular = true;
         }
 
-        return $this->transactionRepository->findFirstTransactionGroupAvailableByUserAndExpirationAt(
+        $transactions = $this->transactionRepository->findAllTransactionsAvailableByUserAndExpirationAt(
             $user,
             $session->getDateStart(),
-            $excludeUnlimited,
-            $onlyUnlimited
+            $packageType,
+            $includeUnlimited,
+            $includeRegular,
         );
+
+        $this->logger->debug('[PackageRestriction][SelectionCandidates]', [
+            'user_id' => $user->getId(),
+            'session_id' => $session->getId(),
+            'package_type' => $packageType,
+            'exclude_unlimited' => $excludeUnlimited,
+            'only_unlimited' => $onlyUnlimited,
+            'candidate_ids' => array_values(array_map(
+                static fn (Transaction $transaction): int => (int) ($transaction->getId() ?? 0),
+                $transactions
+            )),
+        ]);
+
+        $applicableTransactions = $this->filterApplicableTransactions($transactions, $session);
+
+        $this->logger->debug('[PackageRestriction][SelectionApplicable]', [
+            'user_id' => $user->getId(),
+            'session_id' => $session->getId(),
+            'applicable_ids' => array_values(array_map(
+                static fn (Transaction $transaction): int => (int) ($transaction->getId() ?? 0),
+                $applicableTransactions
+            )),
+        ]);
+
+        if (count($applicableTransactions) === 0) {
+            $this->logger->warning('[PackageRestriction][SelectionEmpty]', [
+                'user_id' => $user->getId(),
+                'session_id' => $session->getId(),
+                'reason' => 'no_applicable_transactions',
+            ]);
+
+            throw new NoResultException();
+        }
+
+        if ($includeUnlimited && $includeRegular) {
+            usort($applicableTransactions, [$this, 'compareTransactionsByPriority']);
+        }
+
+        $this->logger->info('[PackageRestriction][SelectionChosen]', [
+            'user_id' => $user->getId(),
+            'session_id' => $session->getId(),
+            'transaction_id' => $applicableTransactions[0]->getId(),
+            'is_unlimited' => $applicableTransactions[0]->isPackageIsUnlimited(),
+            'has_restrictions' => $applicableTransactions[0]->isPackageHasRestrictions(),
+        ]);
+
+        return $applicableTransactions[0];
+    }
+
+    /**
+     * @param array<int, Transaction> $transactions
+     *
+     * @return array<int, Transaction>
+     */
+    private function filterApplicableTransactions(array $transactions, Session $session): array
+    {
+        $applicable = [];
+
+        foreach ($transactions as $transaction) {
+            $isApplicable = $this->packageRestrictionEvaluator->isApplicable($transaction, $session);
+
+            $this->logger->debug('[PackageRestriction][CandidateEvaluation]', [
+                'session_id' => $session->getId(),
+                'transaction_id' => $transaction->getId(),
+                'is_applicable' => $isApplicable,
+                'is_unlimited' => $transaction->isPackageIsUnlimited(),
+                'has_restrictions' => $transaction->isPackageHasRestrictions(),
+                'criteria' => [
+                    'hours' => $transaction->getPackageRestrictionHours(),
+                    'days' => $transaction->getPackageRestrictionDays(),
+                    'instructors' => $transaction->getPackageRestrictionInstructorIds(),
+                    'disciplines' => $transaction->getPackageRestrictionDisciplineIds(),
+                    'branches' => $transaction->getPackageRestrictionBranchIds(),
+                ],
+            ]);
+
+            if ($isApplicable) {
+                $applicable[] = $transaction;
+            }
+        }
+
+        return array_values($applicable);
+    }
+
+    private function compareTransactionsByPriority(Transaction $a, Transaction $b): int
+    {
+        $aPriority = $this->getPriorityBucket($a);
+        $bPriority = $this->getPriorityBucket($b);
+
+        if ($aPriority !== $bPriority) {
+            return $aPriority <=> $bPriority;
+        }
+
+        $aExpiration = $a->getExpirationAt();
+        $bExpiration = $b->getExpirationAt();
+
+        if ($aExpiration && $bExpiration) {
+            $cmp = $aExpiration <=> $bExpiration;
+            if (0 !== $cmp) {
+                return $cmp;
+            }
+        }
+
+        $aCreated = $a->getCreatedAt();
+        $bCreated = $b->getCreatedAt();
+
+        if ($aCreated && $bCreated) {
+            $cmp = $aCreated <=> $bCreated;
+            if (0 !== $cmp) {
+                return $cmp;
+            }
+        }
+
+        return ($a->getId() ?? 0) <=> ($b->getId() ?? 0);
+    }
+
+    private function getPriorityBucket(Transaction $transaction): int
+    {
+        if ($transaction->isPackageHasRestrictions()) {
+            return 1;
+        }
+
+        if ($transaction->isPackageIsUnlimited()) {
+            return 2;
+        }
+
+        return 3;
     }
 }

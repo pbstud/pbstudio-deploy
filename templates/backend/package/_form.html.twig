@@ -1,3 +1,13 @@
+<style>
+.pkg-restriction-ui { margin-top: 5px; }
+.pkg-restriction-slot { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 4px; padding: 8px 10px; margin-bottom: 8px; }
+.pkg-restriction-grid { display: flex; flex-wrap: wrap; }
+.pkg-cb-item { display: inline-flex; align-items: center; padding: 4px 9px; background: #fff; border: 1px solid #ccc; border-radius: 3px; font-weight: normal; cursor: pointer; margin: 3px; user-select: none; }
+.pkg-cb-item:hover { background: #eef6ff; border-color: #3c8dbc; }
+.pkg-cb-item--checked { background: #d4edda; border-color: #28a745; color: #155724; }
+.pkg-cb-item input[type="checkbox"] { margin-right: 5px; }
+.pkg-restriction-help { display: block; margin-top: 6px; color: #73879c; font-size: 12px; line-height: 1.4; }
+</style>
 {{ form_start(form, {'attr': {'id': 'form-package'}}) }}
     <div class="row">
         {{ form_row(form.isUnlimited, {'row_attr': {'class': 'col-md-6'}}) }}
@@ -28,8 +38,33 @@
         {{ form_row(form.isActive, {'row_attr': {'class': 'col-md-6'}}) }}
     </div>
 
+    <div class="row">
+        {{ form_row(form.hasRestrictions, {'row_attr': {'class': 'col-md-6'}}) }}
+    </div>
+
+    <div id="package_restrictions_container" class="row">
+        <div class="col-md-6">
+            {{ form_row(form.restrictionHoursSelection) }}
+            <small class="pkg-restriction-help">La hora seleccionada aplica con un margen de +/- 15 minutos.</small>
+        </div>
+        <div class="col-md-6">
+            {{ form_row(form.restrictionDaysSelection) }}
+            <small class="pkg-restriction-help">Selecciona los dias de la semana en los que el paquete puede usarse.</small>
+        </div>
+    </div>
+
+    <div class="row" id="package_restrictions_container_2">
+        {{ form_row(form.restrictionInstructorIdsSelection, {'row_attr': {'class': 'col-md-6'}}) }}
+        {{ form_row(form.restrictionDisciplineIdsSelection, {'row_attr': {'class': 'col-md-6'}}) }}
+    </div>
+
+    <div class="row" id="package_restrictions_container_3">
+        {{ form_row(form.restrictionBranchIdsSelection, {'row_attr': {'class': 'col-md-6'}}) }}
+    </div>
+
     <div class="ln_solid"></div>
 
+    {% if not (package is defined and package.id is not null and package.hasRestrictions) %}
     <div class="row">
         <div class="col-xs-12">
             <div class="pull-right">
@@ -39,4 +74,5 @@
             </div>
         </div>
     </div>
+    {% endif %}
 {{ form_end(form) }}

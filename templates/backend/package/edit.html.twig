@@ -2,4 +2,12 @@
 
 {% block form %}
     {{ include('backend/package/_form.html.twig', {'button_label': 'btn.update'}) }}
+
+    <hr>
+    <div class="text-right">
+        <form method="post" action="{{ path('backend_package_delete', {'id': package.id}) }}" onsubmit="return confirm('Esta acción eliminará el paquete. ¿Deseas continuar?');" style="display:inline;">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete_package_' ~ package.id) }}">
+            <button type="submit" class="btn btn-danger" id="btn_delete_package">Eliminar paquete</button>
+        </form>
+    </div>
 {% endblock %}

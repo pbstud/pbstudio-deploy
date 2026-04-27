@@ -1,8 +1,14 @@
 <script type="text/javascript">
     $(function () {
-        {%- for label, messages in app.flashes(['success', 'danger']) -%}
+        {%- for label, messages in app.flashes(['success', 'danger', 'error', 'warning', 'info']) -%}
             {% for message in messages -%}
-                $.flash.{{ label }}('{{ message }}');
+                {% set flashMethod = label %}
+                {% if label == 'warning' %}
+                    {% set flashMethod = 'danger' %}
+                {% elseif label == 'info' %}
+                    {% set flashMethod = 'success' %}
+                {% endif %}
+                $.flash.{{ flashMethod }}('{{ message|e('js') }}');
             {%- endfor -%}
         {% endfor %}
     });

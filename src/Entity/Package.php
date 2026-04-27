@@ -40,6 +40,24 @@ class Package implements TimestampableInterface
     #[Assert\NotBlank]
     private ?int $daysExpiry = null;
 
+    #[ORM\Column(options: ['default' => false])]
+    private ?bool $hasRestrictions = false;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $restrictionHours = null;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $restrictionDays = null;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $restrictionInstructorIds = null;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $restrictionDisciplineIds = null;
+
+    #[ORM\Column(type: Types::JSON, nullable: true)]
+    private ?array $restrictionBranchIds = null;
+
     #[ORM\Column]
     private ?bool $isUnlimited = false;
 
@@ -139,6 +157,78 @@ class Package implements TimestampableInterface
     public function setDaysExpiry(int $daysExpiry): static
     {
         $this->daysExpiry = $daysExpiry;
+
+        return $this;
+    }
+
+    public function isHasRestrictions(): ?bool
+    {
+        return $this->hasRestrictions;
+    }
+
+    public function setHasRestrictions(bool $hasRestrictions): static
+    {
+        $this->hasRestrictions = $hasRestrictions;
+
+        return $this;
+    }
+
+    public function getRestrictionHours(): ?array
+    {
+        return $this->restrictionHours;
+    }
+
+    public function setRestrictionHours(?array $restrictionHours): static
+    {
+        $this->restrictionHours = $restrictionHours;
+
+        return $this;
+    }
+
+    public function getRestrictionDays(): ?array
+    {
+        return $this->restrictionDays;
+    }
+
+    public function setRestrictionDays(?array $restrictionDays): static
+    {
+        $this->restrictionDays = $restrictionDays;
+
+        return $this;
+    }
+
+    public function getRestrictionInstructorIds(): ?array
+    {
+        return $this->restrictionInstructorIds;
+    }
+
+    public function setRestrictionInstructorIds(?array $restrictionInstructorIds): static
+    {
+        $this->restrictionInstructorIds = $restrictionInstructorIds;
+
+        return $this;
+    }
+
+    public function getRestrictionDisciplineIds(): ?array
+    {
+        return $this->restrictionDisciplineIds;
+    }
+
+    public function setRestrictionDisciplineIds(?array $restrictionDisciplineIds): static
+    {
+        $this->restrictionDisciplineIds = $restrictionDisciplineIds;
+
+        return $this;
+    }
+
+    public function getRestrictionBranchIds(): ?array
+    {
+        return $this->restrictionBranchIds;
+    }
+
+    public function setRestrictionBranchIds(?array $restrictionBranchIds): static
+    {
+        $this->restrictionBranchIds = $restrictionBranchIds;
 
         return $this;
     }
