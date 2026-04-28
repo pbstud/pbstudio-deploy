@@ -77,13 +77,15 @@ class TransactionType extends AbstractType
                         ->add(new \DateInterval(sprintf('P%sD', $package->getDaysExpiry())))
                     ;
 
-                    $price = $package->getSpecialPrice() ?: $package->getAmount();
+                    $isSpecialPriceActive = $package->isSpecialPriceActiveAt(new \DateTime());
+                    $price = $isSpecialPriceActive ? $package->getSpecialPrice() : $package->getAmount();
 
                     return [
                         'class' => $package->isIsUnlimited() ? 'unlimited' : null,
                         'data-amount' => number_format((float) $package->getAmount(), 2),
-                        'data-special-price' => $package->getSpecialPrice() ?
-                            number_format((float) $package->getSpecialPrice(), 2) : '--',
+                        'data-special-price' => $isSpecialPriceActive
+                            ? number_format((float) $package->getSpecialPrice(), 2)
+                            : '--',
                         'data-amount-original' => number_format((float) $price, 2, '.', ''),
                         'data-expiration-at' => $currentDate->format('d/m/Y'),
                     ];

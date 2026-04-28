@@ -7,6 +7,7 @@ namespace App\Form\Backend;
 use App\Entity\Package;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -119,6 +120,24 @@ class PackageType extends AbstractType
             ])
             ->add('discountInfo', null, [
                 'label' => 'label.discount_info',
+            ])
+            ->add('specialPriceDateStart', DateType::class, [
+                'label' => 'Fecha inicio descuento',
+                'required' => false,
+                'format' => 'dd/MM/yyyy',
+                'html5' => false,
+                'widget' => 'single_text',
+                'block_prefix' => 'datepicker',
+                'attr' => ['placeholder' => 'dd/mm/aaaa'],
+            ])
+            ->add('specialPriceDateEnd', DateType::class, [
+                'label' => 'Fecha final descuento',
+                'required' => false,
+                'format' => 'dd/MM/yyyy',
+                'html5' => false,
+                'widget' => 'single_text',
+                'block_prefix' => 'datepicker',
+                'attr' => ['placeholder' => 'dd/mm/aaaa'],
             ])
         ;
     }

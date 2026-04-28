@@ -79,6 +79,12 @@ class Package implements TimestampableInterface
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $discountInfo = null;
 
+    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $specialPriceDateStart = null;
+
+    #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    private ?\DateTimeInterface $specialPriceDateEnd = null;
+
     public static function typeChoices(): array
     {
         return [
@@ -105,7 +111,7 @@ class Package implements TimestampableInterface
 
     public function getTotalPrice(): string
     {
-        return $this->hasSpecialPrice() ? $this->specialPrice : $this->amount;
+        return $this->isSpecialPriceActiveNow() ? (string) $this->specialPrice : (string) $this->amount;
     }
 
     public function getId(): ?int
@@ -308,6 +314,56 @@ class Package implements TimestampableInterface
         $this->specialPrice = $specialPrice;
 
         return $this;
+    }
+
+    public function getSpecialPriceDateStart(): ?\DateTimeInterface
+    {
+        return $this->specialPriceDateStart;
+    }
+
+    public function setSpecialPriceDateStart(?\DateTimeInterface $specialPriceDateStart): static
+    {
+        $this->specialPriceDateStart = $specialPriceDateStart;
+
+        return $this;
+    }
+
+    public function getSpecialPriceDateEnd(): ?\DateTimeInterface
+    {
+        return $this->specialPriceDateEnd;
+    }
+
+    public function setSpecialPriceDateEnd(?\DateTimeInterface $specialPriceDateEnd): static
+    {
+        $this->specialPriceDateEnd = $specialPriceDateEnd;
+
+        return $this;
+    }
+
+    public function isSpecialPriceActiveAt(\DateTimeInterface $at): bool
+    {
+        if (!$this->hasSpecialPrice()) {
+            return false;
+        }
+
+        $checkDate = $at->format('Y-m-d');
+        $startDate = $this->specialPriceDateStart?->format('Y-m-d');
+        $endDate = $this->specialPriceDateEnd?->format('Y-m-d');
+
+        if (null !== $startDate && $checkDate < $startDate) {
+            return false;
+        }
+
+        if (null !== $endDate && $checkDate > $endDate) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function isSpecialPriceActiveNow(): bool
+    {
+        return $this->isSpecialPriceActiveAt(new \DateTimeImmutable('now'));
     }
 
     public function getDiscountInfo(): ?string

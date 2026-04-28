@@ -71,13 +71,17 @@ readonly class TransactionService
         }
 
         $transaction = new Transaction();
+        $specialPriceForSnapshot = $package->isSpecialPriceActiveAt(new \DateTime())
+            ? $package->getSpecialPrice()
+            : null;
+
         $transaction
             ->setUser($user)
             ->setPackage($package)
             ->setPackageTotalClasses($package->getTotalClasses())
             ->setPackageIsUnlimited($package->isIsUnlimited())
             ->setPackageAmount($package->getAmount())
-            ->setPackageSpecialPrice($package->getSpecialPrice())
+            ->setPackageSpecialPrice($specialPriceForSnapshot)
             ->setPackageType($package->getType())
             ->setPackageDaysExpiry($package->getDaysExpiry())
             ->setPackageHasRestrictions((bool) $package->isHasRestrictions())

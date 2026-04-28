@@ -29,6 +29,17 @@
         {{ form_row(form.type, {'row_attr': {'class': 'col-md-6 icheck-fields'}}) }}
     </div>
 
+    <div class="row" id="row-special-price-dates">
+        {{ form_row(form.specialPriceDateStart, {'row_attr': {'class': 'col-md-6'}}) }}
+        {{ form_row(form.specialPriceDateEnd, {'row_attr': {'class': 'col-md-6'}}) }}
+        <div class="col-xs-12" id="dates-hint" style="display:none; margin-top:4px;">
+            <small class="text-muted">
+                <i class="fa fa-info-circle"></i>
+                <span id="dates-hint-text"></span>
+            </small>
+        </div>
+    </div>
+
     <div class="row">
         {{ form_row(form.newUser, {'row_attr': {'class': 'col-md-6'}}) }}
         {{ form_row(form.public, {'row_attr': {'class': 'col-md-6'}}) }}

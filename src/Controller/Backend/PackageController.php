@@ -327,6 +327,23 @@ class PackageController extends AbstractController
 
     private function applyRestrictionFormData($form, Package $package): bool
     {
+        $specialPrice = (float) ($package->getSpecialPrice() ?? 0);
+        $dateStart = $package->getSpecialPriceDateStart();
+        $dateEnd = $package->getSpecialPriceDateEnd();
+
+        if ($specialPrice <= 0 && (null !== $dateStart || null !== $dateEnd)) {
+            $this->addFlash('error', 'No se puede guardar: hay fechas de descuento pero el campo "Precio especial" está vacío o es 0. Agrégalo primero.');
+
+            return false;
+        } elseif ($specialPrice <= 0) {
+            $package->setSpecialPriceDateStart(null);
+            $package->setSpecialPriceDateEnd(null);
+        } elseif (null !== $dateStart && null !== $dateEnd && $dateStart > $dateEnd) {
+            $this->addFlash('error', 'La fecha de inicio del descuento no puede ser mayor a la fecha final.');
+
+            return false;
+        }
+
         $rawHours = $form->get('restrictionHoursSelection')->getData();
         $rawDays = $form->get('restrictionDaysSelection')->getData();
         $rawInstructors = $form->get('restrictionInstructorIdsSelection')->getData();

@@ -4,10 +4,10 @@
     </h4>
     <div class="price">
         <a href="#">
+            {% if package.specialPriceActiveNow and package.discountInfo %}
+                <i class="discount">{{ package.discountInfo }}</i>
+            {% endif %}
             <div>
-                {% if package.discountInfo %}
-                    <i class="discount">{{ package.discountInfo }}</i>
-                {% endif %}
                 <p>
                     {% if package.isUnlimited %}
                         &infin;
@@ -16,7 +16,7 @@
                     {% endif %}
                 </p>
             </div>
-            <h6 class="{{ package.specialPrice ? 'old-price' }}">
+            <h6 class="{{ package.specialPriceActiveNow ? 'old-price' }}">
                 <small>Clase {{ package.type|PackageSessionType }}</small>
                 {% if package.altText %}
                     <br><small>{{ package.altText }}</small>
@@ -24,7 +24,7 @@
                 <br>
                 ${{ package.amount | number_format }}
             </h6>
-            {% if package.specialPrice %}
+            {% if package.specialPriceActiveNow %}
                 <h5 class="new-price">${{ package.specialPrice|number_format }}</h5>
             {% endif %}
         </a>

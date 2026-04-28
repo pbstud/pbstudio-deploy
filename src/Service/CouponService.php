@@ -56,7 +56,7 @@ readonly class CouponService
         }
 
         // Validate coupon apply in special price.
-        if ($package->hasSpecialPrice() && !$coupon->isApplySpecialPrice()) {
+        if ($package->isSpecialPriceActiveAt(new \DateTime()) && !$coupon->isApplySpecialPrice()) {
             return null;
         }
 
@@ -98,7 +98,7 @@ readonly class CouponService
         }
 
         // Validate coupon apply in special price.
-        if ($package->hasSpecialPrice() && !$coupon->isApplySpecialPrice()) {
+        if ($package->isSpecialPriceActiveAt(new \DateTime()) && !$coupon->isApplySpecialPrice()) {
             return ['coupon' => null, 'reason' => 'error.invalid_coupon'];
         }
 
