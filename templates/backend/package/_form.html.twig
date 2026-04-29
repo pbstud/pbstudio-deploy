@@ -1,5 +1,5 @@
 <style>
-.pkg-restriction-ui { margin-top: 5px; }
+.pkg-restriction-ui { margin-top: 5px; display: flex; flex-wrap: wrap; gap: 8px; }
 .pkg-restriction-slot { background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 4px; padding: 8px 10px; margin-bottom: 8px; }
 .pkg-restriction-grid { display: flex; flex-wrap: wrap; }
 .pkg-cb-item { display: inline-flex; align-items: center; padding: 4px 9px; background: #fff; border: 1px solid #ccc; border-radius: 3px; font-weight: normal; cursor: pointer; margin: 3px; user-select: none; }
@@ -7,6 +7,9 @@
 .pkg-cb-item--checked { background: #d4edda; border-color: #28a745; color: #155724; }
 .pkg-cb-item input[type="checkbox"] { margin-right: 5px; }
 .pkg-restriction-help { display: block; margin-top: 6px; color: #73879c; font-size: 12px; line-height: 1.4; }
+.pkg-time-row { display: flex; gap: 6px; align-items: center; flex: 0 0 auto; margin-bottom: 0; }
+.pkg-time-row input[type="time"] { width: 130px; }
+.pkg-time-remove { min-width: 34px; }
 </style>
 {{ form_start(form, {'attr': {'id': 'form-package'}}) }}
     <div class="row">
@@ -55,8 +58,13 @@
 
     <div id="package_restrictions_container" class="row">
         <div class="col-md-6">
-            {{ form_row(form.restrictionHoursSelection) }}
-            <small class="pkg-restriction-help">La hora seleccionada aplica con un margen de +/- 15 minutos.</small>
+            <label class="control-label required">Hora de la clase</label>
+            {{ form_widget(form.restrictionHoursSelection) }}
+            <div id="restriction-hours-rows" class="pkg-restriction-ui"></div>
+            <button type="button" id="btn-add-restriction-hour" class="btn btn-default btn-sm" style="margin-top:4px;">
+                <i class="fa fa-plus"></i> Agregar hora
+            </button>
+            <small class="pkg-restriction-help">Configura horarios en formato HH:MM para elegibilidad de paquetes.</small>
         </div>
         <div class="col-md-6">
             {{ form_row(form.restrictionDaysSelection) }}
@@ -75,7 +83,6 @@
 
     <div class="ln_solid"></div>
 
-    {% if not (package is defined and package.id is not null and package.hasRestrictions) %}
     <div class="row">
         <div class="col-xs-12">
             <div class="pull-right">
@@ -85,5 +92,132 @@
             </div>
         </div>
     </div>
-    {% endif %}
 {{ form_end(form) }}
+
+<script>
+    (function () {
+        var hiddenInput = document.querySelector('.js-restriction-hours-json');
+        var rowsContainer = document.getElementById('restriction-hours-rows');
+        var addButton = document.getElementById('btn-add-restriction-hour');
+        var form = document.getElementById('form-package');
+
+        if (!hiddenInput || !rowsContainer || !addButton || !form) {
+            return;
+        }
+
+        function normalizeInt(value, min, max, fallback) {
+            var parsed = parseInt(value, 10);
+            if (isNaN(parsed)) {
+                return fallback;
+            }
+            if (parsed < min) {
+                return min;
+            }
+            if (parsed > max) {
+                return max;
+            }
+
+            return parsed;
+        }
+
+        function pad2(value) {
+            return String(value).padStart(2, '0');
+        }
+
+        function normalizeTimeValue(value) {
+            if (typeof value !== 'string' || value.indexOf(':') === -1) {
+                return '00:00';
+            }
+            var parts = value.split(':');
+            var hh = normalizeInt(parts[0], 0, 23, 0);
+            var mm = normalizeInt(parts[1], 0, 59, 0);
+
+            return pad2(hh) + ':' + pad2(mm);
+        }
+
+        function parseInitialSlots() {
+            var raw = hiddenInput.value || '[]';
+            try {
+                var parsed = JSON.parse(raw);
+                if (!Array.isArray(parsed)) {
+                    return [];
+                }
+
+                return parsed
+                    .filter(function (slot) { return typeof slot === 'string'; })
+                    .map(normalizeTimeValue);
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function getRows() {
+            return Array.prototype.slice.call(rowsContainer.querySelectorAll('.pkg-time-row'));
+        }
+
+        function syncHidden() {
+            var values = getRows().map(function (row) {
+                var timeInput = row.querySelector('.js-hour-time');
+                timeInput.value = normalizeTimeValue(timeInput.value);
+
+                return timeInput.value;
+            });
+
+            var dedup = Array.from(new Set(values)).sort();
+            hiddenInput.value = JSON.stringify(dedup);
+        }
+
+        function toggleRemoveButtons() {
+            var rows = getRows();
+            rows.forEach(function (row) {
+                var removeBtn = row.querySelector('.pkg-time-remove');
+                if (!removeBtn) {
+                    return;
+                }
+                removeBtn.disabled = rows.length <= 1;
+            });
+        }
+
+        function appendRow(timeValue) {
+            var row = document.createElement('div');
+            row.className = 'pkg-time-row';
+            row.innerHTML = '' +
+            '<input type="time" class="form-control js-hour-time" step="60" value="' + normalizeTimeValue(timeValue) + '">' +
+                '<button type="button" class="btn btn-danger btn-xs pkg-time-remove" title="Eliminar hora"><i class="fa fa-minus"></i></button>';
+
+            rowsContainer.appendChild(row);
+
+            row.querySelector('.pkg-time-remove').addEventListener('click', function () {
+                row.remove();
+                if (getRows().length === 0) {
+                    appendRow('00:00');
+                }
+                toggleRemoveButtons();
+                syncHidden();
+            });
+
+            row.querySelector('.js-hour-time').addEventListener('input', syncHidden);
+            row.querySelector('.js-hour-time').addEventListener('change', syncHidden);
+
+            toggleRemoveButtons();
+            syncHidden();
+        }
+
+        var initialSlots = parseInitialSlots();
+        if (initialSlots.length === 0) {
+            appendRow('00:00');
+        } else {
+            initialSlots.forEach(function (slot) {
+                appendRow(slot);
+            });
+        }
+
+        addButton.addEventListener('click', function () {
+            appendRow('00:00');
+        });
+
+        form.addEventListener('submit', function () {
+            syncHidden();
+        });
+    })();
+</script>

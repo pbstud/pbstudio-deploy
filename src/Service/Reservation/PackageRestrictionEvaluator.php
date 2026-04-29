@@ -29,7 +29,7 @@ final class PackageRestrictionEvaluator
             return true;
         }
 
-        $hours = $this->normalizeValues($transaction->getPackageRestrictionHours(), 0, 23);
+        $hourRestrictions = $this->normalizeHourRestrictions($transaction->getPackageRestrictionHours());
         $days = $this->normalizeValues($transaction->getPackageRestrictionDays(), 0, 6);
         $instructors = $this->normalizeIds($transaction->getPackageRestrictionInstructorIds());
         $disciplines = $this->normalizeIds($transaction->getPackageRestrictionDisciplineIds());
@@ -39,7 +39,7 @@ final class PackageRestrictionEvaluator
             'transaction_id' => $transactionId,
             'session_id' => $sessionId,
             'normalized' => [
-                'hours' => $hours,
+                'hours' => $hourRestrictions,
                 'days' => $days,
                 'instructors' => $instructors,
                 'disciplines' => $disciplines,
@@ -54,7 +54,7 @@ final class PackageRestrictionEvaluator
             ],
         ]);
 
-        if ($hours && !$this->matchesHourWindow($session, $hours, 15)) {
+        if (!$this->matchesHourRestriction($session, $hourRestrictions)) {
             $this->logger->debug('[PackageRestriction][EvaluatorRejected]', [
                 'transaction_id' => $transactionId,
                 'session_id' => $sessionId,
@@ -183,16 +183,63 @@ final class PackageRestrictionEvaluator
     }
 
     /**
-     * @param array<int> $hours
+     * @return array{exactMinutes: array<int>}
      */
-    private function matchesHourWindow(Session $session, array $hours, int $toleranceMinutes): bool
+    private function normalizeHourRestrictions(?array $raw): array
     {
+        $result = [
+            'exactMinutes' => [],
+        ];
+
+        if (!$raw) {
+            return $result;
+        }
+
+        foreach ($raw as $value) {
+            if (is_string($value) && preg_match('/^(?:[01]?\d|2[0-3]):[0-5]\d$/', $value)) {
+                [$hh, $mm] = explode(':', $value);
+                $result['exactMinutes'][] = ((int) $hh * 60) + (int) $mm;
+
+                continue;
+            }
+
+            if (!is_numeric($value)) {
+                continue;
+            }
+
+            $number = (int) $value;
+            if ($number >= 0 && $number <= 23) {
+                // Snapshot legacy (entero hora): se convierte a HH:00 exacto.
+                $result['exactMinutes'][] = $number * 60;
+
+                continue;
+            }
+
+            if ($number >= 0 && $number <= 1439) {
+                $result['exactMinutes'][] = $number;
+            }
+        }
+
+        $result['exactMinutes'] = array_values(array_unique($result['exactMinutes']));
+        sort($result['exactMinutes']);
+
+        return $result;
+    }
+
+    /**
+     * @param array{exactMinutes: array<int>} $hourRestrictions
+     */
+    private function matchesHourRestriction(Session $session, array $hourRestrictions): bool
+    {
+        if (empty($hourRestrictions['exactMinutes'])) {
+            return true;
+        }
+
         $start = $session->getDateTimeStart();
         $minutesOfDay = ((int) $start->format('H')) * 60 + ((int) $start->format('i'));
 
-        foreach ($hours as $hour) {
-            $target = $hour * 60;
-            if (abs($minutesOfDay - $target) <= $toleranceMinutes) {
+        foreach ($hourRestrictions['exactMinutes'] as $minuteValue) {
+            if ($minutesOfDay === (int) $minuteValue) {
                 return true;
             }
         }

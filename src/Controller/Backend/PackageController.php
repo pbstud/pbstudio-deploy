@@ -112,14 +112,6 @@ class PackageController extends AbstractController
         $editForm->handleRequest($request);
 
         if ($editForm->isSubmitted() && $editForm->isValid()) {
-            if ($package->isHasRestrictions()) {
-                $this->addFlash('warning', 'La edición está bloqueada para paquetes con restricciones.');
-
-                return $this->redirectToRoute('backend_package_edit', [
-                    'id' => $package->getId(),
-                ]);
-            }
-
             if (!$this->applyRestrictionFormData($editForm, $package)) {
                 return $this->render('backend/package/edit.html.twig', [
                     'package' => $package,
@@ -246,12 +238,6 @@ class PackageController extends AbstractController
         BranchOfficeRepository $branchOfficeRepository,
     ): array
     {
-        $hoursChoices = [];
-        for ($h = 0; $h <= 23; ++$h) {
-            $label = sprintf('%02d:00', $h);
-            $hoursChoices[$label] = $h;
-        }
-
         $daysChoices = [
             'Domingo' => 0,
             'Lunes' => 1,
@@ -291,12 +277,11 @@ class PackageController extends AbstractController
         }
 
         $options = [
-            'restriction_hours_choices' => $hoursChoices,
+            'restriction_hour_slots_selected' => $this->normalizeRestrictionHourSlotsForForm($package->getRestrictionHours()),
             'restriction_days_choices' => $daysChoices,
             'restriction_instructor_choices' => $instructorChoices,
             'restriction_discipline_choices' => $disciplineChoices,
             'restriction_branch_choices' => $branchChoices,
-            'restriction_hours_selected' => $this->normalizeSelectionValues($package->getRestrictionHours(), array_values($hoursChoices)),
             'restriction_days_selected' => $this->normalizeSelectionValues($package->getRestrictionDays(), array_values($daysChoices)),
             'restriction_instructor_selected' => $this->normalizeSelectionValues($package->getRestrictionInstructorIds(), array_values($instructorChoices)),
             'restriction_discipline_selected' => $this->normalizeSelectionValues($package->getRestrictionDisciplineIds(), array_values($disciplineChoices)),
@@ -307,14 +292,14 @@ class PackageController extends AbstractController
             'package_id' => $package->getId(),
             'has_restrictions' => $package->isHasRestrictions(),
             'choice_counts' => [
-                'hours' => count($hoursChoices),
+                'hours' => count($options['restriction_hour_slots_selected']),
                 'days' => count($daysChoices),
                 'instructors' => count($instructorChoices),
                 'disciplines' => count($disciplineChoices),
                 'branches' => count($branchChoices),
             ],
             'selected_values' => [
-                'hours' => $options['restriction_hours_selected'],
+                'hours' => $options['restriction_hour_slots_selected'],
                 'days' => $options['restriction_days_selected'],
                 'instructors' => $options['restriction_instructor_selected'],
                 'disciplines' => $options['restriction_discipline_selected'],
@@ -350,7 +335,7 @@ class PackageController extends AbstractController
         $rawDisciplines = $form->get('restrictionDisciplineIdsSelection')->getData();
         $rawBranches = $form->get('restrictionBranchIdsSelection')->getData();
 
-        $hours = $this->normalizeSelectionValues($form->get('restrictionHoursSelection')->getData(), range(0, 23));
+        $hours = $this->normalizeRestrictionHourSlotsSelection($form->get('restrictionHoursSelection')->getData());
         $days = $this->normalizeSelectionValues($form->get('restrictionDaysSelection')->getData(), range(0, 6));
         $instructors = $this->normalizeSelectionValues($form->get('restrictionInstructorIdsSelection')->getData());
         $disciplines = $this->normalizeSelectionValues($form->get('restrictionDisciplineIdsSelection')->getData());
@@ -360,7 +345,7 @@ class PackageController extends AbstractController
             'package_id' => $package->getId(),
             'has_restrictions' => $package->isHasRestrictions(),
             'raw' => [
-                'hours' => is_array($rawHours) ? array_values($rawHours) : $rawHours,
+                'hours' => $rawHours,
                 'days' => is_array($rawDays) ? array_values($rawDays) : $rawDays,
                 'instructors' => is_array($rawInstructors) ? array_values($rawInstructors) : $rawInstructors,
                 'disciplines' => is_array($rawDisciplines) ? array_values($rawDisciplines) : $rawDisciplines,
@@ -472,5 +457,88 @@ class PackageController extends AbstractController
         sort($numbers);
 
         return count($numbers) > 0 ? $numbers : null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function normalizeRestrictionHourSlotsForForm(?array $values): array
+    {
+        if (!$values) {
+            return [];
+        }
+
+        $slots = [];
+
+        foreach ($values as $value) {
+            if (is_string($value) && preg_match('/^(?:[01]?\d|2[0-3]):[0-5]\d$/', $value)) {
+                [$hh, $mm] = explode(':', $value);
+                $slots[] = sprintf('%02d:%02d', (int) $hh, (int) $mm);
+
+                continue;
+            }
+
+            if (!is_numeric($value)) {
+                continue;
+            }
+
+            $number = (int) $value;
+            if ($number >= 0 && $number <= 23) {
+                // Compatibilidad con valores legacy guardados por hora.
+                $slots[] = sprintf('%02d:00', $number);
+
+                continue;
+            }
+
+            if ($number >= 0 && $number <= 1439) {
+                $hh = (int) floor($number / 60);
+                $mm = $number % 60;
+                $slots[] = sprintf('%02d:%02d', $hh, $mm);
+            }
+        }
+
+        $slots = array_values(array_unique($slots));
+        sort($slots);
+
+        return $slots;
+    }
+
+    /**
+     * @return array<int, string>|null
+     */
+    private function normalizeRestrictionHourSlotsSelection(mixed $value): ?array
+    {
+        if (!is_string($value) || '' === trim($value)) {
+            return null;
+        }
+
+        try {
+            $decoded = json_decode($value, true, 512, JSON_THROW_ON_ERROR);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if (!is_array($decoded) || count($decoded) === 0) {
+            return null;
+        }
+
+        $slots = [];
+        foreach ($decoded as $slot) {
+            if (!is_string($slot)) {
+                continue;
+            }
+
+            if (!preg_match('/^(?:[01]?\d|2[0-3]):[0-5]\d$/', $slot)) {
+                continue;
+            }
+
+            [$hh, $mm] = explode(':', $slot);
+            $slots[] = sprintf('%02d:%02d', (int) $hh, (int) $mm);
+        }
+
+        $slots = array_values(array_unique($slots));
+        sort($slots);
+
+        return count($slots) > 0 ? $slots : null;
     }
 }

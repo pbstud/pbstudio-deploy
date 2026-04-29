@@ -8,6 +8,7 @@ use App\Entity\Package;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -45,15 +46,11 @@ class PackageType extends AbstractType
                 'block_prefix' => 'switch',
                 'required' => false,
             ])
-            ->add('restrictionHoursSelection', ChoiceType::class, [
+            ->add('restrictionHoursSelection', HiddenType::class, [
                 'mapped' => false,
                 'required' => false,
-                'label' => 'Hora de la clase',
-                'choices' => $options['restriction_hours_choices'],
-                'data' => $options['restriction_hours_selected'],
-                'multiple' => true,
-                'expanded' => false,
-                'attr' => ['class' => 'restriction-select-field'],
+                'data' => json_encode($options['restriction_hour_slots_selected'], JSON_THROW_ON_ERROR),
+                'attr' => ['class' => 'js-restriction-hours-json'],
             ])
             ->add('restrictionDaysSelection', ChoiceType::class, [
                 'mapped' => false,
@@ -150,6 +147,7 @@ class PackageType extends AbstractType
         $resolver->setDefaults([
             'data_class' => Package::class,
             'restriction_hours_choices' => [],
+            'restriction_hour_slots_selected' => [],
             'restriction_days_choices' => [],
             'restriction_instructor_choices' => [],
             'restriction_discipline_choices' => [],
