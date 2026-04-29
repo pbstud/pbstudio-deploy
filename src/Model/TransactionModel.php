@@ -40,6 +40,8 @@ class TransactionModel
      */
     private ?string $coupon = null;
 
+    private bool $giftPurchase = false;
+
     /**
      * Set user.
      *
@@ -217,6 +219,18 @@ class TransactionModel
     public function setCoupon(?string $coupon): TransactionModel
     {
         $this->coupon = $coupon;
+
+        return $this;
+    }
+
+    public function isGiftPurchase(): bool
+    {
+        return $this->giftPurchase;
+    }
+
+    public function setGiftPurchase(bool $giftPurchase): TransactionModel
+    {
+        $this->giftPurchase = $giftPurchase;
 
         return $this;
     }

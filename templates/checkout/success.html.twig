@@ -1,6 +1,6 @@
 {% extends 'layout.html.twig' %}
 
-{% block page_title %}Gracias por tu compra | {% endblock %}
+{% block page_title %}{% if giftCard is not null %}Tu regalo está listo | {% else %}Gracias por tu compra | {% endif %}{% endblock %}
 
 {% block content %}
     <section class="page checkout-success-page">
@@ -8,12 +8,74 @@
             <div class="content">
                 <div class="checkout-success-shell">
                     <div class="checkout-success-header center">
-                        <p class="checkout-success-kicker">Paquetes</p>
-                        <h1>Gracias por tu compra</h1>
-                        <p class="checkout-success-lead">
-                            Tu paquete fue activado exitosamente. Ya puedes reservar tus clases.
+                        <p class="checkout-success-kicker">
+                            {% if giftCard is not null %}
+                                <i class="bi bi-gift" aria-hidden="true"></i> Tarjeta de regalo
+                            {% else %}
+                                Paquetes
+                            {% endif %}
                         </p>
+                        {% if giftCard is not null %}
+                            <h1>¡Tu regalo está listo!</h1>
+                            <p class="checkout-success-lead">
+                                Compra registrada. Comparte el código con la persona a quien quieres regalar las clases.
+                            </p>
+                        {% else %}
+                            <h1>Gracias por tu compra</h1>
+                            <p class="checkout-success-lead">
+                                Tu paquete fue activado exitosamente. Ya puedes reservar tus clases.
+                            </p>
+                        {% endif %}
                     </div>
+
+                    {% if giftCard is not null %}
+                        {% set giftShareText = '¡Te regalo clases en P&B Studio! Tu código es: ' ~ giftCard.code ~ ' — Canjéalo en la sección de paquetes en pbstudio.mx' %}
+                        <div class="checkout-success-card checkout-success-gift-card center">
+                            <p class="checkout-success-gift-label">Código de regalo</p>
+                            <div class="checkout-success-gift-code-box">
+                                <span id="gift-code-value">{{ giftCard.code }}</span>
+                            </div>
+                            <div class="checkout-success-gift-copy-wrap">
+                                <button type="button"
+                                        class="checkout-success-gift-copy-btn"
+                                        id="btn-copy-gift-code"
+                                        data-code="{{ giftCard.code }}">
+                                    <i class="bi bi-clipboard" aria-hidden="true"></i>
+                                    <span class="copy-btn-label">Copiar código</span>
+                                </button>
+                            </div>
+                            <p class="checkout-success-gift-hint">
+                                Guarda este código. La persona que lo reciba podrá canjearlo desde la sección de paquetes.
+                            </p>
+                            <div class="checkout-success-gift-share">
+                                <p class="checkout-success-gift-share-label">Compartir código</p>
+                                <div class="checkout-success-gift-share-btns">
+                                    <a href="https://api.whatsapp.com/send?text={{ giftShareText|url_encode }}"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       class="share-btn share-btn--whatsapp">
+                                        <i class="bi bi-whatsapp"></i>
+                                        <span>WhatsApp</span>
+                                    </a>
+                                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ ('https://pbstudio.mx/paquetes')|url_encode }}"
+                                       target="_blank"
+                                       rel="noopener noreferrer"
+                                       class="share-btn share-btn--facebook">
+                                        <i class="bi bi-facebook"></i>
+                                        <span>Facebook</span>
+                                    </a>
+                                    <button type="button"
+                                            class="share-btn share-btn--instagram"
+                                            id="btn-share-instagram"
+                                            data-code="{{ giftCard.code }}"
+                                            data-share-text="{{ giftShareText }}">
+                                        <i class="bi bi-instagram"></i>
+                                        <span>Instagram</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
 
                     <div class="checkout-success-card center">
                         <div class="checkout-success-summary" aria-label="Resumen de compra">
@@ -48,4 +110,63 @@
             </div>
         </div>
     </section>
+
+    {% if giftCard is not null %}
+    <script>
+        (function () {
+            function swapIcon(btn, fromClass, toClass, delayMs) {
+                var icon = btn.querySelector('.bi');
+                if (icon) {
+                    icon.classList.replace(fromClass, toClass);
+                    setTimeout(function () { icon.classList.replace(toClass, fromClass); }, delayMs);
+                }
+            }
+
+            function copyToClipboard(text) {
+                return navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject();
+            }
+
+            // Copy code button
+            var btnCopy = document.getElementById('btn-copy-gift-code');
+            if (btnCopy) {
+                btnCopy.addEventListener('click', function () {
+                    var code = this.dataset.code;
+                    var self = this;
+                    var label = self.querySelector('.copy-btn-label');
+                    copyToClipboard(code).then(function () {
+                        swapIcon(self, 'bi-clipboard', 'bi-clipboard-check', 2000);
+                        if (label) {
+                            var original = label.textContent;
+                            label.textContent = '¡Copiado!';
+                            setTimeout(function () { label.textContent = original; }, 2000);
+                        }
+                    }).catch(function () {
+                        var el = document.getElementById('gift-code-value');
+                        if (el) {
+                            var range = document.createRange();
+                            range.selectNode(el);
+                            window.getSelection().removeAllRanges();
+                            window.getSelection().addRange(range);
+                        }
+                    });
+                });
+            }
+
+            // Instagram share button — copies text to clipboard then opens Instagram Direct
+            var btnInsta = document.getElementById('btn-share-instagram');
+            if (btnInsta) {
+                btnInsta.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    var text = this.dataset.shareText || this.dataset.code;
+                    var instagramUrl = 'https://www.instagram.com/direct/inbox/';
+                    copyToClipboard(text).then(function () {
+                        window.open(instagramUrl, '_blank', 'noopener,noreferrer');
+                    }).catch(function () {
+                        window.open(instagramUrl, '_blank', 'noopener,noreferrer');
+                    });
+                });
+            }
+        })();
+    </script>
+    {% endif %}
 {% endblock %}

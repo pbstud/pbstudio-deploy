@@ -1,5 +1,5 @@
 {# package \App\Entity\Package #}
-<a href="#" data-url="{{ path('package_checkout', { 'id': package.id }) }}" data-remodal="checkout" class="{% if package.newUser %}first-class{% endif %}">
+<a href="#" data-url="{{ path('package_checkout', { 'id': package.id, 'gift': isGiftMode|default(false) ? 1 : 0 }) }}" data-remodal="checkout" class="{% if package.newUser %}first-class{% endif %}">
     {% if package.specialPriceActiveNow and package.discountInfo %}
         <i class="discount">{{ package.discountInfo }}</i>
     {% endif %}
@@ -26,5 +26,11 @@
         <h5 class="new-price">${{ package.specialPrice|number_format }}</h5>
     {% endif %}
 
-    <small class="validity">Vigencia {{ package.daysExpiry }} días</small>
+    <small class="validity">
+        {% if isGiftMode|default(false) %}
+            Comprar como regalo
+        {% else %}
+            Vigencia {{ package.daysExpiry }} días
+        {% endif %}
+    </small>
 </a>

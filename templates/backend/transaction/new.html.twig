@@ -142,6 +142,7 @@
                     </div>
 
                     {{ form_row(form.package) }}
+                    {{ form_row(form.giftPurchase) }}
 
                     <div class="form-group">
                         {{ form_label(form.coupon) }}
@@ -241,6 +242,48 @@
             {% endembed %}
         </div>
     {{ form_end(form) }}
+
+    {% if giftCardCode %}
+        <div class="modal fade" id="gift-card-code-modal" tabindex="-1" role="dialog" aria-labelledby="giftCardCodeModalLabel">
+            <div class="modal-dialog modal-sm" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                        <h4 class="modal-title" id="giftCardCodeModalLabel">Código de tarjeta de regalo</h4>
+                    </div>
+
+                    <div class="modal-body">
+                        <p class="text-muted">Comparte este código con el usuario para que pueda canjear su regalo.</p>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <input type="text" class="form-control input-lg text-center" id="gift-card-code-value" value="{{ giftCardCode }}" readonly style="font-weight: 700; letter-spacing: 1px;" />
+                        </div>
+
+                        <div id="gift-card-share-options" class="hidden" style="margin-top: 12px;">
+                            <div role="group" aria-label="Opciones de reenvío">
+                                <a href="#" class="btn btn-success btn-block" id="btn-share-whatsapp" style="margin-bottom: 6px;">
+                                    <i class="fa fa-whatsapp"></i> Enviar por WhatsApp
+                                </a>
+                                <a href="#" class="btn btn-primary btn-block" id="btn-share-facebook" style="margin-bottom: 6px;">
+                                    <i class="fa fa-facebook"></i> Enviar por Facebook
+                                </a>
+                                <a href="#" class="btn btn-block" id="btn-share-instagram" style="background-color: #E4405F; border-color: #E4405F; color: #fff;">
+                                    <i class="fa fa-instagram"></i> Enviar por Instagram
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" id="btn-copy-gift-card-code">Copiar</button>
+                        <button type="button" class="btn btn-success" id="btn-resend-gift-card-code">Compartir</button>
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
 {% endblock %}
 
 {% block javascripts %}
@@ -248,5 +291,79 @@
 
     <script type="text/javascript">
         checkoutHandler('{{ conekta_public_key }}');
+
+        {% if giftCardCode %}
+        (function () {
+            const codeInput = document.getElementById('gift-card-code-value');
+            const copyButton = document.getElementById('btn-copy-gift-card-code');
+            const resendButton = document.getElementById('btn-resend-gift-card-code');
+            const shareOptions = document.getElementById('gift-card-share-options');
+            const shareWhatsappButton = document.getElementById('btn-share-whatsapp');
+            const shareFacebookButton = document.getElementById('btn-share-facebook');
+            const shareInstagramButton = document.getElementById('btn-share-instagram');
+            const shareText = {{ giftCardShareText|json_encode|raw }};
+            const encodedShareText = encodeURIComponent(shareText);
+            const facebookUrl = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(window.location.origin) + '&quote=' + encodedShareText;
+            const whatsappUrl = 'https://wa.me/?text=' + encodedShareText;
+            const instagramUrl = 'https://www.instagram.com/direct/inbox/';
+
+            const copyText = function (text) {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    return navigator.clipboard.writeText(text);
+                }
+
+                codeInput.focus();
+                codeInput.select();
+                document.execCommand('copy');
+
+                return Promise.resolve();
+            };
+
+            copyButton.addEventListener('click', function () {
+                copyText(codeInput.value)
+                    .then(function () {
+                        $.flash.success('Código copiado al portapapeles.');
+                    })
+                    .catch(function () {
+                        $.flash.danger('No fue posible copiar el código automáticamente.');
+                    });
+            });
+
+            resendButton.addEventListener('click', function () {
+                shareOptions.classList.toggle('hidden');
+            });
+
+            const shareWithCopy = function (targetUrl) {
+                copyText(shareText)
+                    .then(function () {
+                        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+                    })
+                    .catch(function () {
+                        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+                    });
+            };
+
+            shareWhatsappButton.addEventListener('click', function (event) {
+                event.preventDefault();
+                shareWithCopy(whatsappUrl);
+            });
+
+            shareFacebookButton.addEventListener('click', function (event) {
+                event.preventDefault();
+                shareWithCopy(facebookUrl);
+            });
+
+            shareInstagramButton.addEventListener('click', function (event) {
+                event.preventDefault();
+                shareWithCopy(instagramUrl);
+            });
+
+            $('#gift-card-code-modal').modal('show');
+
+            if (window.history && window.history.replaceState) {
+                window.history.replaceState({}, document.title, '{{ path('backend_transaction_new') }}');
+            }
+        })();
+        {% endif %}
     </script>
 {% endblock %}

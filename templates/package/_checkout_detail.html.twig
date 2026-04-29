@@ -1,33 +1,68 @@
 <div class="grid-1-4 right">
     <h4>
-        Tu compra<small>(Vigencia {{ package.daysExpiry }} días)</small>
+        <span id="checkout-detail-title">Tu compra</span><small id="checkout-detail-subtitle" data-days-expiry="{{ package.daysExpiry }}">(Vigencia {{ package.daysExpiry }} días)</small>
     </h4>
-    <div class="price">
-        <a href="#">
-            {% if package.specialPriceActiveNow and package.discountInfo %}
-                <i class="discount">{{ package.discountInfo }}</i>
-            {% endif %}
-            <div>
-                <p>
-                    {% if package.isUnlimited %}
-                        &infin;
-                    {% else %}
-                        {{ package.totalClasses }}
-                    {% endif %}
-                </p>
-            </div>
-            <h6 class="{{ package.specialPriceActiveNow ? 'old-price' }}">
-                <small>Clase {{ package.type|PackageSessionType }}</small>
-                {% if package.altText %}
-                    <br><small>{{ package.altText }}</small>
+    <div id="checkout-detail-package">
+        <div class="price">
+            <a href="#">
+                {% if package.specialPriceActiveNow and package.discountInfo %}
+                    <i class="discount">{{ package.discountInfo }}</i>
                 {% endif %}
-                <br>
-                ${{ package.amount | number_format }}
-            </h6>
-            {% if package.specialPriceActiveNow %}
-                <h5 class="new-price">${{ package.specialPrice|number_format }}</h5>
-            {% endif %}
-        </a>
+                <div>
+                    <p>
+                        {% if package.isUnlimited %}
+                            &infin;
+                        {% else %}
+                            {{ package.totalClasses }}
+                        {% endif %}
+                    </p>
+                </div>
+                <h6 class="{{ package.specialPriceActiveNow ? 'old-price' }}">
+                    <small>Clase {{ package.type|PackageSessionType }}</small>
+                    {% if package.altText %}
+                        <br><small>{{ package.altText }}</small>
+                    {% endif %}
+                    <br>
+                    ${{ package.amount | number_format }}
+                </h6>
+                {% if package.specialPriceActiveNow %}
+                    <h5 class="new-price">${{ package.specialPrice|number_format }}</h5>
+                {% endif %}
+            </a>
+        </div>
+    </div>
+
+    <div id="checkout-detail-gift" class="hidden">
+        <div class="price checkout-gift-summary">
+            <a href="#">
+                <div>
+                    <p id="checkout-detail-gift-classes">Gift</p>
+                </div>
+                <h6>
+                    <small id="checkout-detail-gift-type">Tarjeta de regalo</small>
+                    <br>
+                    <span id="checkout-detail-gift-expiry">Se asigna al validar tu codigo</span>
+                    <br>
+                    <span id="checkout-detail-gift-value"></span>
+                </h6>
+            </a>
+        </div>
+    </div>
+
+    <div id="checkout-detail-gift-success" class="hidden">
+        <div class="price checkout-gift-summary checkout-gift-summary--success">
+            <a href="#">
+                <div>
+                    <p id="checkout-gift-success-classes">Gift</p>
+                </div>
+                <h6>
+                    <small id="checkout-gift-success-type">Tarjeta de regalo</small>
+                    <br>
+                    <span id="checkout-gift-success-value">$0</span>
+                </h6>
+                <span class="validity" id="checkout-gift-success-expiry">Vigencia por confirmar</span>
+            </a>
+        </div>
     </div>
     <p>
         <small>
@@ -35,4 +70,10 @@
             <a href="{{ path('package_index') }}" data-remodal-action="close">otros paquetes</a>
         </small>
     </p>
+
+    {% if not isGiftMode|default(false) %}
+    <p>
+        <button type="button" class="checkout-gift-toggle" id="btn-toggle-gift-redeem">¿Tienes tarjeta de regalo?</button>
+    </p>
+    {% endif %}
 </div>

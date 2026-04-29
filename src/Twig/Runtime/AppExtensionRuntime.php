@@ -5,11 +5,16 @@ declare(strict_types=1);
 namespace App\Twig\Runtime;
 
 use App\Entity\Reservation;
+use App\Entity\GiftCard;
 use App\Repository\SessionAuditRepository;
 use App\Security\Voter\RouteAccessVoter;
 use App\Service\Reservation\ReservationService;
 use App\Service\WaitingList\WaitingListCancellationWindowService;
 use App\Util\ChargeMethodDescription;
+use App\Util\GiftCardHistoryActionDescription;
+use App\Util\GiftCardOriginDescription;
+use App\Util\GiftCardStatusDescription;
+use App\Util\GiftCardStatusResolver;
 use App\Util\PackageSessionType;
 use App\Util\ReservationStatusDescription;
 use App\Util\SessionStatusDescription;
@@ -70,6 +75,46 @@ readonly class AppExtensionRuntime implements RuntimeExtensionInterface
     public function getReservationStatusLabel(string $value): string
     {
         return ReservationStatusDescription::getLabel($value);
+    }
+
+    public function getGiftCardStatusDescription(string $value): string
+    {
+        return GiftCardStatusDescription::getDescription($value);
+    }
+
+    public function getGiftCardStatusLabel(string $value): string
+    {
+        return GiftCardStatusDescription::getLabel($value);
+    }
+
+    public function getResolvedGiftCardStatusDescription(GiftCard $giftCard): string
+    {
+        return GiftCardStatusResolver::getDescription($giftCard);
+    }
+
+    public function getResolvedGiftCardStatusLabel(GiftCard $giftCard): string
+    {
+        return GiftCardStatusResolver::getLabel($giftCard);
+    }
+
+    public function getGiftCardOriginDescription(string $value): string
+    {
+        return GiftCardOriginDescription::getDescription($value);
+    }
+
+    public function getGiftCardOriginLabel(string $value): string
+    {
+        return GiftCardOriginDescription::getLabel($value);
+    }
+
+    public function getGiftCardHistoryActionDescription(string $value): string
+    {
+        return GiftCardHistoryActionDescription::getDescription($value);
+    }
+
+    public function getGiftCardHistoryActionLabel(string $value): string
+    {
+        return GiftCardHistoryActionDescription::getLabel($value);
     }
 
     public function reservationCanCancel(Reservation $reservation): bool

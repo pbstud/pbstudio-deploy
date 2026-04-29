@@ -1,0 +1,124 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% set page_section = 'Tarjetas de regalo' %}
+
+{% block content %}
+    <div class="page-title">
+        <div class="title_left">
+            <h3>
+                <a href="{{ path('backend_gift_card') }}" class="btn btn-default btn-return-to">
+                    <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                </a>
+                Detalle de Gift Card
+            </h3>
+        </div>
+        <div class="title_right">
+            <div class="form-group pull-right" style="display:flex;gap:8px;">
+                {% if giftCard.status == constant('App\\Entity\\GiftCard::STATUS_GENERATED') %}
+                    <form method="post" action="{{ path('backend_gift_card_resend', {id: giftCard.id}) }}" style="display:inline;">
+                        <input type="hidden" name="_token" value="{{ csrf_token('backend_gift_card_resend_' ~ giftCard.id) }}">
+                        <button type="submit" class="btn btn-primary">Reenviar</button>
+                    </form>
+                    <form method="post" action="{{ path('backend_gift_card_cancel', {id: giftCard.id}) }}" style="display:inline;">
+                        <input type="hidden" name="_token" value="{{ csrf_token('backend_gift_card_cancel_' ~ giftCard.id) }}">
+                        <input type="hidden" name="reason" value="Cancelada desde backend por staff">
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('¿Deseas cancelar esta gift card?');">Cancelar</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="clearfix"></div>
+
+    <div class="row">
+        <div class="col-xs-12 col-md-6">
+            <div class="x_panel x_panel_widget">
+                <div class="x_title">
+                    <h2>Gift Card</h2>
+                    <div class="clearfix"></div>
+                </div>
+                <div class="x_content">
+                    <table class="table table_inner">
+                        <tbody>
+                        <tr><th>ID</th><td>{{ giftCard.id }}</td></tr>
+                        <tr><th>Codigo</th><td>{{ giftCard.code }}</td></tr>
+                        <tr>
+                            <th>Estado</th>
+                            <td>
+                                <span class="label label-{{ giftCard|ResolvedGiftCardStatusLabel }}">
+                                    {{ giftCard|ResolvedGiftCardStatusDescription }}
+                                </span>
+                            </td>
+                        </tr>
+                        <tr><th>Canal</th><td>{{ giftCard.originChannel }}</td></tr>
+                        <tr><th>Monto</th><td>${{ giftCard.amountSnapshot|number_format(2) }}</td></tr>
+                        <tr><th>Moneda</th><td>{{ giftCard.currencySnapshot }}</td></tr>
+                        <tr><th>Paquete</th><td>{{ giftCard.packageNameSnapshot }}</td></tr>
+                        <tr><th>Tipo</th><td>{{ giftCard.packageTypeSnapshot }}</td></tr>
+                        <tr><th>Clases</th><td>{{ giftCard.packageTotalClassesSnapshot }}</td></tr>
+                        <tr><th>Vigencia</th><td>{{ giftCard.packageDaysExpirySnapshot }} dias</td></tr>
+                        <tr><th>Comprador</th><td>{{ giftCard.purchaserUser ? giftCard.purchaserUser.email : '-' }}</td></tr>
+                        <tr><th>Receptor</th><td>{{ giftCard.recipientUser ? giftCard.recipientUser.email : '-' }}</td></tr>
+                        <tr><th>Compra</th><td>{{ giftCard.purchasedAt ? giftCard.purchasedAt|date('d/m/Y H:i:s') : '-' }}</td></tr>
+                        <tr><th>Asignacion</th><td>{{ giftCard.assignedAt ? giftCard.assignedAt|date('d/m/Y H:i:s') : '-' }}</td></tr>
+                        <tr><th>Canje</th><td>{{ giftCard.redeemedAt ? giftCard.redeemedAt|date('d/m/Y H:i:s') : '-' }}</td></tr>
+                        <tr><th>Caducidad</th><td>{{ giftCard.giftExpiresAt ? giftCard.giftExpiresAt|date('d/m/Y H:i:s') : '-' }}</td></tr>
+                        <tr><th>Cancelacion</th><td>{{ giftCard.cancelledAt ? giftCard.cancelledAt|date('d/m/Y H:i:s') : '-' }}</td></tr>
+                        <tr><th>Motivo cancelacion</th><td>{{ giftCard.cancellationReason ?: '-' }}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xs-12 col-md-6">
+            <div class="x_panel x_panel_widget">
+                <div class="x_title">
+                    <h2>Historial</h2>
+                    <div class="clearfix"></div>
+                </div>
+                <div class="x_content">
+                    {% if history is empty %}
+                        <p class="text-muted">No hay movimientos registrados.</p>
+                    {% else %}
+                        <div class="table-responsive">
+                            <table class="table table_inner">
+                                <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Accion</th>
+                                    <th>Usuario</th>
+                                    <th>Transaccion</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for item in history %}
+                                    <tr>
+                                        <td>{{ item.createdAt ? item.createdAt|date('d/m/Y H:i:s') : '-' }}</td>
+                                        <td>
+                                            <span class="label label-{{ item.action|GiftCardHistoryActionLabel }}">
+                                                {{ item.action|GiftCardHistoryActionDescription }}
+                                            </span>
+                                        </td>
+                                        <td>{{ item.actorUser ? item.actorUser.email : '-' }}</td>
+                                        <td>
+                                            {% if item.transaction %}
+                                                <a href="{{ path('backend_transaction_show', { id: item.transaction.id }) }}">
+                                                    {{ item.transaction.id }}
+                                                </a>
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

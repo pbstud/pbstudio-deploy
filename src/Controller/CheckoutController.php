@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Repository\GiftCardRepository;
 use App\Repository\TransactionRepository;
 use App\Util\PackageSessionType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -17,6 +18,7 @@ class CheckoutController extends AbstractController
 {
     public function __construct(
         private readonly TransactionRepository $transactionRepository,
+        private readonly GiftCardRepository $giftCardRepository,
     ) {
     }
 
@@ -70,6 +72,7 @@ class CheckoutController extends AbstractController
             'transaction' => $transaction,
             'packageName' => $packageName,
             'packageType' => $packageType,
+            'giftCard'    => $this->giftCardRepository->findOneByPurchaseTransactionId((int) $transaction->getId()),
         ]);
     }
 }

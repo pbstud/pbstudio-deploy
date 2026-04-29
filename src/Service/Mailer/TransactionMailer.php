@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Service\Mailer;
 
+use App\Entity\GiftCard;
 use App\Entity\Package;
 use App\Entity\Transaction;
 use App\Entity\User;
@@ -102,6 +103,41 @@ class TransactionMailer extends AbstractMailManager
             $this->sendMessage($template, $context, (string) $user->getEmail());
         } catch (TransportExceptionInterface $e) {
             $this->logger->error('Error al enviar correo de pago fallido: '.$e->getMessage());
+        }
+    }
+
+    public function sendGiftCardRedemptionConfirmationEmail(Package $package, Transaction $transaction, User $user): void
+    {
+        $template = 'mail/gift_card_redemption_confirmation.html.twig';
+
+        $context = [
+            'subject' => '¡Tu tarjeta de regalo ha sido canjeada!',
+            'package' => $package,
+            'transaction' => $transaction,
+            'user' => $user,
+        ];
+
+        try {
+            $this->sendMessage($template, $context, (string) $user->getEmail());
+        } catch (TransportExceptionInterface $e) {
+            // Registrar error.
+        }
+    }
+
+    public function sendGiftCardCodeEmail(GiftCard $giftCard, User $user): void
+    {
+        $template = 'mail/gift_card_code.html.twig';
+
+        $context = [
+            'subject' => 'Tu codigo de tarjeta de regalo',
+            'giftCard' => $giftCard,
+            'user' => $user,
+        ];
+
+        try {
+            $this->sendMessage($template, $context, (string) $user->getEmail());
+        } catch (TransportExceptionInterface $e) {
+            $this->logger->error('Error al enviar correo de codigo de gift card: '.$e->getMessage());
         }
     }
 }

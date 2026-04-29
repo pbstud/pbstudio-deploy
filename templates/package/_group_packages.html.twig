@@ -1,3 +1,6 @@
 {% for entity in group_packages %}
-    {{ include('package/_package.html.twig', { 'package': entity }) }}
+    {{ include('package/_package.html.twig', { 'package': entity, 'isGiftMode': isGiftMode|default(false) }) }}
 {% endfor %}
+{% if not isGiftMode|default(false) %}
+{{ include('package/_gift_card_entry.html.twig') }}
+{% endif %}

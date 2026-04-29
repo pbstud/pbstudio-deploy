@@ -1,0 +1,155 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% set page_section = 'Tarjetas de regalo' %}
+{% block title %}Listado de Tarjetas de Regalo{% endblock %}
+
+{% block content %}
+    {% embed 'backend/default/embed/list_common.html.twig' with { 'page_section': page_section, 'page_title': block('title') } %}
+        {% block body_filters %}
+            <form action="{{ path('backend_gift_card') }}" method="get">
+                <div class="row">
+                    <div class="col-md-4 col-sm-4 col-xs-12">
+                        <div class="form-group">
+                            <label for="search">Buscar:</label>
+                            <input type="text" id="search" name="search" class="form-control" value="{{ filters.search }}" placeholder="Codigo, nombre o email" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="status">Estado:</label>
+                            <select id="status" name="status" class="form-control" data-current="{{ filters.status }}">
+                                <option value="">- Todos -</option>
+                                {% for status, text in statusChoices %}
+                                    <option value="{{ status }}">{{ status|GiftCardStatusDescription }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 col-sm-4 col-xs-12">
+                        <div class="form-group">
+                            <label for="origin">Origen:</label>
+                            <select id="origin" name="origin" class="form-control" data-current="{{ filters.origin }}">
+                                <option value="">- Todos -</option>
+                                {% for origin, text in originChoices %}
+                                    <option value="{{ origin }}">{{ origin|GiftCardOriginDescription }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="date_start">Compra desde:</label>
+                            <div class="date-action-field">
+                                <input type="text" id="date_start" name="date_start" class="form-control datepicker" value="{{ filters.date_start }}" placeholder="dd/mm/aaaa" />
+                                <span class="date-action-icon" aria-hidden="true">
+                                    <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                                </span>
+                                <button type="button" class="btn btn-default date-action-clear" onclick="document.getElementById('date_start').value = '';" title="Limpiar fecha" aria-label="Limpiar fecha">
+                                    <i class="fa fa-times" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 col-sm-4 col-xs-12">
+                        <div class="form-group">
+                            <label for="date_end">Compra hasta:</label>
+                            <div class="date-action-field">
+                                <input type="text" id="date_end" name="date_end" class="form-control datepicker" value="{{ filters.date_end }}" placeholder="dd/mm/aaaa" />
+                                <span class="date-action-icon" aria-hidden="true">
+                                    <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                                </span>
+                                <button type="button" class="btn btn-default date-action-clear" onclick="document.getElementById('date_end').value = '';" title="Limpiar fecha" aria-label="Limpiar fecha">
+                                    <i class="fa fa-times" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 col-md-offset-8 col-sm-4 col-sm-offset-8 col-xs-12">
+                        <label>&nbsp;</label>
+                        <div class="clearfix">
+                            {% if pagination | length > 0 %}
+                                <a href="{{ url_export }}" class="btn btn-success pull-right">
+                                    <i class="fa fa-file-excel-o" aria-hidden="true"></i> Exportar
+                                </a>
+                            {% endif %}
+                            <button type="submit" class="btn btn-dark">Buscar</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        {% endblock %}
+
+        {% block body %}
+            {% if pagination | length > 0 %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Codigo</th>
+                            <th>Comprador</th>
+                            <th>Receptor</th>
+                            <th>Monto</th>
+                            <th>Estado</th>
+                            <th>Canal</th>
+                            <th>Compra</th>
+                            <th>Canje</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for giftCard in pagination %}
+                            <tr>
+                                <td>
+                                    <a href="{{ path('backend_gift_card_show', { id: giftCard.id }) }}" class="link-edit">
+                                        <u>{{ giftCard.id }}</u>
+                                        <i class="fa fa-eye" aria-hidden="true"></i>
+                                    </a>
+                                </td>
+                                <td>{{ giftCard.code }}</td>
+                                <td>
+                                    {% if giftCard.purchaserUser %}
+                                        <strong>{{ giftCard.purchaserUser }}</strong><br>
+                                        <small class="text-muted">{{ giftCard.purchaserUser.email }}</small>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if giftCard.recipientUser %}
+                                        <strong>{{ giftCard.recipientUser }}</strong><br>
+                                        <small class="text-muted">{{ giftCard.recipientUser.email }}</small>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>${{ giftCard.amountSnapshot|number_format(2) }}</td>
+                                <td>
+                                    <span class="label label-{{ giftCard|ResolvedGiftCardStatusLabel }}">
+                                        {{ giftCard|ResolvedGiftCardStatusDescription }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="label label-{{ giftCard.originChannel|GiftCardOriginLabel }}">
+                                        {{ giftCard.originChannel|GiftCardOriginDescription }}
+                                    </span>
+                                </td>
+                                <td>{{ giftCard.purchasedAt ? giftCard.purchasedAt|date('d/m/Y H:i:s') : '-' }}</td>
+                                <td>{{ giftCard.redeemedAt ? giftCard.redeemedAt|date('d/m/Y H:i:s') : '-' }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                {{ include('backend/default/partials/not_records.html.twig') }}
+            {% endif %}
+        {% endblock %}
+
+        {% block footer %}
+            {% if pagination | length > 0 %}
+                {{ knp_pagination_render(pagination) }}
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

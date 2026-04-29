@@ -28,6 +28,7 @@ class Transaction implements TimestampableInterface
     public const CHARGE_METHOD_CASH = 'payment.cash';
     public const CHARGE_METHOD_CARD = 'payment.card';
     public const CHARGE_METHOD_POS = 'payment.pos';
+    public const CHARGE_METHOD_GIFT = 'payment.gift';
 
     public const NUMBER_OF_ITEMS = 10;
     public const NUMBER_OF_ITEMS_USER = 10;
@@ -43,6 +44,9 @@ class Transaction implements TimestampableInterface
 
     public const WITH_DISCOUNT = 1;
     public const WITHOUT_DISCOUNT = 2;
+
+    public const WITH_GIFT_PURCHASE = 1;
+    public const WITHOUT_GIFT_PURCHASE = 2;
 
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -195,6 +199,7 @@ class Transaction implements TimestampableInterface
             self::CHARGE_METHOD_CASH => 'payment.cash',
             self::CHARGE_METHOD_CARD => 'payment.card',
             self::CHARGE_METHOD_POS => 'payment.pos',
+            self::CHARGE_METHOD_GIFT => 'payment.gift',
         ];
     }
 

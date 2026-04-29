@@ -126,6 +126,11 @@ final class BackendBuilder
                 'backend_transaction_show',
             ],
             'backend_transaction_new' => [],
+            'backend_gift_card' => [
+                'backend_gift_card_show',
+                'backend_gift_card_resend',
+                'backend_gift_card_cancel',
+            ],
         ];
 
         $this->addSubmenu($menu, $submenu);

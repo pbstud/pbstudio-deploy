@@ -7,7 +7,7 @@
             <div class="center">
                 <h4>Clases grupales</h4>
                 <div class="price">
-                    {{ render(controller('App\\Controller\\PackageController::groupPackages')) }}
+                    {{ render(controller('App\\Controller\\PackageController::groupPackages', { 'gift': isGiftMode|default(false) ? 1 : 0 })) }}
                 </div>
             </div>
         </div>
@@ -17,7 +17,7 @@
             <div class="center">
                 <h4>Clases individuales</h4>
                 <div class="price">
-                    {{ render(controller('App\\Controller\\PackageController::individualPackages')) }}
+                    {{ render(controller('App\\Controller\\PackageController::individualPackages', { 'gift': isGiftMode|default(false) ? 1 : 0 })) }}
                 </div>
 
                 <a href="{{ path('reservation_calendar') }}" class="btn reserve-class-toggle">

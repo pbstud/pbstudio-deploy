@@ -19,5 +19,8 @@ class ChargeMethodDescription extends BaseDescription
         'payment.pos' => [
             'description' => 'Terminal',
         ],
+        'payment.gift' => [
+            'description' => 'Regalo',
+        ],
     ];
 }

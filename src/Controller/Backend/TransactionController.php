@@ -13,12 +13,15 @@ use App\Event\TransactionSuccessEvent;
 use App\Form\Backend\TransactionType;
 use App\Model\TransactionModel;
 use App\Repository\BranchOfficeRepository;
+use App\Repository\GiftCardRepository;
 use App\Repository\PackageRepository;
 use App\Repository\TransactionFreezeLogRepository;
 use App\Repository\TransactionRepository;
 use App\Repository\UserRepository;
 use App\Service\Conekta\ConektaService;
 use App\Service\CouponService;
+use App\Service\GiftCardService;
+use App\Service\Mailer\TransactionMailer;
 use App\Service\TransactionService;
 use App\Util\ChargeMethodDescription;
 use App\Util\PackageSessionType;
@@ -60,6 +63,7 @@ class TransactionController extends AbstractController
         $filters['filter_package'] = $request->query->get('filter_package');
         $filters['filter_charge_method'] = $request->query->get('filter_charge_method');
         $filters['filter_discount'] = $request->query->get('filter_discount');
+        $filters['filter_gift_purchase'] = $request->query->get('filter_gift_purchase');
 
         $transactions = $transactionRepository->findForBackendList($filters);
 
@@ -82,21 +86,45 @@ class TransactionController extends AbstractController
 
         $branchOffices = $branchOfficeRepository->findAll();
         $packages = $packageRepository->getAllActive();
+        $packagesByType = [
+            PackageSessionType::TYPE_INDIVIDUAL => [],
+            PackageSessionType::TYPE_GROUP => [],
+        ];
+
+        foreach ($packages as $package) {
+            if (!$package->isIsActive()) {
+                continue;
+            }
+
+            $type = $package->getType();
+            if (PackageSessionType::TYPE_INDIVIDUAL === $type || PackageSessionType::TYPE_GROUP === $type) {
+                $packagesByType[$type][] = $package;
+            }
+        }
 
         $filterDiscount = [
             Transaction::WITH_DISCOUNT,
             Transaction::WITHOUT_DISCOUNT,
         ];
 
+        $filterGiftPurchase = [
+            Transaction::WITH_GIFT_PURCHASE,
+            Transaction::WITHOUT_GIFT_PURCHASE,
+        ];
+
+        $chargeMethods = Transaction::chargeMethodChoices();
+        unset($chargeMethods[Transaction::CHARGE_METHOD_GIFT]);
+
         return $this->render('backend/transaction/index.html.twig', $filters + [
             'url_export' => $urlExport,
             'branchOffices' => $branchOffices,
             'pagination' => $pagination,
-            'packages' => $packages,
-            'chargeMethods' => Transaction::chargeMethodChoices(),
+            'packagesByType' => $packagesByType,
+            'chargeMethods' => $chargeMethods,
             'statusChoices' => Transaction::statusChoices(),
             'total' => $transactionRepository->getSumFilterList($filters),
             'filterDiscount' => $filterDiscount,
+            'filterGiftPurchase' => $filterGiftPurchase,
         ]);
     }
 
@@ -108,8 +136,23 @@ class TransactionController extends AbstractController
         ConektaService $conekta,
         EventDispatcherInterface $dispatcher,
         EntityManagerInterface $em,
+        GiftCardService $giftCardService,
+        GiftCardRepository $giftCardRepository,
+        TransactionMailer $transactionMailer,
     ): Response {
         $transactionModel = new TransactionModel();
+        $giftCardCode = null;
+        $giftCardShareText = null;
+
+        $giftCardId = $request->query->getInt('gift_card_id', 0);
+        if ($giftCardId > 0) {
+            $giftCard = $giftCardRepository->find($giftCardId);
+            if (null !== $giftCard) {
+                $giftCardCode = $giftCard->getCode();
+                $giftCardShareText = sprintf('Tu codigo de tarjeta de regalo de P&B Studio es: %s', $giftCard->getCode());
+            }
+        }
+
         $form = $this->createForm(TransactionType::class, $transactionModel);
         $form->handleRequest($request);
 
@@ -165,6 +208,28 @@ class TransactionController extends AbstractController
                     $em->flush();
                 }
 
+                if ($transactionModel->isGiftPurchase()) {
+                    $transaction
+                        ->setHaveSessionsAvailable(false)
+                        ->setExpirationAt(null)
+                    ;
+
+                    $em->persist($transaction);
+                    $em->flush();
+
+                    $giftCard = $giftCardService->createFromPurchaseTransaction($transaction, 'backend');
+                    $transactionMailer->sendGiftCardCodeEmail($giftCard, $transaction->getUser());
+
+                    $event = new TransactionSuccessEvent($transaction);
+                    $dispatcher->dispatch($event);
+
+                    $this->addFlash('success', 'La Transacción ha sido creada.');
+
+                    return $this->redirectToRoute('backend_transaction_new', [
+                        'gift_card_id' => $giftCard->getId(),
+                    ]);
+                }
+
                 $event = new TransactionSuccessEvent($transaction);
                 $dispatcher->dispatch($event);
 
@@ -180,6 +245,8 @@ class TransactionController extends AbstractController
             'conekta_public_key' => $conekta->getPublicKey(),
             'form' => $form->createView(),
             'transactionModel' => $transactionModel,
+            'giftCardCode' => $giftCardCode,
+            'giftCardShareText' => $giftCardShareText,
         ]);
     }
 
@@ -317,6 +384,7 @@ class TransactionController extends AbstractController
         Transaction $transaction,
         ConektaService $conektaService,
         EntityManagerInterface $em,
+        GiftCardRepository $giftCardRepository,
     ): Response {
         if (!$this->isCsrfTokenValid('backend_transaction_cancel_'.$transaction->getId(), (string) $request->request->get('_token'))) {
             return $this->json([
@@ -336,10 +404,40 @@ class TransactionController extends AbstractController
 
         $response = [];
         $canCancelLocally = true;
+        $transactionsToCancel = [$transaction];
+
+        $giftCard = $giftCardRepository->findOneByRedemptionTransaction($transaction);
+        if (null === $giftCard) {
+            $giftCard = $giftCardRepository->findOneByPurchaseTransactionId((int) $transaction->getId());
+        }
+
+        if (null !== $giftCard) {
+            $purchaseTransaction = $giftCard->getPurchaseTransaction();
+            $redemptionTransaction = $giftCard->getRedemptionTransaction();
+
+            if (null !== $purchaseTransaction && $purchaseTransaction->getId() !== $transaction->getId()) {
+                $transactionsToCancel[] = $purchaseTransaction;
+            }
+
+            if (null !== $redemptionTransaction && $redemptionTransaction->getId() !== $transaction->getId()) {
+                $transactionsToCancel[] = $redemptionTransaction;
+            }
+        }
 
         try {
-            if ('payment.card' === $transaction->getChargeMethod()) {
-                $response = $conektaService->chargeRefund($transaction);
+            $transactionForRefund = null;
+            foreach ($transactionsToCancel as $candidateTransaction) {
+                if (
+                    Transaction::STATUS_PAID === $candidateTransaction->getStatus()
+                    && Transaction::CHARGE_METHOD_CARD === $candidateTransaction->getChargeMethod()
+                ) {
+                    $transactionForRefund = $candidateTransaction;
+                    break;
+                }
+            }
+
+            if (null !== $transactionForRefund) {
+                $response = $conektaService->chargeRefund($transactionForRefund);
 
                 if (isset($response['error'])) {
                     if ($conektaService->isSandboxModeEnabled()) {
@@ -353,17 +451,26 @@ class TransactionController extends AbstractController
             }
 
             if ($canCancelLocally) {
-                $transaction
-                    ->setStatus(Transaction::STATUS_CANCEL)
-                    ->setRefundedAt(new \DateTime())
-                ;
+                $cancelledCount = 0;
+                foreach ($transactionsToCancel as $candidateTransaction) {
+                    if (Transaction::STATUS_PAID !== $candidateTransaction->getStatus()) {
+                        continue;
+                    }
+
+                    $candidateTransaction
+                        ->setStatus(Transaction::STATUS_CANCEL)
+                        ->setRefundedAt(new \DateTime())
+                    ;
+
+                    ++$cancelledCount;
+                }
 
                 $em->flush();
 
                 $response['success'] = [
                     'message' => isset($response['warning'])
-                        ? 'Transacción cancelada localmente en sandbox.'
-                        : 'La transacción ha sido cancelada.',
+                        ? sprintf('Transacción(es) cancelada(s) localmente en sandbox (%d).', $cancelledCount)
+                        : sprintf('Se cancelaron %d transacción(es) vinculada(s).', $cancelledCount),
                 ];
             } else {
                 return $this->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -434,6 +541,7 @@ class TransactionController extends AbstractController
                 'Descuento Adicional',
                 'Total',
                 'Método de pago',
+                'Flujo regalo',
                 'Tarjetahabiente',
                 'Tarjeta',
                 'Código de autorización',
@@ -464,6 +572,7 @@ class TransactionController extends AbstractController
                     $transaction->getDiscount().'%',
                     $transaction->getTotal(),
                     ChargeMethodDescription::getDescription($transaction->getChargeMethod()),
+                    $this->getGiftFlowLabel($transaction),
                     $transaction->getCardName(),
                     $transaction->getCardLast4(),
                     $transaction->getChargeAuthCode(),
@@ -489,16 +598,17 @@ class TransactionController extends AbstractController
             $sheet->setColumnWidth(15, 9); // Descuento Adicional
             $sheet->setColumnWidth(10, 10); // Total
             $sheet->setColumnWidth(18, 11); // Método de pago
-            $sheet->setColumnWidth(18, 12); // Tarjetahabiente
-            $sheet->setColumnWidth(12, 13); // Tarjeta
-            $sheet->setColumnWidth(18, 14); // Código de autorización
-            $sheet->setColumnWidth(15, 15); // Conekta ID
-            $sheet->setColumnWidth(20, 16); // Conekta error
-            $sheet->setColumnWidth(15, 17); // Sucursal
-            $sheet->setColumnWidth(15, 18); // Estado
-            $sheet->setColumnWidth(12, 19); // Expirada
-            $sheet->setColumnWidth(20, 20); // Fecha de Expiración
-            $sheet->setColumnWidth(20, 21); // Fecha de creación
+            $sheet->setColumnWidth(16, 12); // Flujo regalo
+            $sheet->setColumnWidth(18, 13); // Tarjetahabiente
+            $sheet->setColumnWidth(12, 14); // Tarjeta
+            $sheet->setColumnWidth(18, 15); // Código de autorización
+            $sheet->setColumnWidth(15, 16); // Conekta ID
+            $sheet->setColumnWidth(20, 17); // Conekta error
+            $sheet->setColumnWidth(15, 18); // Sucursal
+            $sheet->setColumnWidth(15, 19); // Estado
+            $sheet->setColumnWidth(12, 20); // Expirada
+            $sheet->setColumnWidth(20, 21); // Fecha de Expiración
+            $sheet->setColumnWidth(20, 22); // Fecha de creación
 
             $writer->close();
 
@@ -513,4 +623,26 @@ class TransactionController extends AbstractController
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
+    private function getGiftFlowLabel(Transaction $transaction): string
+    {
+        if (Transaction::CHARGE_METHOD_GIFT === $transaction->getChargeMethod()) {
+            return 'Canje regalo';
+        }
+
+        if (
+            Transaction::STATUS_PAID === $transaction->getStatus()
+            && !$transaction->isHaveSessionsAvailable()
+            && \in_array($transaction->getChargeMethod(), [
+                Transaction::CHARGE_METHOD_CARD,
+                Transaction::CHARGE_METHOD_CASH,
+                Transaction::CHARGE_METHOD_POS,
+            ], true)
+        ) {
+            return 'Compra regalo';
+        }
+
+        return '-';
+    }
 }
+

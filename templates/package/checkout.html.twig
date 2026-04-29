@@ -9,7 +9,64 @@
                 </div>
             {% else %}
                 <div class="checkout-form">
-                    <h4 class="checkout-form__title">Datos de pago<small>Ingresa los datos de tu tarjeta</small></h4>
+                    {% if isGiftMode|default(false) %}
+                        <div class="checkout-gift-purchase-banner">
+                            <i class="bi bi-gift"></i>
+                            <div>
+                                <strong>Comprando como regalo</strong>
+                                <small>Se generará un código único para compartir. Tú no recibirás las clases.</small>
+                            </div>
+                        </div>
+                        <input type="checkbox" id="is-gift-purchase" checked class="sr-only">
+                    {% endif %}
+                    <h4 class="checkout-form__title"><span id="checkout-main-title">Datos de pago</span><small id="checkout-main-subtitle">Ingresa los datos de tu tarjeta</small></h4>
+
+                    <div id="checkout-gift-redeem-content" class="hidden checkout-form__field">
+                        <div id="checkout-gift-redeem-form">
+                            <label class="checkout-form__label" for="gift-card-code-modal">Canjear codigo</label>
+                            <div class="checkout-gift-redeem-panel">
+                                <input type="text"
+                                       id="gift-card-code-modal"
+                                       maxlength="64"
+                                       placeholder="Ingresa tu codigo"
+                                       autocomplete="off"
+                                       data-url="{{ path('gift_card_redeem') }}"
+                                       data-token="{{ csrf_token('gift_card_redeem') }}">
+                                <button type="button" id="btn-gift-card-redeem" class="checkout-gift-redeem-btn">Canjear</button>
+                            </div>
+
+                            <div id="checkout-gift-visual" class="checkout-gift-visual checkout-gift-visual--3">
+                                <div class="checkout-gift-visual-option checkout-gift-visual-option--3">
+                                    <h5>Tu regalo se asigna como un paquete sin costo</h5>
+                                    <ul>
+                                        <li>Al canjear el codigo, se te activa un paquete nuevo con importe $0.</li>
+                                        <li>Este paquete funciona igual que cualquier compra normal: clases, vigencia y reglas del plan.</li>
+                                        <li>Cuando termine el canje, podras reservar y usarlo de inmediato desde tu cuenta.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="checkout-gift-redeem-success" class="hidden">
+                            <div class="checkout-gift-done-header">
+                                <span class="checkout-gift-done-check">&#10003;</span>
+                                <h5 class="checkout-gift-done-title">¡Código canjeado!</h5>
+                            </div>
+                            <p class="checkout-gift-done-body">
+                                Tu paquete está activo. Ahora puedes reservar tus clases desde el calendario en cualquier momento.
+                            </p>
+                            <p class="checkout-gift-done-hint">
+                                ¿Quieres regalar clases a alguien especial? Compra una tarjeta de regalo desde
+                                <a href="{{ path('package_index') }}" data-remodal-action="close">la sección de paquetes</a>
+                                y comparte el código con quien quieras.
+                            </p>
+                            <div class="checkout-gift-done-actions">
+                                <a href="{{ path('reservation_calendar') }}" class="btn checkout-gift-action-btn" data-remodal-action="close">Reservar clase</a>
+                                <a href="{{ path('profile') }}" class="btn secondary checkout-gift-action-btn" data-remodal-action="close">Ir a mi cuenta</a>
+                            </div>
+                        </div>
+                    </div>
+
                     <form id="checkout-form" action="{{ path('package_checkout', { 'id': package.id }) }}" method="POST" autocomplete="off">
                         <div class="checkout-form__field">
                             <label class="checkout-form__label">Titular de la tarjeta</label>

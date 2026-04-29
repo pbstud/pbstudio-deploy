@@ -97,6 +97,10 @@ readonly class TransactionService
 
         $transaction->calculateTotal();
 
+        if (Transaction::CHARGE_METHOD_GIFT === $chargeMethod) {
+            $transaction->setTotal('0.00');
+        }
+
         return $transaction;
     }
 

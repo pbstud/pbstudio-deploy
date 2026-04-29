@@ -13,6 +13,7 @@ use App\Util\PackageSessionType;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\HiddenType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -33,6 +34,9 @@ class TransactionType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        $chargeMethodChoices = Transaction::chargeMethodChoices();
+        unset($chargeMethodChoices[Transaction::CHARGE_METHOD_GIFT]);
+
         $builder
             ->add('branchOffice', EntityType::class, [
                 'label' => 'label.branch_office',
@@ -97,7 +101,11 @@ class TransactionType extends AbstractType
             ])
             ->add('chargeMethod', ChoiceType::class, [
                 'label' => 'label.charge_method',
-                'choices' => array_flip(Transaction::chargeMethodChoices()),
+                'choices' => array_flip($chargeMethodChoices),
+            ])
+            ->add('giftPurchase', CheckboxType::class, [
+                'label' => 'Compra como tarjeta de regalo',
+                'required' => false,
             ])
             ->add('discount', null, [
                 'label' => 'label.additional_discount',

@@ -52,6 +52,8 @@ class TransactionRepository extends ServiceEntityRepository
 
         $qb
             ->select('COALESCE(SUM(t.total), 0) AS total')
+            ->andWhere('t.chargeMethod != :giftChargeMethod')
+            ->setParameter('giftChargeMethod', Transaction::CHARGE_METHOD_GIFT)
         ;
 
         $allowUserSearch = $this->needsUserJoinForSearch($filters);
@@ -163,8 +165,10 @@ class TransactionRepository extends ServiceEntityRepository
             ->select('SUM(t.total)')
             ->where('t.status = :status')
             ->andWhere('t.chargeMethod != :notChargeMethod')
+            ->andWhere('t.chargeMethod != :giftChargeMethod')
             ->setParameter('status', Transaction::STATUS_PAID)
             ->setParameter('notChargeMethod', Transaction::CHARGE_METHOD_FREE)
+            ->setParameter('giftChargeMethod', Transaction::CHARGE_METHOD_GIFT)
         ;
 
         if ($from) {
@@ -213,11 +217,13 @@ class TransactionRepository extends ServiceEntityRepository
             ->andWhere('t.createdAt >= :startDate')
             ->andWhere('t.createdAt <= :endDate')
             ->andWhere('t.chargeMethod != :notChargeMethod')
+            ->andWhere('t.chargeMethod != :giftChargeMethod')
             ->setParameters([
                 'status' => Transaction::STATUS_PAID,
                 'startDate' => $startDate->format('Y-m-d 00:00:00'),
                 'endDate' => $endDate->format('Y-m-d 23:59:59'),
-                'notChargeMethod' => 'payment.free',
+                'notChargeMethod' => Transaction::CHARGE_METHOD_FREE,
+                'giftChargeMethod' => Transaction::CHARGE_METHOD_GIFT,
             ])
         ;
 
@@ -438,9 +444,11 @@ class TransactionRepository extends ServiceEntityRepository
         $qb
             ->where('t.status = :status')
             ->andWhere('t.isExpired = false')
+            ->andWhere('t.haveSessionsAvailable = :haveSessionsAvailable')
             ->andWhere('t.expirationAt < :current_date')
             ->orderBy('t.id')
             ->setParameter('status', Transaction::STATUS_PAID)
+            ->setParameter('haveSessionsAvailable', true)
             ->setParameter('current_date', $currentDate->format('Y-m-d'))
         ;
 
@@ -460,11 +468,13 @@ class TransactionRepository extends ServiceEntityRepository
             ->leftJoin('t.package', 'p')
             ->where('t.status = :status')
             ->andWhere('t.isExpired = :isExpired')
+            ->andWhere('t.haveSessionsAvailable = :haveSessionsAvailable')
             ->andWhere('u.enabled = :userEnabled')
             ->andWhere('t.expirationAt IS NOT NULL')
             ->andWhere('t.expirationAt BETWEEN :start AND :end')
             ->setParameter('status', Transaction::STATUS_PAID)
             ->setParameter('isExpired', false)
+            ->setParameter('haveSessionsAvailable', true)
             ->setParameter('userEnabled', true)
             ->setParameter('start', $start)
             ->setParameter('end', $end)
@@ -518,6 +528,7 @@ class TransactionRepository extends ServiceEntityRepository
             ->join('t.package', 'p')
             ->where('t.createdAt >= :from')
             ->andWhere('t.status = :status')
+            ->andWhere('t.chargeMethod != :giftChargeMethod')
             ->andWhere('b.public = :public')
             ->groupBy('b.id')
             ->addGroupBy('b.name')
@@ -526,6 +537,7 @@ class TransactionRepository extends ServiceEntityRepository
             ->orderBy('transactions', 'DESC')
             ->setParameter('status', Transaction::STATUS_PAID)
             ->setParameter('from', $fromStart)
+            ->setParameter('giftChargeMethod', Transaction::CHARGE_METHOD_GIFT)
             ->setParameter('public', true)
         ;
 
@@ -580,6 +592,11 @@ class TransactionRepository extends ServiceEntityRepository
 
     private function applyFilters(QueryBuilder $qb, array $filters, bool $allowUserSearch = true): void
     {
+        $qb
+            ->andWhere('t.chargeMethod != :giftChargeMethod')
+            ->setParameter('giftChargeMethod', Transaction::CHARGE_METHOD_GIFT)
+        ;
+
         $search = trim((string) ($filters['filter_search'] ?? ''));
 
         if ('' !== $search) {
@@ -675,6 +692,34 @@ class TransactionRepository extends ServiceEntityRepository
                     ->andWhere($qb->expr()->isNull('t.packageSpecialPrice'))
                     ->andWhere($qb->expr()->isNull('t.couponDiscount'))
                 ;
+            }
+        }
+
+        if (!empty($filters['filter_gift_purchase'])) {
+            $giftPurchaseType = (int) $filters['filter_gift_purchase'];
+
+            $giftPurchaseExpr = $qb->expr()->andX(
+                $qb->expr()->eq('t.status', ':giftPurchaseStatus'),
+                $qb->expr()->eq('t.haveSessionsAvailable', ':giftPurchaseSessionsAvailable'),
+                $qb->expr()->in('t.chargeMethod', ':giftPurchaseChargeMethods')
+            );
+
+            $qb
+                ->setParameter('giftPurchaseStatus', Transaction::STATUS_PAID)
+                ->setParameter('giftPurchaseSessionsAvailable', false)
+                ->setParameter('giftPurchaseChargeMethods', [
+                    Transaction::CHARGE_METHOD_CARD,
+                    Transaction::CHARGE_METHOD_CASH,
+                    Transaction::CHARGE_METHOD_POS,
+                ])
+            ;
+
+            if (Transaction::WITH_GIFT_PURCHASE === $giftPurchaseType) {
+                $qb->andWhere($giftPurchaseExpr);
+            }
+
+            if (Transaction::WITHOUT_GIFT_PURCHASE === $giftPurchaseType) {
+                $qb->andWhere($qb->expr()->not($giftPurchaseExpr));
             }
         }
     }

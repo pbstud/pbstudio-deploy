@@ -68,9 +68,21 @@
                             <label for="filter_package">Paquete</label>
                             <select id="filter_package" name="filter_package" class="form-control" data-current="{{ filter_package }}">
                                 <option value="">- Todos -</option>
-                                {% for package in packages %}
-                                    <option value="{{ package.id }}">{{ package.totalClasses }} clase(s) {{ package.type|PackageSessionType }}</option>
-                                {% endfor %}
+                                {% if packagesByType[constant('App\\Util\\PackageSessionType::TYPE_INDIVIDUAL')]|length > 0 %}
+                                    <optgroup label="Individual">
+                                        {% for package in packagesByType[constant('App\\Util\\PackageSessionType::TYPE_INDIVIDUAL')] %}
+                                            <option value="{{ package.id }}">{{ package.totalClasses }} clase(s)</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                {% endif %}
+
+                                {% if packagesByType[constant('App\\Util\\PackageSessionType::TYPE_GROUP')]|length > 0 %}
+                                    <optgroup label="Grupal">
+                                        {% for package in packagesByType[constant('App\\Util\\PackageSessionType::TYPE_GROUP')] %}
+                                            <option value="{{ package.id }}">{{ package.totalClasses }} clase(s)</option>
+                                        {% endfor %}
+                                    </optgroup>
+                                {% endif %}
                             </select>
                         </div>
                     </div>
@@ -100,6 +112,22 @@
                     </div>
 
                     <div class="col-md-4 col-sm-4 col-xs-12">
+                        <div class="form-group">
+                            <label for="filter_gift_purchase">Flujo regalo</label>
+                            <select id="filter_gift_purchase" name="filter_gift_purchase" class="form-control" data-current="{{ filter_gift_purchase }}">
+                                <option value="">- Todos -</option>
+                                {% for key in filterGiftPurchase %}
+                                    {% if key == constant('App\\Entity\\Transaction::WITH_GIFT_PURCHASE') %}
+                                        <option value="{{ key }}">Solo compra regalo</option>
+                                    {% elseif key == constant('App\\Entity\\Transaction::WITHOUT_GIFT_PURCHASE') %}
+                                        <option value="{{ key }}">Sin compra regalo</option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4 col-md-offset-8 col-sm-4 col-sm-offset-8 col-xs-12">
                         <label>&nbsp;</label>
                         <div class="clearfix">
                             {% if pagination | length > 0 %}
@@ -132,6 +160,7 @@
                                 <th class="text-right">Monto</th>
                                 <th>Cupón</th>
                                 <th>M. de pago</th>
+                                <th>Flujo regalo</th>
                                 <th class="text-center">Sucursal</th>
                                 <th class="text-center">Estado</th>
                                 <th class="text-center">F. creación</th>
@@ -164,6 +193,18 @@
                                     <td>{{ transaction.coupon.code|default('') }}</td>
                                     <td>
                                         {{ transaction.chargeMethod|ChargeMethodDescription }}
+                                    </td>
+                                    <td>
+                                        {% if transaction.chargeMethod == constant('App\\Entity\\Transaction::CHARGE_METHOD_GIFT') %}
+                                            <span class="label label-info">Canje regalo</span>
+                                        {% elseif transaction.status == constant('App\\Entity\\Transaction::STATUS_PAID')
+                                            and not transaction.haveSessionsAvailable
+                                            and transaction.chargeMethod in [constant('App\\Entity\\Transaction::CHARGE_METHOD_CARD'), constant('App\\Entity\\Transaction::CHARGE_METHOD_CASH'), constant('App\\Entity\\Transaction::CHARGE_METHOD_POS')]
+                                        %}
+                                            <span class="label label-warning">Compra regalo</span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
                                     </td>
                                     <td class="text-center">
                                         {{ transaction.branchOffice }}

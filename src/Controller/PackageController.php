@@ -14,6 +14,7 @@ use App\Repository\PackageRepository;
 use App\Repository\TransactionRepository;
 use App\Service\Conekta\ConektaService;
 use App\Service\CouponService;
+use App\Service\GiftCardService;
 use App\Service\TransactionService;
 use App\Util\PackageSessionType;
 use Doctrine\ORM\EntityManagerInterface;
@@ -21,7 +22,6 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Attribute\MapQueryParameter;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -34,10 +34,11 @@ class PackageController extends AbstractController
     }
 
     #[Route('/paquetes', name: 'package_index', methods: ['GET'])]
-    public function index(BranchOfficeRepository $branchOfficeRepository): Response
+    public function index(Request $request, BranchOfficeRepository $branchOfficeRepository): Response
     {
         return $this->render('package/index.html.twig', [
             'branchOffices' => $branchOfficeRepository->getPublic(),
+            'isGiftMode' => $request->query->getBoolean('gift'),
         ]);
     }
 
@@ -50,6 +51,7 @@ class PackageController extends AbstractController
         EntityManagerInterface $em,
         ConektaService $conekta,
         CouponService $couponService,
+        GiftCardService $giftCardService,
         EventDispatcherInterface $dispatcher,
     ): Response {
         if (!$request->isXmlHttpRequest()) {
@@ -60,6 +62,7 @@ class PackageController extends AbstractController
 
         if (!$restrictNewUser && $request->isMethod('POST') && $request->request->has('conekta_card_token')) {
             $json = [];
+            $isGiftPurchase = $request->request->getBoolean('is_gift_purchase');
 
             // Validar formato del token (solo lo genera Conekta; si llega malformado es manipulación)
             $token = (string) $request->request->get('conekta_card_token', '');
@@ -92,6 +95,18 @@ class PackageController extends AbstractController
             $transaction = $conekta->chargeCard($transaction, $token);
 
             if ($transaction->isPaid()) {
+                if ($isGiftPurchase) {
+                    $transaction
+                        ->setHaveSessionsAvailable(false)
+                        ->setExpirationAt(null)
+                    ;
+
+                    $em->persist($transaction);
+                    $em->flush();
+
+                    $giftCardService->createFromPurchaseTransaction($transaction, 'frontend');
+                }
+
                 $event = new TransactionSuccessEvent($transaction);
                 $dispatcher->dispatch($event);
 
@@ -110,18 +125,22 @@ class PackageController extends AbstractController
         ]);
         $modalTarget = str_replace('/', '__', $modalTarget);
 
+        $isGiftMode = $request->query->getBoolean('gift');
         $template = $this->isGranted('ROLE_USER') ? 'checkout' : 'checkout_login';
 
         return $this->render(sprintf('package/%s.html.twig', $template), [
-            'package' => $package,
-            'conektaPublicKey' => $conekta->getPublicKey(),
-            'restrictNewUser' => $restrictNewUser,
-            'modalTarget' => $modalTarget,
+            'package'           => $package,
+            'conektaPublicKey'  => $conekta->getPublicKey(),
+            'restrictNewUser'   => $restrictNewUser,
+            'modalTarget'       => $modalTarget,
+            'isGiftMode'        => $isGiftMode,
         ]);
     }
 
-    public function groupPackages(): Response
+    public function groupPackages(Request $request): Response
     {
+        $isGiftMode = (bool) ($request->attributes->get('gift') ?? $request->query->getBoolean('gift'));
+
         $filters = [
             'type' => PackageSessionType::TYPE_GROUP,
             'isActive' => true,
@@ -137,13 +156,18 @@ class PackageController extends AbstractController
             'amount' => 'ASC',
         ]);
 
+        $packages = $this->sortPackagesUnlimitedLast($packages);
+
         return $this->render('package/_group_packages.html.twig', [
             'group_packages' => $packages,
+            'isGiftMode' => $isGiftMode,
         ]);
     }
 
-    public function individualPackages(): Response
+    public function individualPackages(Request $request): Response
     {
+        $isGiftMode = (bool) ($request->attributes->get('gift') ?? $request->query->getBoolean('gift'));
+
         $filters = [
             'type' => PackageSessionType::TYPE_INDIVIDUAL,
             'isActive' => true,
@@ -159,9 +183,26 @@ class PackageController extends AbstractController
             'amount' => 'ASC',
         ]);
 
+        $packages = $this->sortPackagesUnlimitedLast($packages);
+
         return $this->render('package/_individual_packages.html.twig', [
             'individual_packages' => $packages,
+            'isGiftMode' => $isGiftMode,
         ]);
+    }
+
+    /**
+     * Sort packages so unlimited ones appear last, preserving relative order within each group.
+     *
+     * @param Package[] $packages
+     * @return Package[]
+     */
+    private function sortPackagesUnlimitedLast(array $packages): array
+    {
+        $regular   = array_values(array_filter($packages, fn ($p) => !$p->isIsUnlimited()));
+        $unlimited = array_values(array_filter($packages, fn ($p) =>  $p->isIsUnlimited()));
+
+        return array_merge($regular, $unlimited);
     }
 
     /**

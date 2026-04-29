@@ -7,11 +7,20 @@
         <div class="row">
             <div class="content">
                 <div class="title clearfix">
-                    <h1>¡Tu cuerpo como nunca lo habías sentido!</h1>
+                    {% if isGiftMode|default(false) %}
+                        <h1>Elige el paquete que quieres regalar</h1>
+                    {% else %}
+                        <h1>¡Tu cuerpo como nunca lo habías sentido!</h1>
+                    {% endif %}
                     <p>
-                        En <strong>P&B Studio</strong> queremos que descubras la mejor versión de ti. Selecciona alguno
-                        de nuestros paquetes: Pilates y Barra en clases grupales o si lo prefieres
-                        clases totalmente personales para ti de Pilates. ¡Tu decides!
+                        {% if isGiftMode|default(false) %}
+                            Estás en modo <strong>compra de regalo</strong>. Selecciona cualquiera de nuestros paquetes activos
+                            y continuaremos al checkout para generar un código que podrás compartir con otra persona.
+                        {% else %}
+                            En <strong>P&B Studio</strong> queremos que descubras la mejor versión de ti. Selecciona alguno
+                            de nuestros paquetes: Pilates y Barra en clases grupales o si lo prefieres
+                            clases totalmente personales para ti de Pilates. ¡Tu decides!
+                        {% endif %}
                     </p>
                 </div>
             </div>
@@ -21,7 +30,7 @@
                 <div class="center">
                     <h4>Clases grupales</h4>
                     <div class="price">
-                        {{ render(controller('App\\Controller\\PackageController::groupPackages')) }}
+                        {{ render(controller('App\\Controller\\PackageController::groupPackages', { 'gift': isGiftMode|default(false) ? 1 : 0 })) }}
                     </div>
                 </div>
             </div>
@@ -30,9 +39,8 @@
             <div class="content">
                 <div class="center">
                     <h4>Clases individuales</h4>
-                    <p>(Solo en sucursal Santa Fé. Reserva por teléfono)</p>
                     <div class="price">
-                        {{ render(controller('App\\Controller\\PackageController::individualPackages')) }}
+                        {{ render(controller('App\\Controller\\PackageController::individualPackages', { 'gift': isGiftMode|default(false) ? 1 : 0 })) }}
                     </div>
 
                     <a href="{{ path('reservation_calendar') }}" class="btn">

@@ -22,6 +22,14 @@ class AppExtension extends AbstractExtension
             new TwigFilter('TransactionStatusLabel', [AppExtensionRuntime::class, 'getTransactionStatusLabel']),
             new TwigFilter('ReservationStatusDescription', [AppExtensionRuntime::class, 'getReservationStatusDescription']),
             new TwigFilter('ReservationStatusLabel', [AppExtensionRuntime::class, 'getReservationStatusLabel']),
+            new TwigFilter('GiftCardStatusDescription', [AppExtensionRuntime::class, 'getGiftCardStatusDescription']),
+            new TwigFilter('GiftCardStatusLabel', [AppExtensionRuntime::class, 'getGiftCardStatusLabel']),
+            new TwigFilter('ResolvedGiftCardStatusDescription', [AppExtensionRuntime::class, 'getResolvedGiftCardStatusDescription']),
+            new TwigFilter('ResolvedGiftCardStatusLabel', [AppExtensionRuntime::class, 'getResolvedGiftCardStatusLabel']),
+            new TwigFilter('GiftCardOriginDescription', [AppExtensionRuntime::class, 'getGiftCardOriginDescription']),
+            new TwigFilter('GiftCardOriginLabel', [AppExtensionRuntime::class, 'getGiftCardOriginLabel']),
+            new TwigFilter('GiftCardHistoryActionDescription', [AppExtensionRuntime::class, 'getGiftCardHistoryActionDescription']),
+            new TwigFilter('GiftCardHistoryActionLabel', [AppExtensionRuntime::class, 'getGiftCardHistoryActionLabel']),
         ];
     }
 

@@ -5,6 +5,12 @@
 {% block account_content %}
     {# user \App\Entity\User #}
 
+    {% for label, messages in app.flashes(['success', 'danger', 'error', 'warning', 'info']) %}
+        {% for message in messages %}
+            <div class="flash-message flash-{{ label }}">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+
     {{ include('package/_aside.html.twig') }}
 
     {{ include('profile/_transactions.html.twig') }}

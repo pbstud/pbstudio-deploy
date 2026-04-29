@@ -126,6 +126,10 @@ main:
     backend_transaction: Transacciones
     backend_transaction_new: Caja
     backend_transaction_show: Detalle Transacciones
+    backend_gift_card: Tarjetas de Regalo
+    backend_gift_card_show: Detalle Tarjeta de Regalo
+    backend_gift_card_resend: Reenviar Tarjeta de Regalo
+    backend_gift_card_cancel: Cancelar Tarjeta de Regalo
     backend_user: Listado
     backend_user_edit: Editar Usuario
     backend_user_show: Perfil del usuario
@@ -146,6 +150,7 @@ payment:
     cash: Pago en caja
     card: Pago con tarjeta
     pos: Pago con terminal
+    gift: Canje regalo
 
 placeholder:
     select: '- Seleccionar -'
