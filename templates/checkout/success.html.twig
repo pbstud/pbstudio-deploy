@@ -122,8 +122,35 @@
                 }
             }
 
+            function legacyCopy(text) {
+                var textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.setAttribute('readonly', '');
+                textArea.style.position = 'fixed';
+                textArea.style.top = '-9999px';
+                textArea.style.left = '-9999px';
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+
+                var copied = false;
+                try {
+                    copied = document.execCommand('copy');
+                } catch (e) {
+                    copied = false;
+                }
+
+                document.body.removeChild(textArea);
+
+                return copied;
+            }
+
             function copyToClipboard(text) {
-                return navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject();
+                if (navigator.clipboard && window.isSecureContext) {
+                    return navigator.clipboard.writeText(text);
+                }
+
+                return legacyCopy(text) ? Promise.resolve() : Promise.reject();
             }
 
             // Copy code button
@@ -141,12 +168,10 @@
                             setTimeout(function () { label.textContent = original; }, 2000);
                         }
                     }).catch(function () {
-                        var el = document.getElementById('gift-code-value');
-                        if (el) {
-                            var range = document.createRange();
-                            range.selectNode(el);
-                            window.getSelection().removeAllRanges();
-                            window.getSelection().addRange(range);
+                        if (label) {
+                            var original = label.textContent;
+                            label.textContent = 'Copia manual';
+                            setTimeout(function () { label.textContent = original; }, 2000);
                         }
                     });
                 });
