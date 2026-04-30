@@ -7,6 +7,7 @@ namespace App\Controller\Backend;
 use App\Entity\Package;
 use App\Entity\Staff;
 use App\Entity\Transaction;
+use App\Entity\GiftCard;
 use App\Entity\User;
 use App\Event\TransactionFailedEvent;
 use App\Event\TransactionSuccessEvent;
@@ -466,6 +467,17 @@ class TransactionController extends AbstractController
                 }
 
                 $em->flush();
+
+                // Actualizar la entidad gift card con cancelledAt cuando se cancela via transaccion
+                // (aplica independientemente del estado previo de la gift card).
+                if (null !== $giftCard && GiftCard::STATUS_CANCELLED !== $giftCard->getStatus()) {
+                    $giftCard
+                        ->setStatus(GiftCard::STATUS_CANCELLED)
+                        ->setCancelledAt(new \DateTimeImmutable())
+                    ;
+                    $em->persist($giftCard);
+                    $em->flush();
+                }
 
                 $response['success'] = [
                     'message' => isset($response['warning'])

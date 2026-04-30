@@ -101,11 +101,18 @@ readonly class GiftCardService
             throw new \LogicException('La gift card ya se encuentra expirada.');
         }
 
+        $expiresAt = $redemptionTransaction->getExpirationAt();
+
         $giftCard
             ->setRecipientUser($recipient)
             ->setRedemptionTransaction($redemptionTransaction)
             ->setStatus(GiftCard::STATUS_REDEEMED)
             ->setRedeemedAt(new \DateTimeImmutable())
+            ->setGiftExpiresAt(
+                $expiresAt instanceof \DateTimeImmutable
+                    ? $expiresAt
+                    : ($expiresAt !== null ? \DateTimeImmutable::createFromInterface($expiresAt) : null)
+            )
         ;
 
         $this->em->persist($giftCard);

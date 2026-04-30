@@ -65,7 +65,6 @@
                         <tr><th>Canje</th><td>{{ giftCard.redeemedAt ? giftCard.redeemedAt|date('d/m/Y H:i:s') : '-' }}</td></tr>
                         <tr><th>Caducidad</th><td>{{ giftCard.giftExpiresAt ? giftCard.giftExpiresAt|date('d/m/Y H:i:s') : '-' }}</td></tr>
                         <tr><th>Cancelacion</th><td>{{ giftCard.cancelledAt ? giftCard.cancelledAt|date('d/m/Y H:i:s') : '-' }}</td></tr>
-                        <tr><th>Motivo cancelacion</th><td>{{ giftCard.cancellationReason ?: '-' }}</td></tr>
                         </tbody>
                     </table>
                 </div>
