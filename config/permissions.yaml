@@ -1,9 +1,4 @@
 sections:
-    Dashboard:
-        label: 'Dashboard'
-        actions:
-            - { label: 'Estadísticas', route: 'dashboard_stats' }
-
     BranchOffice:
         label: 'Sucursales'
         actions:
@@ -92,3 +87,8 @@ sections:
             - { label: 'Crear', route: 'backend_coupon_new' }
             - { label: 'Editar', route: 'backend_coupon_edit' }
             - { label: 'Detalle', route: 'backend_coupon_show' }
+
+    StatsRatings:
+        label: 'Calificaciones'
+        actions:
+            - { label: 'Listado y detalles', route: 'backend_stats_ratings' }

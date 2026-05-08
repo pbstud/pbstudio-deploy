@@ -115,4 +115,29 @@ class ExerciseRoomRepository extends ServiceEntityRepository
 
         return $qb->getQuery()->getResult();
     }
+
+    /**
+     * Salas activas en sucursales publicas, con discipline e join a branchOffice.
+     * Usado para construir la estructura base disciplina-por-sucursal del dashboard.
+     *
+     * @return ExerciseRoom[]
+     */
+    public function getActiveByPublicBranchOffice(): array
+    {
+        return $this->createQueryBuilder('er')
+            ->addSelect('bo', 'd')
+            ->join('er.branchOffice', 'bo')
+            ->join('er.discipline', 'd')
+            ->andWhere('er.isActive = :erActive')
+            ->andWhere('bo.public = :public')
+            ->andWhere('d.isActive = :dActive')
+            ->orderBy('bo.name', 'ASC')
+            ->addOrderBy('d.name', 'ASC')
+            ->setParameter('erActive', true)
+            ->setParameter('public', true)
+            ->setParameter('dActive', true)
+            ->getQuery()
+            ->getResult()
+        ;
+    }
 }

@@ -17,6 +17,7 @@ use App\Repository\ExerciseRoomRepository;
 use App\Repository\ReservationRepository;
 use App\Repository\SessionAuditRepository;
 use App\Repository\SessionRepository;
+use App\Repository\DisciplineRepository;
 use App\Repository\StaffRepository;
 use App\Entity\Notification;
 use App\Service\Mailer\ReservationMailer;
@@ -24,7 +25,6 @@ use App\Service\Notification\NotificationDispatcher;
 use App\Service\ReservationCancellationService;
 use App\Service\WaitingList\WaitingListService;
 use App\Util\SeatLayoutMapper;
-use App\Util\Schedule;
 use App\Util\SessionStatusDescription;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
@@ -70,7 +70,9 @@ class SessionController extends AbstractController
             $filters['date_start'] = (new \DateTime('today'))->format('d/m/Y');
         }
 
-        $filters['date_end'] = $filters['date_start'];
+        if (empty($filters['date_end'])) {
+            $filters['date_end'] = $filters['date_start'];
+        }
 
         $sessions = $sessionRepository->findForBackendList($filters);
 
@@ -103,7 +105,7 @@ class SessionController extends AbstractController
         StaffRepository $staffRepository,
         BranchOfficeRepository $branchOfficeRepository,
         ExerciseRoomRepository $exerciseRoomRepository,
-        Schedule $schedule,
+        DisciplineRepository $disciplineRepository,
         #[MapQueryParameter] array $filters = [],
         #[MapQueryParameter] int $page = 1,
     ): Response {
@@ -222,7 +224,7 @@ class SessionController extends AbstractController
         }
 
         $exerciseRoomsGrouped = [];
-        $exerciseRooms = $exerciseRoomRepository->getAll();
+        $exerciseRooms = $exerciseRoomRepository->getAllActive();
         foreach ($exerciseRooms as $exerciseRoom) {
             $exerciseRoomsGrouped[$exerciseRoom->getBranchOffice()->getName()][] = $exerciseRoom;
         }
@@ -238,7 +240,7 @@ class SessionController extends AbstractController
             'filters' => $filters,
             'filter_status' => $filterStatus,
             'filter_exercise_rooms' => $exerciseRoomsGrouped,
-            'filter_schedules' => $schedule->getSchedules(),
+            'filter_disciplines' => $disciplineRepository->getAllActives(),
             'is_instructor' => $isInstructor,
         ]);
     }

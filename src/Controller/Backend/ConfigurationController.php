@@ -8,6 +8,7 @@ use App\Entity\Configuration;
 use App\Model\ConfigurationFileModel;
 use App\Repository\ConfigurationRepository;
 use App\Repository\PackageRepository;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -24,6 +25,9 @@ class ConfigurationController extends AbstractController
     private UploadHandler $uploadHandler;
 
     private array $cast = [
+        'sessions' => [
+            'fitpass_user_id' => 'int',
+        ],
         'stats' => [
             'start_date' => 'date',
         ],
@@ -84,6 +88,7 @@ class ConfigurationController extends AbstractController
         Request $request,
         UploadHandler $uploadHandler,
         ConfigurationRepository $configurationRepository,
+        UserRepository $userRepository,
         EntityManagerInterface $em,
     ): Response {
         $this->uploadHandler = $uploadHandler;
@@ -105,6 +110,7 @@ class ConfigurationController extends AbstractController
 
             try {
                 $values = $this->castValues($module, $values);
+                $this->validateReferences($module, $values, $userRepository);
             } catch (\InvalidArgumentException $exception) {
                 // Ensure pending managed entities are discarded for this request path.
                 $em->clear();
@@ -194,11 +200,49 @@ class ConfigurationController extends AbstractController
 
             $values[$field] = match ($this->cast[$module][$field]) {
                 'date' => $this->castDateValue($module, $field, (string) $value),
+                'int' => $this->castIntValue($module, $field, $value),
                 default => $value,
             };
         }
 
         return $values;
+    }
+
+    private function castIntValue(string $module, string $field, mixed $value): ?int
+    {
+        $input = trim((string) $value);
+        if ('' === $input) {
+            return null;
+        }
+
+        if (!ctype_digit($input) || (int) $input <= 0) {
+            throw new \InvalidArgumentException(sprintf(
+                'El valor para "%s.%s" es invalido. Debe ser un entero positivo.',
+                $module,
+                $field,
+            ));
+        }
+
+        return (int) $input;
+    }
+
+    private function validateReferences(string $module, array $values, UserRepository $userRepository): void
+    {
+        if ('sessions' !== $module) {
+            return;
+        }
+
+        $fitpassUserId = $values['fitpass_user_id'] ?? null;
+        if (null === $fitpassUserId) {
+            return;
+        }
+
+        if (null === $userRepository->find((int) $fitpassUserId)) {
+            throw new \InvalidArgumentException(sprintf(
+                'No existe un usuario con id %d para sessions.fitpass_user_id.',
+                (int) $fitpassUserId,
+            ));
+        }
     }
 
     private function castDateValue(string $module, string $field, string $value): string

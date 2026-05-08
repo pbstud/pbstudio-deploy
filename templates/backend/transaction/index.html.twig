@@ -105,7 +105,13 @@
                             <select id="filter_discount" name="filter_discount" class="form-control" data-current="{{ filter_discount }}">
                                 <option value="">- Todos -</option>
                                 {% for key in filterDiscount %}
-                                    <option value="{{ key }}">{{ ('filter.transaction_discount.' ~ key)|trans }}</option>
+                                    {% if key == constant('App\\Entity\\Transaction::WITHOUT_DISCOUNT') %}
+                                        <option value="{{ key }}">Sin descuento</option>
+                                    {% elseif key == constant('App\\Entity\\Transaction::PERCENTAGE_DISCOUNT') %}
+                                        <option value="{{ key }}">Descuento porcentual</option>
+                                    {% elseif key == constant('App\\Entity\\Transaction::SPECIAL_PRICE') %}
+                                        <option value="{{ key }}">Precio especial</option>
+                                    {% endif %}
                                 {% endfor %}
                             </select>
                         </div>

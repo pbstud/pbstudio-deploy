@@ -38,6 +38,7 @@
         var $form = $('#frm-session');
         var validateInstructorConflictUrl = '{{ path('backend_session_validate_instructor_conflict') }}';
         var isSubmittingAfterServerValidation = false;
+        var currentSessionId = '{{ session.id }}';
 
         function showConflictModal(message) {
           var $msg = $('#single-session-conflict-msg');
@@ -129,10 +130,16 @@
 
           event.preventDefault();
 
+          var payload = $form.serializeArray();
+          payload.push({
+            name: 'session[id]',
+            value: currentSessionId
+          });
+
           $.ajax({
             url: validateInstructorConflictUrl,
             type: 'POST',
-            data: $form.serialize(),
+            data: $.param(payload),
             headers: {
               'X-Requested-With': 'XMLHttpRequest'
             },

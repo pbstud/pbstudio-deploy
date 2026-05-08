@@ -44,6 +44,17 @@
 
             <div class="col-md-4 col-sm-4 col-xs-12">
                 <div class="form-group">
+                    <label for="filter_has_taken_reservations">Reservas tomadas:</label>
+                    <select id="filter_has_taken_reservations" name="filters[hasTakenReservations]" class="form-control" data-current="{{ filters['hasTakenReservations'] ?? '' }}">
+                        <option value="">- Todos -</option>
+                        <option value="1">Sí</option>
+                        <option value="0">No</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
                     <label for="filter_date_start">Fecha inicio:</label>
                     <div class="date-action-field">
                         <input type="text" id="filter_date_start" name="filters[date_start]" class="form-control datepicker" value="{{ filters['date_start'] ?? '' }}" placeholder="dd/mm/aa" />
@@ -74,6 +85,13 @@
 
             <div class="col-md-4 col-sm-4 col-xs-12">
                 <div class="form-group">
+                    <label for="filter_id"># ID Clase</label>
+                    <input type="number" id="filter_id" name="filters[id]" class="form-control" value="{{ filters['id'] ?? '' }}" min="1" placeholder="Ej: 123">
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
                     <label for="filter_branchOffice">Sucursal</label>
                     <select id="filter_branchOffice" name="filters[branchOffice]" class="form-control" data-current="{{ filters['branchOffice'] ?? '' }}">
                         <option value="">- Todos -</option>
@@ -84,6 +102,7 @@
                 </div>
             </div>
 
+
             <div class="col-md-4 col-sm-4 col-xs-12">
                 <div class="form-group">
                     <label for="filter_exercise_room">Salón</label>
@@ -92,7 +111,9 @@
                         {% for branch_office, rooms in filter_exercise_rooms %}
                             <optgroup label="{{ branch_office }}">
                                 {% for exercise_room in rooms %}
-                                    <option value="{{ exercise_room.id }}">{{ exercise_room.name }}</option>
+                                    {% if exercise_room.type != constant('App\\Util\\PackageSessionType::TYPE_INDIVIDUAL') %}
+                                        <option value="{{ exercise_room.id }}">{{ exercise_room.name }}</option>
+                                    {% endif %}
                                 {% endfor %}
                             </optgroup>
                         {% endfor %}
@@ -102,22 +123,45 @@
 
             <div class="col-md-4 col-sm-4 col-xs-12">
                 <div class="form-group">
-                    <label for="filter_schedule">Horario</label>
-                    <select id="filter_schedule" name="filters[schedule]" class="form-control" data-current="{{ filters['schedule'] ?? '' }}">
+                    <label for="filter_type">Tipo</label>
+                    <select id="filter_type" name="filters[type]" class="form-control" data-current="{{ filters['type'] ?? '' }}">
                         <option value="">- Todos -</option>
-                        {% for schedule in filter_schedules %}
-                            <option value="{{ schedule }}">{{ schedule }}</option>
+                        <option value="{{ constant('App\\Util\\PackageSessionType::TYPE_GROUP') }}">Grupal</option>
+                        <option value="{{ constant('App\\Util\\PackageSessionType::TYPE_INDIVIDUAL') }}">Privada</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="filter_discipline">Disciplina</label>
+                    <select id="filter_discipline" name="filters[discipline]" class="form-control" data-current="{{ filters['discipline'] ?? '' }}">
+                        <option value="">- Todas -</option>
+                        {% for discipline in filter_disciplines %}
+                            <option value="{{ discipline.id }}">{{ discipline.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
             </div>
 
-            <div class="col-md-8 col-sm-8 col-xs-12">
+            <div class="col-md-4 col-sm-4 col-xs-12">
+                <div class="form-group">
+                    <label for="filter_schedule">Horario</label>
+                    <div class="date-action-field">
+                        <input type="time" id="filter_schedule" name="filters[schedule]" class="form-control" value="{{ filters['schedule'] ?? '' }}" step="60">
+                        <button type="button" class="btn btn-default date-action-clear" onclick="document.getElementById('filter_schedule').value = '';" title="Limpiar horario" aria-label="Limpiar horario">
+                            <i class="fa fa-times" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-sm-4 col-xs-12 {{ not is_instructor ? 'col-md-offset-8 col-sm-offset-8' : '' }}">
                 <label>&nbsp;</label>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="clearfix">
                     <button type="submit" class="btn btn-primary">Buscar</button>
                     {% if pagination|length > 0 %}
-                        <a href="{{ url_export }}" class="btn btn-success">
+                        <a href="{{ url_export }}" class="btn btn-success pull-right">
                             <i class="fa fa-file-excel-o" aria-hidden="true"></i> Exportar
                         </a>
                     {% endif %}

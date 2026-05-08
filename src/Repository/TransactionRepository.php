@@ -52,7 +52,9 @@ class TransactionRepository extends ServiceEntityRepository
 
         $qb
             ->select('COALESCE(SUM(t.total), 0) AS total')
+            ->andWhere('t.chargeMethod != :freeChargeMethod')
             ->andWhere('t.chargeMethod != :giftChargeMethod')
+            ->setParameter('freeChargeMethod', Transaction::CHARGE_METHOD_FREE)
             ->setParameter('giftChargeMethod', Transaction::CHARGE_METHOD_GIFT)
         ;
 
@@ -117,7 +119,9 @@ class TransactionRepository extends ServiceEntityRepository
         $qb = $this
             ->createQueryBuilder('t')
             ->where('t.status = :status')
+            ->andWhere('t.chargeMethod != :gift')
             ->setParameter('status', Transaction::STATUS_PAID)
+            ->setParameter('gift', Transaction::CHARGE_METHOD_GIFT)
             ->orderBy('t.createdAt', 'DESC')
             ->setMaxResults($limit)
         ;
@@ -183,8 +187,15 @@ class TransactionRepository extends ServiceEntityRepository
             $qb
                 ->andWhere($qb->expr()->orX(
                     $qb->expr()->gt('t.discount', 0),
-                    $qb->expr()->isNotNull('t.packageSpecialPrice'),
-                    $qb->expr()->isNotNull('t.couponDiscount')
+                    $qb->expr()->andX(
+                        $qb->expr()->isNotNull('t.couponDiscount'),
+                        $qb->expr()->gt('t.couponDiscount', 0)
+                    ),
+                    $qb->expr()->andX(
+                        $qb->expr()->isNotNull('t.packageSpecialPrice'),
+                        $qb->expr()->gt('t.packageSpecialPrice', 0),
+                        $qb->expr()->lt('t.packageSpecialPrice', 't.packageAmount')
+                    )
                 ))
             ;
         }
@@ -192,12 +203,184 @@ class TransactionRepository extends ServiceEntityRepository
         if ($forceDiscount && !$withDiscount) {
             $qb
                 ->andWhere($qb->expr()->eq('t.discount', 0))
-                ->andWhere($qb->expr()->isNull('t.packageSpecialPrice'))
-                ->andWhere($qb->expr()->isNull('t.couponDiscount'))
+                ->andWhere($qb->expr()->orX(
+                    $qb->expr()->isNull('t.couponDiscount'),
+                    $qb->expr()->eq('t.couponDiscount', 0)
+                ))
+                ->andWhere($qb->expr()->orX(
+                    $qb->expr()->isNull('t.packageSpecialPrice'),
+                    $qb->expr()->eq('t.packageSpecialPrice', 0),
+                    $qb->expr()->gte('t.packageSpecialPrice', 't.packageAmount')
+                ))
             ;
         }
 
         return (float) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    public function getTotalsByDiscountAndPublicBranchOffice(\DateTimeInterface $from, \DateTimeInterface $to): array
+    {
+        $qb = $this->createQueryBuilder('t');
+
+        $qb
+            ->select('b.id AS branchOfficeId', 'b.name AS branchOfficeName')
+            ->addSelect('SUM(CASE WHEN (t.discount = 0 AND (t.couponDiscount IS NULL OR t.couponDiscount = 0) AND (t.packageSpecialPrice IS NULL OR t.packageSpecialPrice = 0 OR t.packageSpecialPrice >= t.packageAmount)) THEN t.total ELSE 0 END) AS withoutDiscount')
+            ->addSelect('SUM(CASE WHEN ((t.discount > 0 OR (t.couponDiscount IS NOT NULL AND t.couponDiscount > 0)) AND (t.packageSpecialPrice IS NULL OR t.packageSpecialPrice = 0 OR t.packageSpecialPrice >= t.packageAmount)) THEN t.total ELSE 0 END) AS percentageDiscount')
+            ->addSelect('SUM(CASE WHEN (t.packageSpecialPrice IS NOT NULL AND t.packageSpecialPrice > 0 AND t.packageSpecialPrice < t.packageAmount) THEN t.total ELSE 0 END) AS specialPrice')
+            ->join('t.branchOffice', 'b')
+            ->where('t.status = :status')
+            ->andWhere('t.createdAt >= :from')
+            ->andWhere('t.createdAt <= :to')
+            ->andWhere('t.chargeMethod != :notChargeMethod')
+            ->andWhere('t.chargeMethod != :giftChargeMethod')
+            ->andWhere('b.public = :public')
+            ->andWhere('b.isActive = :isActive')
+            ->groupBy('b.id')
+            ->addGroupBy('b.name')
+            ->orderBy('b.name', 'ASC')
+            ->setParameter('status', Transaction::STATUS_PAID)
+            ->setParameter('from', \DateTimeImmutable::createFromInterface($from)->setTime(0, 0, 0))
+            ->setParameter('to', \DateTimeImmutable::createFromInterface($to)->setTime(23, 59, 59))
+            ->setParameter('notChargeMethod', Transaction::CHARGE_METHOD_FREE)
+            ->setParameter('giftChargeMethod', Transaction::CHARGE_METHOD_GIFT)
+            ->setParameter('public', true)
+            ->setParameter('isActive', true)
+        ;
+
+        return $qb->getQuery()->getArrayResult();
+    }
+
+    /**
+     * Bloque 4 — Totales por metodo de pago y sucursal publica activa desde $from hasta hoy.
+     * Las compras regalo se suman a su metodo real (cash/card/pos).
+     * Se excluyen FREE y GIFT porque payment.gift representa un canje de regalo.
+     * Retorna una fila por sucursal con columnas: cash, card, pos.
+     */
+    public function getTotalsByChargeMethodAndPublicBranchOffice(\DateTimeInterface $from, \DateTimeInterface $to): array
+    {
+        $qb = $this->createQueryBuilder('t');
+
+        $qb
+            ->select('b.id AS branchOfficeId', 'b.name AS branchOfficeName')
+            ->addSelect('SUM(CASE WHEN t.chargeMethod = :cash  THEN t.total ELSE 0 END) AS cash')
+            ->addSelect('SUM(CASE WHEN t.chargeMethod = :card  THEN t.total ELSE 0 END) AS card')
+            ->addSelect('SUM(CASE WHEN t.chargeMethod = :pos   THEN t.total ELSE 0 END) AS pos')
+            ->join('t.branchOffice', 'b')
+            ->where('t.status = :status')
+            ->andWhere('t.createdAt >= :from')
+            ->andWhere('t.createdAt <= :to')
+            ->andWhere('t.chargeMethod != :free')
+            ->andWhere('t.chargeMethod != :gift')
+            ->andWhere('b.public = :public')
+            ->andWhere('b.isActive = :isActive')
+            ->groupBy('b.id')
+            ->addGroupBy('b.name')
+            ->orderBy('b.name', 'ASC')
+            ->setParameter('status', Transaction::STATUS_PAID)
+            ->setParameter('from', \DateTimeImmutable::createFromInterface($from)->setTime(0, 0, 0))
+            ->setParameter('to', \DateTimeImmutable::createFromInterface($to)->setTime(23, 59, 59))
+            ->setParameter('cash', Transaction::CHARGE_METHOD_CASH)
+            ->setParameter('card', Transaction::CHARGE_METHOD_CARD)
+            ->setParameter('pos', Transaction::CHARGE_METHOD_POS)
+            ->setParameter('free', Transaction::CHARGE_METHOD_FREE)
+            ->setParameter('gift', Transaction::CHARGE_METHOD_GIFT)
+            ->setParameter('public', true)
+            ->setParameter('isActive', true)
+        ;
+
+        return $qb->getQuery()->getArrayResult();
+    }
+
+    /**
+     * Bloque 8 — Paquetes mas comprados por sucursal publica activa en un rango de fechas.
+     * Agrupa por sucursal + paquete (id denormalizado). Si el paquete fue eliminado,
+     * packageId sera null pero los campos denormalizados (packageTotalClasses, packageType)
+     * siguen presentes en la transaccion.
+     */
+    public function getPackagePurchasesByPublicBranchOffice(\DateTimeInterface $from, \DateTimeInterface $to): array
+    {
+        $qb = $this->createQueryBuilder('t');
+
+        $qb
+            ->select('b.id AS branchOfficeId', 'b.name AS branchOfficeName')
+            ->addSelect('IDENTITY(t.package) AS packageId')
+            ->addSelect('t.packageTotalClasses AS packageTotalClasses')
+            ->addSelect('t.packageType AS packageType')
+            ->addSelect('MAX(t.packageAmount) AS packageAmount')
+            ->addSelect('MAX(t.packageSpecialPrice) AS packageSpecialPrice')
+            ->addSelect('COUNT(t.id) AS purchases')
+            ->join('t.branchOffice', 'b')
+            ->where('t.status = :status')
+            ->andWhere('t.createdAt >= :from')
+            ->andWhere('t.createdAt <= :to')
+            ->andWhere('t.chargeMethod != :free')
+            ->andWhere('t.chargeMethod != :gift')
+            ->andWhere('b.public = :public')
+            ->andWhere('b.isActive = :isActive')
+            ->groupBy('b.id')
+            ->addGroupBy('b.name')
+            ->addGroupBy('t.package')
+            ->addGroupBy('t.packageTotalClasses')
+            ->addGroupBy('t.packageType')
+            ->orderBy('b.name', 'ASC')
+            ->addOrderBy('purchases', 'DESC')
+            ->addOrderBy('packageAmount', 'DESC')
+            ->setParameter('status', Transaction::STATUS_PAID)
+            ->setParameter('from', \DateTimeImmutable::createFromInterface($from)->setTime(0, 0, 0))
+            ->setParameter('to', \DateTimeImmutable::createFromInterface($to)->setTime(23, 59, 59))
+            ->setParameter('free', Transaction::CHARGE_METHOD_FREE)
+            ->setParameter('gift', Transaction::CHARGE_METHOD_GIFT)
+            ->setParameter('public', true)
+            ->setParameter('isActive', true)
+        ;
+
+        return $qb->getQuery()->getArrayResult();
+    }
+
+    /**
+     * Retorna los clientes con mayor gasto total por sucursal publica en el rango dado.
+     * Excluye transacciones gratuitas y de gift card.
+     */
+    public function getTopClientsBySpendingAndPublicBranchOffice(\DateTimeInterface $from, \DateTimeInterface $to): array
+    {
+        $qb = $this->createQueryBuilder('t');
+
+        $qb
+            ->select('b.id AS branchOfficeId', 'b.name AS branchOfficeName')
+            ->addSelect('IDENTITY(t.user) AS userId')
+            ->addSelect('u.name AS userName')
+            ->addSelect('u.lastname AS userLastname')
+            ->addSelect('u.email AS userEmail')
+            ->addSelect('SUM(t.total) AS totalSpent')
+            ->addSelect('COUNT(t.id) AS purchases')
+            ->join('t.user', 'u')
+            ->join('t.branchOffice', 'b')
+            ->where('t.status = :status')
+            ->andWhere('t.createdAt >= :from')
+            ->andWhere('t.createdAt <= :to')
+            ->andWhere('t.chargeMethod != :free')
+            ->andWhere('t.chargeMethod != :gift')
+            ->andWhere('b.public = :public')
+            ->andWhere('b.isActive = :isActive')
+            ->groupBy('b.id')
+            ->addGroupBy('b.name')
+            ->addGroupBy('t.user')
+            ->addGroupBy('u.name')
+            ->addGroupBy('u.lastname')
+            ->addGroupBy('u.email')
+            ->orderBy('b.name', 'ASC')
+            ->addOrderBy('totalSpent', 'DESC')
+            ->addOrderBy('purchases', 'DESC')
+            ->setParameter('status', Transaction::STATUS_PAID)
+            ->setParameter('from', \DateTimeImmutable::createFromInterface($from)->setTime(0, 0, 0))
+            ->setParameter('to', \DateTimeImmutable::createFromInterface($to)->setTime(23, 59, 59))
+            ->setParameter('free', Transaction::CHARGE_METHOD_FREE)
+            ->setParameter('gift', Transaction::CHARGE_METHOD_GIFT)
+            ->setParameter('public', true)
+            ->setParameter('isActive', true)
+        ;
+
+        return $qb->getQuery()->getArrayResult();
     }
 
     /**
@@ -208,8 +391,11 @@ class TransactionRepository extends ServiceEntityRepository
      *
      * @return mixed
      */
-    public function getTotalAmountForRageDate($startDate, $endDate)
+    public function getTotalAmountForRangeDate(\DateTimeInterface $startDate, \DateTimeInterface $endDate): ?float
     {
+        $from = \DateTimeImmutable::createFromInterface($startDate)->setTime(0, 0, 0);
+        $to   = \DateTimeImmutable::createFromInterface($endDate)->setTime(23, 59, 59);
+
         $qb = $this
             ->createQueryBuilder('t')
             ->select('SUM(t.total)')
@@ -220,14 +406,14 @@ class TransactionRepository extends ServiceEntityRepository
             ->andWhere('t.chargeMethod != :giftChargeMethod')
             ->setParameters([
                 'status' => Transaction::STATUS_PAID,
-                'startDate' => $startDate->format('Y-m-d 00:00:00'),
-                'endDate' => $endDate->format('Y-m-d 23:59:59'),
+                'startDate' => $from,
+                'endDate' => $to,
                 'notChargeMethod' => Transaction::CHARGE_METHOD_FREE,
                 'giftChargeMethod' => Transaction::CHARGE_METHOD_GIFT,
             ])
         ;
 
-        return $qb->getQuery()->getSingleScalarResult();
+        return (float) $qb->getQuery()->getSingleScalarResult();
     }
 
     public function findFirstTransactionIndividualAvailableByUser(User $user)
@@ -666,22 +852,26 @@ class TransactionRepository extends ServiceEntityRepository
                 ->andWhere('t.chargeMethod = :chargeMethod')
                 ->setParameter('chargeMethod', $filters['filter_charge_method'])
             ;
-        } else {
-            $qb
-                ->andWhere('t.chargeMethod != :notChargeMethod')
-                ->setParameter('notChargeMethod', Transaction::CHARGE_METHOD_FREE)
-            ;
         }
 
         if (!empty($filters['filter_discount'])) {
             $discountType = (int) $filters['filter_discount'];
 
-            if (Transaction::WITH_DISCOUNT === $discountType) {
+            if (Transaction::PERCENTAGE_DISCOUNT === $discountType) {
                 $qb
-                    ->andWhere($qb->expr()->orX(
-                        $qb->expr()->gt('t.discount', 0),
-                        $qb->expr()->isNotNull('t.packageSpecialPrice'),
-                        $qb->expr()->isNotNull('t.couponDiscount')
+                    ->andWhere($qb->expr()->andX(
+                        $qb->expr()->orX(
+                            $qb->expr()->gt('t.discount', 0),
+                            $qb->expr()->andX(
+                                $qb->expr()->isNotNull('t.couponDiscount'),
+                                $qb->expr()->gt('t.couponDiscount', 0)
+                            )
+                        ),
+                        $qb->expr()->orX(
+                            $qb->expr()->isNull('t.packageSpecialPrice'),
+                            $qb->expr()->eq('t.packageSpecialPrice', 0),
+                            $qb->expr()->gte('t.packageSpecialPrice', 't.packageAmount')
+                        )
                     ))
                 ;
             }
@@ -689,8 +879,25 @@ class TransactionRepository extends ServiceEntityRepository
             if (Transaction::WITHOUT_DISCOUNT === $discountType) {
                 $qb
                     ->andWhere($qb->expr()->eq('t.discount', 0))
-                    ->andWhere($qb->expr()->isNull('t.packageSpecialPrice'))
-                    ->andWhere($qb->expr()->isNull('t.couponDiscount'))
+                    ->andWhere($qb->expr()->orX(
+                        $qb->expr()->isNull('t.couponDiscount'),
+                        $qb->expr()->eq('t.couponDiscount', 0)
+                    ))
+                    ->andWhere($qb->expr()->orX(
+                        $qb->expr()->isNull('t.packageSpecialPrice'),
+                        $qb->expr()->eq('t.packageSpecialPrice', 0),
+                        $qb->expr()->gte('t.packageSpecialPrice', 't.packageAmount')
+                    ))
+                ;
+            }
+
+            if (Transaction::SPECIAL_PRICE === $discountType) {
+                $qb
+                    ->andWhere($qb->expr()->andX(
+                        $qb->expr()->isNotNull('t.packageSpecialPrice'),
+                        $qb->expr()->gt('t.packageSpecialPrice', 0),
+                        $qb->expr()->lt('t.packageSpecialPrice', 't.packageAmount')
+                    ))
                 ;
             }
         }

@@ -255,6 +255,16 @@
                                         <input type="text" id="sessions_calendar_empty_day_text" name="sessions[calendar_empty_day_text]" value="{{ sessions.calendar_empty_day_text | default('') }}" placeholder="Sin clases este día" class="form-control" maxlength="120">
                                     </div>
                                 </div>
+
+                                <div class="form-group">
+                                    <label class="control-label col-md-6 col-sm-6 col-xs-12" for="sessions_fitpass_user_id">
+                                        ID de usuario Fitpass:<br />
+                                        <small class="help">Usuario base para el bloque Fitpass por sucursal (entero positivo)</small>
+                                    </label>
+                                    <div class="col-md-6 col-sm-6 col-xs-12">
+                                        <input type="text" id="sessions_fitpass_user_id" name="sessions[fitpass_user_id]" value="{{ sessions.fitpass_user_id | default('') }}" placeholder="Ej. 361" class="form-control" inputmode="numeric" pattern="[0-9]*" maxlength="10">
+                                    </div>
+                                </div>
                             </fieldset>
 
                             <div class="ln_solid"></div>

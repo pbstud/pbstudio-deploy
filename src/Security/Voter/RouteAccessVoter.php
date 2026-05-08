@@ -14,6 +14,10 @@ use Symfony\Component\Security\Core\User\UserInterface;
 class RouteAccessVoter extends Voter
 {
     public const ALLOWED_ROUTE_ACCESS = 'ALLOWED_ROUTE_ACCESS';
+    private const ROUTE_PERMISSION_ALIASES = [
+        // Calificaciones se maneja como permiso unico de modulo.
+        'backend_stats_ratings_detail' => 'backend_stats_ratings',
+    ];
 
     public function __construct(
         private RequestStack $requestStack,
@@ -63,7 +67,7 @@ class RouteAccessVoter extends Voter
 
         $permissions = ($user instanceof Staff) ? $user->getPermissions() : [];
 
-        $effectiveSubject = $subject;
+        $effectiveSubject = $this->resolveEffectiveSubject($subject);
         $result = in_array($effectiveSubject, $permissions, true);
 
         $this->logger->debug('[RouteAccessVoter] Verificación de permiso de ruta', [
@@ -74,5 +78,19 @@ class RouteAccessVoter extends Voter
         ]);
 
         return $result;
+    }
+
+    private function resolveEffectiveSubject(string $subject): string
+    {
+        if (isset(self::ROUTE_PERMISSION_ALIASES[$subject])) {
+            return self::ROUTE_PERMISSION_ALIASES[$subject];
+        }
+
+        // Regla operativa: si puede ver listado, puede exportar ese mismo modulo.
+        if (str_ends_with($subject, '_export')) {
+            return substr($subject, 0, -strlen('_export'));
+        }
+
+        return $subject;
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Entity\Notification;
+use App\Repository\UserRepository;
 use App\Repository\TransactionRepository;
 use App\Service\Mailer\TransactionMailer;
 use App\Service\Notification\NotificationDispatcherInterface;
@@ -22,6 +23,7 @@ class TransactionExpiration24hReminderCommand extends AbstractCommand
 {
     public function __construct(
         private readonly TransactionRepository $transactionRepository,
+        private readonly UserRepository $userRepository,
         private readonly TransactionMailer $transactionMailer,
         private readonly NotificationDispatcherInterface $notificationDispatcher,
         private readonly NotificationRepository $notificationRepository,
@@ -67,7 +69,42 @@ class TransactionExpiration24hReminderCommand extends AbstractCommand
             }
         }
 
+        $todayKey = (new \DateTimeImmutable('today'))->format('Ymd');
+        $birthdayUsers = $this->userRepository->findEnabledWithBirthdayToday();
+        $this->msgInfo(sprintf('Usuarios con cumpleaños hoy: %d', count($birthdayUsers)));
+
+        $birthdayNotificationsSent = 0;
+        foreach ($birthdayUsers as $birthdayUser) {
+            $resourceKey = sprintf('birthday_%d_%s', (int) $birthdayUser->getId(), $todayKey);
+
+            if ($this->notificationRepository->existsByResourceKey($birthdayUser, 'birthday_greetings', $resourceKey)) {
+                continue;
+            }
+
+            $name = trim(sprintf('%s %s', (string) $birthdayUser->getName(), (string) $birthdayUser->getLastname()));
+            if ('' === $name) {
+                $name = 'Hola';
+            }
+
+            try {
+                $this->notificationDispatcher->dispatch(
+                    'birthday_greetings',
+                    $birthdayUser,
+                    '¡Feliz cumpleaños!',
+                    sprintf('¡%s, te deseamos un excelente día de cumpleaños! 🎉', $name),
+                    ['resource_key' => $resourceKey],
+                    Notification::PRIORITY_LOW,
+                );
+                ++$birthdayNotificationsSent;
+            } catch (\Throwable) {}
+        }
+
+        $anniversarySnapshotAt = new \DateTimeImmutable('now');
+        $anniversaryUsersUpdated = $this->userRepository->recalculateAnniversarySnapshotForEnabledUsers($anniversarySnapshotAt);
+
         $this->msgInfo(sprintf('Correos enviados: %d', $emailsSent));
+        $this->msgInfo(sprintf('Notificaciones de cumpleaños enviadas: %d', $birthdayNotificationsSent));
+        $this->msgInfo(sprintf('Perfiles actualizados con snapshot de aniversarios: %d', $anniversaryUsersUpdated));
         $this->msg('Proceso finalizado.');
 
         return Command::SUCCESS;

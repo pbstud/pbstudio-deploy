@@ -3,30 +3,102 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-    {% if stats is defined %}
-        <div class="row tile_count">
-            <div class="col-md-4 col-sm-6 col-xs-6 tile_stats_count">
-                <span class="count_top"><i class="fa fa-user"></i> Total transaccionado</span>
-                <div class="count">${{ stats['totalAmountProcessed']|number_format() }}</div>
+    <style>
+        .dashboard-kpi-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .dashboard-kpi-tile {
+            flex: 0 0 auto;
+            min-width: 220px;
+            width: auto;
+            text-align: center;
+        }
+
+        .dashboard-kpi-link {
+            display: block;
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .dashboard-kpi-link:hover,
+        .dashboard-kpi-link:focus {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .dashboard-kpi-link .count {
+            font-size: 28px;
+            line-height: 1.15;
+            white-space: nowrap;
+            word-break: normal;
+            overflow: visible;
+        }
+
+        .tile_count .tile_stats_count {
+            min-height: 120px;
+        }
+    </style>
+
+    {% if billing is defined %}
+        <div class="dashboard-kpi-grid tile_count">
+            <div class="dashboard-kpi-tile tile_stats_count">
+                <a href="{{ path('backend_transaction') }}" class="dashboard-kpi-link">
+                    <span class="count_top"><i class="fa fa-dollar"></i> Total histórico</span>
+                    <div class="count">${{ billing.amountProcessed|number_format(2, '.', ',') }}</div>
+                </a>
             </div>
-            <div class="col-md-4 col-sm-6 col-xs-6 tile_stats_count">
-                <span class="count_top"><i class="fa fa-user"></i> Total transaccionado en el mes</span>
-                <div class="count">${{ stats['totalAmountInCurrentMonth']|number_format() }}</div>
+            <div class="dashboard-kpi-tile tile_stats_count">
+                <a href="{{ path('backend_transaction', {
+                    filter_date_start: billing.currentYear|date('d/m/Y'),
+                    filter_date_end: billing.currentYear|date_modify('+1 year -1 day')|date('d/m/Y'),
+                    filter_status: constant('App\\Entity\\Transaction::STATUS_PAID')
+                }) }}" class="dashboard-kpi-link">
+                    <span class="count_top"><i class="fa fa-calendar"></i> Total anual</span>
+                    <div class="count">${{ billing.amountAnnually|number_format(2, '.', ',') }}</div>
+                </a>
             </div>
-            <div class="col-md-4 col-sm-6 col-xs-6 tile_stats_count">
-                <span class="count_top"><i class="fa fa-user"></i> Total de usuarios</span>
-                <div class="count">{{ stats['totalActiveUsers'] }}</div>
+            <div class="dashboard-kpi-tile tile_stats_count">
+                <a href="{{ path('backend_transaction', {
+                    filter_date_start: billing.currentMonth|date('d/m/Y'),
+                    filter_status: constant('App\\Entity\\Transaction::STATUS_PAID')
+                }) }}" class="dashboard-kpi-link">
+                    <span class="count_top"><i class="fa fa-calendar-o"></i> Total mensual</span>
+                    <div class="count">${{ billing.amountMonthly|number_format(2, '.', ',') }}</div>
+                </a>
+            </div>
+            <div class="dashboard-kpi-tile tile_stats_count">
+                <a href="{{ path('backend_transaction', {
+                    filter_date_start: billing.currentWeek|date('d/m/Y'),
+                    filter_date_end: billing.currentWeek|date_modify('+6 days')|date('d/m/Y'),
+                    filter_status: constant('App\\Entity\\Transaction::STATUS_PAID')
+                }) }}" class="dashboard-kpi-link">
+                    <span class="count_top"><i class="fa fa-calendar-check-o"></i> Total semanal</span>
+                    <div class="count">${{ billing.amountWeekly|number_format(2, '.', ',') }}</div>
+                </a>
+            </div>
+            <div class="dashboard-kpi-tile tile_stats_count">
+                <a href="{{ path('backend_transaction', {
+                    filter_date_start: 'now'|date('d/m/Y'),
+                    filter_date_end: 'now'|date('d/m/Y'),
+                    filter_status: constant('App\\Entity\\Transaction::STATUS_PAID')
+                }) }}" class="dashboard-kpi-link">
+                    <span class="count_top"><i class="fa fa-clock-o"></i> Total del día</span>
+                    <div class="count">${{ billing.amountDaily|number_format(2, '.', ',') }}</div>
+                </a>
             </div>
         </div>
     {% endif %}
 
-    <div class="row">
-        {% if lastTransactions is defined %}
+    {% if lastTransactions is defined %}
+        <div class="row">
             <div class="col-xs-12">
                 <div class="x_panel">
-                    <div class="x_title">
-                        <h2>Últimas transacciones</h2>
-
+                    <div class="x_title x_title--collapsible" style="text-align:center; cursor:pointer;" data-panel-id="last-transactions">
+                        <h2 style="width:100%; text-align:center;">Últimas transacciones <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
                         <div class="clearfix"></div>
                     </div>
                     <div class="x_content">
@@ -76,14 +148,463 @@
                     {% endif %}
                 </div>
             </div>
-        {% endif %}
+        </div>
 
-        {% if lastUsers is defined %}
+        <div class="row">
             <div class="col-xs-12">
                 <div class="x_panel">
-                    <div class="x_title">
-                        <h2>Últimos usuarios registrados</h2>
+                    <div class="x_title x_title--collapsible" style="text-align:center; cursor:pointer;" data-panel-id="discounts">
+                        <h2 style="width:100%; text-align:center;"><i class="fa fa-tags" aria-hidden="true"></i> Transacciones <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        {% if discounts is defined and discounts.data is not empty %}
+                            {% for branchOfficeId, branch in discounts.data %}
+                                {% if branch.annually.without_discount > 0 or branch.annually.percentage_discount > 0 or branch.annually.special_price > 0 or branch.monthly.without_discount > 0 or branch.monthly.percentage_discount > 0 or branch.monthly.special_price > 0 %}
+                                <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #f0f0f0;">
+                                    <h4 style="margin:0 0 6px 0; text-align:center; font-weight:700;">{{ branch.name }}</h4>
+                                    <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start;">
+                                        {% for periodKey, periodLabel in {'annually': 'Año', 'monthly': 'Mes'} %}
+                                            {% set dateStartParam = periodKey == 'annually' ? discounts.currentYear|date('d/m/Y') : discounts.currentMonth|date('d/m/Y') %}
+                                            {% set dateEndParam = 'now'|date('d/m/Y') %}
+                                            {% set periodData = attribute(branch, periodKey) %}
+                                            <div style="flex:1 1 220px; min-width:180px; padding:4px 6px;">
+                                                <h4 style="margin:0 0 4px 0; text-align:center; font-weight:700; font-size:13px; color:#555; text-transform:uppercase; letter-spacing:.5px;">{{ periodLabel }}</h4>
+                                                <div style="display:flex; flex-wrap:wrap; gap:2px; justify-content:center;">
+                                                    <a href="{{ path('backend_transaction', {
+                                                        filter_date_start: dateStartParam,
+                                                        filter_date_end: dateEndParam,
+                                                        filter_status: constant('App\\Entity\\Transaction::STATUS_PAID'),
+                                                        filter_branchOffice: branchOfficeId,
+                                                        filter_discount: constant('App\\Entity\\Transaction::WITHOUT_DISCOUNT')
+                                                    }) }}" style="flex:1 1 90px; min-width:85px; text-align:center; text-decoration:none; color:inherit; padding:2px 4px; display:block;">
+                                                        <div style="font-size:10px; color:#888; text-transform:uppercase; white-space:nowrap;">Sin descuento</div>
+                                                        <div style="font-size:16px; font-weight:700; line-height:1.2; {% if periodData.without_discount == 0 %}color:#ccc;{% endif %}">${{ periodData.without_discount|number_format(2, '.', ',') }}</div>
+                                                    </a>
+                                                    <a href="{{ path('backend_transaction', {
+                                                        filter_date_start: dateStartParam,
+                                                        filter_date_end: dateEndParam,
+                                                        filter_status: constant('App\\Entity\\Transaction::STATUS_PAID'),
+                                                        filter_branchOffice: branchOfficeId,
+                                                        filter_discount: constant('App\\Entity\\Transaction::PERCENTAGE_DISCOUNT')
+                                                    }) }}" style="flex:1 1 90px; min-width:85px; text-align:center; text-decoration:none; color:inherit; padding:2px 4px; display:block;">
+                                                        <div style="font-size:10px; color:#888; text-transform:uppercase; white-space:nowrap;">Desc. %</div>
+                                                        <div style="font-size:16px; font-weight:700; line-height:1.2; {% if periodData.percentage_discount == 0 %}color:#ccc;{% endif %}">${{ periodData.percentage_discount|number_format(2, '.', ',') }}</div>
+                                                    </a>
+                                                    <a href="{{ path('backend_transaction', {
+                                                        filter_date_start: dateStartParam,
+                                                        filter_date_end: dateEndParam,
+                                                        filter_status: constant('App\\Entity\\Transaction::STATUS_PAID'),
+                                                        filter_branchOffice: branchOfficeId,
+                                                        filter_discount: constant('App\\Entity\\Transaction::SPECIAL_PRICE')
+                                                    }) }}" style="flex:1 1 90px; min-width:85px; text-align:center; text-decoration:none; color:inherit; padding:2px 4px; display:block;">
+                                                        <div style="font-size:10px; color:#888; text-transform:uppercase; white-space:nowrap;">Precio especial</div>
+                                                        <div style="font-size:16px; font-weight:700; line-height:1.2; {% if periodData.special_price == 0 %}color:#ccc;{% endif %}">${{ periodData.special_price|number_format(2, '.', ',') }}</div>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            {{ include('backend/default/partials/not_records.html.twig') }}
+                        {% endif %}
+                    </div>
+                    <div class="clearfix"></div>
+                    <div class="x_footer text-center">
+                        <a href="{{ path('backend_transaction') }}" class="btn btn-default btn-sm">Ver todas</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
 
+    {% if payments is defined and payments.data is not empty %}
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="x_panel">
+                    <div class="x_title x_title--collapsible" style="text-align:center; cursor:pointer;" data-panel-id="payments">
+                        <h2 style="width:100%; text-align:center;"><i class="fa fa-credit-card" aria-hidden="true"></i> M&eacute;todos de pago <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        {% for branchOfficeId, branch in payments.data %}
+                            {% if branch.annually.cash > 0 or branch.annually.card > 0 or branch.annually.pos > 0 or branch.monthly.cash > 0 or branch.monthly.card > 0 or branch.monthly.pos > 0 %}
+                            <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #f0f0f0;">
+                                <h4 style="margin:0 0 6px 0; text-align:center; font-weight:700;">{{ branch.name }}</h4>
+                                <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start;">
+                                    {% for periodKey, periodLabel in {'annually': 'Año', 'monthly': 'Mes'} %}
+                                        {% set dateStartParam = periodKey == 'annually' ? payments.currentYear|date('d/m/Y') : payments.currentMonth|date('d/m/Y') %}
+                                        {% set dateEndParam = 'now'|date('d/m/Y') %}
+                                        {% set periodData = attribute(branch, periodKey) %}
+                                        <div class="dash-period dash-period--{{ periodKey }}" style="flex:1 1 220px; min-width:180px; padding:4px 6px;">
+                                            <h4 style="margin:0 0 4px 0; text-align:center; font-weight:700; font-size:13px; color:#555; text-transform:uppercase; letter-spacing:.5px;">{{ periodLabel }}</h4>
+                                            <div style="display:flex; flex-wrap:wrap; gap:2px; justify-content:center;">
+                                                {% set methods = {
+                                                    'cash': {'label': 'Efectivo',  'const': constant('App\\Entity\\Transaction::CHARGE_METHOD_CASH')},
+                                                    'card': {'label': 'Tarjeta',   'const': constant('App\\Entity\\Transaction::CHARGE_METHOD_CARD')},
+                                                    'pos':  {'label': 'Terminal',  'const': constant('App\\Entity\\Transaction::CHARGE_METHOD_POS')}
+                                                } %}
+                                                {% for key, method in methods %}
+                                                    {% set amount = attribute(periodData, key) %}
+                                                    <a href="{{ path('backend_transaction', {
+                                                        filter_date_start: dateStartParam,
+                                                        filter_date_end: dateEndParam,
+                                                        filter_status: constant('App\\Entity\\Transaction::STATUS_PAID'),
+                                                        filter_branchOffice: branchOfficeId,
+                                                        filter_charge_method: method.const
+                                                    }) }}" style="flex:1 1 80px; min-width:72px; text-align:center; text-decoration:none; color:inherit; padding:2px 4px; display:block;">
+                                                        <div style="font-size:10px; color:#888; text-transform:uppercase; white-space:nowrap;">{{ method.label }}</div>
+                                                        <div style="font-size:16px; font-weight:700; line-height:1.2; {% if amount == 0 %}color:#ccc;{% endif %}">${{ amount|number_format(2, '.', ',') }}</div>
+                                                    </a>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <div class="clearfix"></div>
+                    <div class="x_footer text-center">
+                        <a href="{{ path('backend_transaction') }}" class="btn btn-default btn-sm">Ver todas</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if classes is defined %}
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="x_panel">
+                    <div class="x_title x_title--collapsible" style="text-align:center; cursor:pointer;" data-panel-id="classes">
+                        <h2 style="width:100%; text-align:center;"><i class="fa fa-heartbeat" aria-hidden="true"></i> Clases <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        {% for branchOfficeId, studio in classes.data %}
+                            <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #f0f0f0;">
+                                <h4 style="margin:0 0 6px 0; text-align:center; font-weight:700;">{{ studio.name }}</h4>
+                                <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start;">
+                                    {% for periodKey, periodLabel in {'monthly': 'Mes', 'weekly': 'Semana', 'daily': 'Día'} %}
+                                        {% set dateParam    = periodKey == 'monthly' ? classes.currentMonth|date('d/m/Y')    : (periodKey == 'weekly' ? classes.currentWeek|date('d/m/Y')    : classes.currentDay|date('d/m/Y')) %}
+                                        {% set dateEndParam = periodKey == 'monthly' ? classes.currentMonthEnd|date('d/m/Y') : (periodKey == 'weekly' ? classes.currentWeekEnd|date('d/m/Y') : classes.currentDay|date('d/m/Y')) %}
+                                        <div class="dash-period dash-period--{{ periodKey }}" style="flex:1 1 160px; min-width:130px; padding:4px 6px;">
+                                            <h4 style="margin:0 0 4px 0; text-align:center; font-weight:700; font-size:13px; color:#555; text-transform:uppercase; letter-spacing:.5px;">{{ periodLabel }}</h4>
+                                            <div style="display:flex; flex-wrap:wrap; gap:2px; justify-content:center;">
+                                                {% for disciplineId, discipline in studio.disciplines %}
+                                                    {% set count = attribute(discipline, periodKey) %}
+                                                    <a href="{{ path('backend_session', {
+                                                        'filters[status]': constant('App\\Entity\\Session::STATUS_CLOSED'),
+                                                        'filters[hasTakenReservations]': 1,
+                                                        'filters[branchOffice]': branchOfficeId,
+                                                        'filters[discipline]': disciplineId,
+                                                        'filters[type]': constant('App\\Util\\PackageSessionType::TYPE_GROUP'),
+                                                        'filters[date_start]': dateParam,
+                                                        'filters[date_end]': dateEndParam
+                                                    }) }}" style="flex:1 1 70px; min-width:62px; text-align:center; text-decoration:none; color:inherit; padding:2px 4px; display:block;">
+                                                        <div style="font-size:12px; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="{{ discipline.name }}">{{ discipline.name }}</div>
+                                                        <div style="font-size:20px; font-weight:700; line-height:1.2; {% if count == 0 %}color:#ccc;{% endif %}">{{ count }}</div>
+                                                    </a>
+                                                {% endfor %}
+                                                {% set privateCount = attribute(studio.private, periodKey) %}
+                                                <a href="{{ path('backend_session', {
+                                                    'filters[status]': constant('App\\Entity\\Session::STATUS_CLOSED'),
+                                                    'filters[hasTakenReservations]': 1,
+                                                    'filters[branchOffice]': branchOfficeId,
+                                                    'filters[type]': constant('App\\Util\\PackageSessionType::TYPE_INDIVIDUAL'),
+                                                    'filters[date_start]': dateParam,
+                                                    'filters[date_end]': dateEndParam
+                                                }) }}" style="flex:1 1 70px; min-width:62px; text-align:center; text-decoration:none; color:inherit; padding:2px 4px; display:block;">
+                                                    <div style="font-size:12px; color:#888; white-space:nowrap;">Privada</div>
+                                                    <div style="font-size:20px; font-weight:700; line-height:1.2; {% if privateCount == 0 %}color:#ccc;{% endif %}">{{ privateCount }}</div>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="clearfix"></div>
+                    <div class="x_footer text-center">
+                        <a href="{{ path('backend_session') }}" class="btn btn-default btn-sm">Ver todas</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if instructors is defined %}
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="x_panel">
+                    <div class="x_title x_title--collapsible" style="text-align:center; cursor:pointer;" data-panel-id="instructors">
+                        <h2 style="width:100%; text-align:center;"><i class="fa fa-futbol-o" aria-hidden="true"></i> Asistencias <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        {% if not instructors.hasStartDate %}
+                            <div class="alert alert-warning" style="margin-bottom:0;">
+                                No hay fecha de inicio de catorcena configurada en Ajustes &rarr; Stats.
+                            </div>
+                        {% elseif instructors.data is empty %}
+                            {{ include('backend/default/partials/not_records.html.twig') }}
+                        {% else %}
+                            {% for branchOfficeId, studio in instructors.data %}
+                                {% if studio.instructors is not empty %}
+                                <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #f0f0f0;">
+                                    <h4 style="margin:0 0 6px 0; text-align:center; font-weight:700;">{{ studio.name }}</h4>
+                                    <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start;">
+                                        {% for periodKey, periodLabel in {'monthly': 'Mes', 'catorcena': 'Catorcena'} %}
+                                            {% set dateStartParam = periodKey == 'monthly' ? instructors.startMonth|date('d/m/Y') : instructors.startCatorcena|date('d/m/Y') %}
+                                            {% set dateEndParam = periodKey == 'monthly' ? instructors.endMonth|date('d/m/Y') : instructors.endCatorcena|date('d/m/Y') %}
+                                            <div class="dash-period dash-period--{{ periodKey }}" style="flex:1 1 220px; min-width:180px; padding:4px 6px;">
+                                                <h4 style="margin:0 0 4px 0; text-align:center; font-weight:700; font-size:13px; color:#555; text-transform:uppercase; letter-spacing:.5px;">
+                                                    {% if periodKey == 'catorcena' %}
+                                                        {{ periodLabel }} (inicio: {{ instructors.startCatorcena|date('d/m/Y') }})
+                                                    {% else %}
+                                                        {{ periodLabel }}
+                                                    {% endif %}
+                                                </h4>
+                                                <div style="display:flex; flex-wrap:wrap; gap:2px; justify-content:center;">
+                                                    {% for instructorId, instructor in studio.instructors %}
+                                                        {% set count = attribute(instructor, periodKey) %}
+                                                        <a href="{{ path('backend_session', {
+                                                            'filters[status]': constant('App\\Entity\\Session::STATUS_CLOSED'),
+                                                            'filters[hasTakenReservations]': 1,
+                                                            'filters[branchOffice]': branchOfficeId,
+                                                            'filters[instructor]': instructorId,
+                                                            'filters[date_start]': dateStartParam,
+                                                            'filters[date_end]': dateEndParam
+                                                        }) }}" style="flex:1 1 130px; min-width:120px; text-align:center; text-decoration:none; color:inherit; padding:2px 4px; display:block;">
+                                                            <div style="font-size:12px; color:#888; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="{{ instructor.firstname }} {{ instructor.paternalSurname }} {{ instructor.maternalSurname|default('') }}">
+                                                                {{ instructor.firstname }} {{ instructor.paternalSurname }} {{ instructor.maternalSurname|default('') }}
+                                                            </div>
+                                                            <div style="font-size:20px; font-weight:700; line-height:1.2; {% if count == 0 %}color:#ccc;{% endif %}">{{ count }}</div>
+                                                        </a>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <div class="clearfix"></div>
+                    <div class="x_footer text-center">
+                        <a href="{{ path('backend_session') }}" class="btn btn-default btn-sm">Ver todas</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if fitpass is defined %}
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="x_panel">
+                    <div class="x_title x_title--collapsible" style="text-align:center; cursor:pointer;" data-panel-id="fitpass">
+                        <h2 style="width:100%; text-align:center;"><i class="fa fa-ticket" aria-hidden="true"></i> Fitpass <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        {% if not fitpass.hasFitpassUser %}
+                            <div class="alert alert-warning" style="margin-bottom:0;">
+                                Configura el ID de usuario Fitpass en Configuración &rarr; Clases para calcular este bloque.
+                            </div>
+                        {% else %}
+                            {% for branchOfficeId, studio in fitpass.data %}
+                                {% if studio.year.reserved > 0 or studio.monthly.reserved > 0 or studio.weekly.reserved > 0 or studio.daily.reserved > 0 %}
+                                <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #f0f0f0;">
+                                    <h4 style="margin:0 0 6px 0; text-align:center; font-weight:700;">{{ studio.name }}</h4>
+                                    <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start;">
+                                        {% for periodKey, periodLabel in {'year': 'Año', 'monthly': 'Mes', 'weekly': 'Semana', 'daily': 'Día'} %}
+                                            {% set dateStartParam = periodKey == 'year' ? fitpass.currentYear|date('d/m/Y') : (periodKey == 'monthly' ? fitpass.currentMonth|date('d/m/Y') : (periodKey == 'weekly' ? fitpass.currentWeek|date('d/m/Y') : fitpass.currentDay|date('d/m/Y'))) %}
+                                            {% set dateEndParam = periodKey == 'year' ? fitpass.currentYearEnd|date('d/m/Y') : (periodKey == 'monthly' ? fitpass.currentMonthEnd|date('d/m/Y') : (periodKey == 'weekly' ? fitpass.currentWeekEnd|date('d/m/Y') : fitpass.currentDay|date('d/m/Y'))) %}
+                                            <div class="dash-period dash-period--{{ periodKey }}" style="flex:1 1 160px; min-width:130px; padding:4px 6px;">
+                                                <h4 style="margin:0 0 4px 0; text-align:center; font-weight:700; font-size:13px; color:#555; text-transform:uppercase; letter-spacing:.5px;">{{ periodLabel }}</h4>
+                                                {% set periodData = attribute(studio, periodKey) %}
+                                                <div style="display:flex; flex-wrap:wrap; gap:2px; justify-content:center;">
+                                                    <a href="{{ path('backend_user_show', {
+                                                        'id': fitpass.fitpassUserId,
+                                                        'tab': 'reservations',
+                                                        'filter_status': 1,
+                                                        'filter_branch_office': branchOfficeId,
+                                                        'filter_session_date_start': dateStartParam,
+                                                        'filter_session_date_end': dateEndParam
+                                                    }) }}" style="flex:1 1 50px; min-width:45px; text-align:center; text-decoration:none; color:inherit; padding:2px 4px; display:block;">
+                                                        <div style="font-size:10px; color:#888; text-transform:uppercase; white-space:nowrap;">Reservadas</div>
+                                                        <div style="font-size:16px; font-weight:700; line-height:1.2; {% if periodData.reserved == 0 %}color:#ccc;{% endif %}">{{ periodData.reserved }}</div>
+                                                    </a>
+                                                    <a href="{{ path('backend_user_show', {
+                                                        'id': fitpass.fitpassUserId,
+                                                        'tab': 'reservations',
+                                                        'filter_status': 1,
+                                                        'filter_attended': 1,
+                                                        'filter_branch_office': branchOfficeId,
+                                                        'filter_session_date_start': dateStartParam,
+                                                        'filter_session_date_end': dateEndParam
+                                                    }) }}" style="flex:1 1 50px; min-width:45px; text-align:center; text-decoration:none; color:inherit; padding:2px 4px; display:block;">
+                                                        <div style="font-size:10px; color:#888; text-transform:uppercase; white-space:nowrap;">Asistidas</div>
+                                                        <div style="font-size:16px; font-weight:700; line-height:1.2; {% if periodData.attended == 0 %}color:#ccc;{% endif %}">{{ periodData.attended }}</div>
+                                                    </a>
+                                                    <a href="{{ path('backend_user_show', {
+                                                        'id': fitpass.fitpassUserId,
+                                                        'tab': 'reservations',
+                                                        'filter_status': 1,
+                                                        'filter_attended': 0,
+                                                        'filter_branch_office': branchOfficeId,
+                                                        'filter_session_date_start': dateStartParam,
+                                                        'filter_session_date_end': dateEndParam
+                                                    }) }}" style="flex:1 1 50px; min-width:45px; text-align:center; text-decoration:none; color:inherit; padding:2px 4px; display:block;">
+                                                        <div style="font-size:10px; color:#888; text-transform:uppercase; white-space:nowrap;">No asistidas</div>
+                                                        <div style="font-size:16px; font-weight:700; line-height:1.2; {% if periodData.notAttended == 0 %}color:#ccc;{% endif %}">{{ periodData.notAttended }}</div>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if rankingPermissions is defined and rankingPermissions.showRanking and ratingFilters is defined %}
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="x_panel">
+                    <div class="x_title x_title--collapsible" style="text-align:center; cursor:pointer;" data-panel-id="ranking">
+                        <h2 style="width:100%; text-align:center;"><i class="fa fa-bar-chart" aria-hidden="true"></i> Ranking <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        <form method="get" action="{{ path('backend_dashboard') }}" style="margin-bottom:15px;">
+                            <div class="row">
+                                <div class="col-md-4 col-sm-4 col-xs-12">
+                                    <div class="form-group">
+                                        <label for="rating_date_start">Fecha inicio:</label>
+                                        <div class="date-action-field">
+                                            <input type="text"
+                                                   id="rating_date_start"
+                                                   name="rating_date_start"
+                                                   class="form-control datepicker"
+                                                   value="{{ ratingFilters.rating_date_start }}"
+                                                   autocomplete="off"
+                                                   style="padding-right:32px;" />
+                                            <span class="date-action-icon" aria-hidden="true" style="right:0; border-radius:0 4px 4px 0; border-right:1px solid #ccc;">
+                                                <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-sm-4 col-xs-12">
+                                    <div class="form-group">
+                                        <label for="rating_date_end">Fecha de t&eacute;rmino:</label>
+                                        <div class="date-action-field">
+                                            <input type="text"
+                                                   id="rating_date_end"
+                                                   name="rating_date_end"
+                                                   class="form-control datepicker"
+                                                   value="{{ ratingFilters.rating_date_end }}"
+                                                   autocomplete="off"
+                                                   style="padding-right:32px;" />
+                                            <span class="date-action-icon" aria-hidden="true" style="right:0; border-radius:0 4px 4px 0; border-right:1px solid #ccc;">
+                                                <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-sm-4 col-xs-12">
+                                    <label>&nbsp;</label>
+                                    <div class="text-right">
+                                        <button type="submit" class="btn btn-primary">Recalcular</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+
+                        {% if rankingPermissions.weekdays %}
+                            <h4 style="margin:0 0 10px 0; text-align:center; font-weight:700;">D&iacute;as m&aacute;s llenos</h4>
+                            {{ include('backend/dashboard/_ranking_content.html.twig') }}
+                        {% endif %}
+
+                        {% if rankingPermissions.schedules %}
+                            {% if rankingPermissions.weekdays %}
+                                <hr style="margin:14px 0;" />
+                            {% endif %}
+                            <h4 style="margin:0 0 10px 0; text-align:center; font-weight:700;">Horarios m&aacute;s llenos</h4>
+                            {{ include('backend/dashboard/_ranking_schedules_content.html.twig') }}
+                        {% endif %}
+
+                        {% if rankingPermissions.packages %}
+                            {% if rankingPermissions.weekdays or rankingPermissions.schedules %}
+                                <hr style="margin:14px 0;" />
+                            {% endif %}
+                            <h4 style="margin:0 0 10px 0; text-align:center; font-weight:700;">Paquetes m&aacute;s comprados</h4>
+                            {{ include('backend/dashboard/_ranking_packages_content.html.twig') }}
+                        {% endif %}
+
+                        {% if rankingPermissions.clients %}
+                            {% if rankingPermissions.weekdays or rankingPermissions.schedules or rankingPermissions.packages %}
+                                <hr style="margin:14px 0;" />
+                            {% endif %}
+                            <h4 style="margin:0 0 10px 0; text-align:center; font-weight:700;">Clientes Favoritos</h4>
+                            {{ include('backend/dashboard/_ranking_clients_content.html.twig') }}
+                        {% endif %}
+
+                        {% if not rankingPermissions.weekdays and not rankingPermissions.schedules and not rankingPermissions.packages and not rankingPermissions.clients %}
+                            <div class="alert alert-info" style="margin-bottom:0;">
+                                No tienes permisos para ver los bloques de ranking.
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if users is defined %}
+        <div class="dashboard-kpi-grid tile_count">
+            <div class="dashboard-kpi-tile tile_stats_count">
+                <a href="{{ path('backend_user', {'filters[enabled]': 1}) }}" class="dashboard-kpi-link">
+                    <span class="count_top"><i class="fa fa-users"></i> Usuarios totales</span>
+                    <div class="count">{{ users.total }}</div>
+                </a>
+            </div>
+            <div class="dashboard-kpi-tile tile_stats_count">
+                <a href="{{ path('backend_user', {'filters[date_start]': users.currentMonth|date('d/m/Y'), 'filters[enabled]': 1}) }}" class="dashboard-kpi-link">
+                    <span class="count_top"><i class="fa fa-user-plus"></i> Nuevos este mes</span>
+                    <div class="count">{{ users.monthly }}</div>
+                </a>
+            </div>
+            <div class="dashboard-kpi-tile tile_stats_count">
+                <a href="{{ path('backend_user', {'filters[enabled]': 1, 'filters[package_enabled]': 1}) }}" class="dashboard-kpi-link">
+                    <span class="count_top"><i class="fa fa-check-circle"></i> Usuarios activos</span>
+                    <div class="count">{{ users.active }}</div>
+                </a>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if lastUsers is defined %}
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="x_panel">
+                    <div class="x_title x_title--collapsible" style="text-align:center; cursor:pointer;" data-panel-id="last-users">
+                        <h2 style="width:100%; text-align:center;">Registros recientes <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
                         <div class="clearfix"></div>
                     </div>
                     <div class="x_content">
@@ -126,10 +647,188 @@
                     {% endif %}
                 </div>
             </div>
-        {% endif %}
-    </div>
+        </div>
+    {% endif %}
+
+    {% if birthdays is defined %}
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="x_panel">
+                    <div class="x_title x_title--collapsible" style="text-align:center; cursor:pointer;" data-panel-id="birthdays">
+                        <h2 style="width:100%; text-align:center;">
+                            <i class="fa fa-birthday-cake" aria-hidden="true"></i> Cumpleaños
+                            <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i>
+                        </h2>
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                            <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start;">
+                                {% for windowKey, windowLabel in {'this_week': 'Esta semana', 'this_month': 'Este mes', 'next_month': 'Próximo mes'} %}
+                                    <div class="dash-period dash-period--{{ windowKey }}" style="flex:1 1 220px; min-width:200px; padding:8px 10px;">
+                                        <h4 style="margin:0 0 8px 0; text-align:center; font-weight:700; font-size:13px; color:#555; text-transform:uppercase; letter-spacing:.5px;">{{ windowLabel }}</h4>
+                                        {% set users = attribute(birthdays, windowKey) %}
+                                        {% if users is not empty %}
+                                            <ul class="list-unstyled" style="margin:0;">
+                                                {% for user in users %}
+                                                    <li style="display:flex; align-items:center; justify-content:space-between; padding:3px 0; border-bottom:1px solid #f0f0f0;">
+                                                        <a href="{{ path('backend_user_show', {'id': user.id}) }}" style="text-decoration:none; color:inherit; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ user.name }} {{ user.lastname }}">
+                                                            {{ user.name }} {{ user.lastname }}
+                                                        </a>
+                                                        <span style="font-size:11px; color:#888; margin-left:8px; white-space:nowrap;">{{ user.birthdayFormatted }}</span>
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            <p style="text-align:center; color:#aaa; margin:8px 0 0; font-size:12px;">Sin cumpleaños</p>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="clearfix"></div>
+                        <div class="x_footer text-center">
+                            <a href="{{ path('backend_user') }}" class="btn btn-default btn-sm">Ver todos los usuarios</a>
+                        </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if anniversaries is defined %}
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="x_panel">
+                    <div class="x_title x_title--collapsible" style="text-align:center; cursor:pointer;" data-panel-id="anniversaries">
+                        <h2 style="width:100%; text-align:center;">
+                            <i class="fa fa-star" aria-hidden="true"></i> Aniversarios
+                            <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i>
+                        </h2>
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+                        {% set weekRows = anniversaries.this_week|default([]) %}
+                        {% set monthRows = anniversaries.this_month|default([]) %}
+                        {% if weekRows is not empty or monthRows is not empty %}
+                            <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start;">
+                                {% for windowKey, windowLabel in {'this_week': 'Esta semana', 'this_month': 'Este mes'} %}
+                                    {% set rows = attribute(anniversaries, windowKey)|default([]) %}
+                                    <div class="dash-period dash-period--{{ windowKey }}" style="flex:1 1 260px; min-width:220px; padding:8px 10px;">
+                                        <h4 style="margin:0 0 8px 0; text-align:center; font-weight:700; font-size:13px; color:#555; text-transform:uppercase; letter-spacing:.5px;">{{ windowLabel }}</h4>
+                                        {% if rows is not empty %}
+                                            <ul class="list-unstyled" style="margin:0;">
+                                                {% for item in rows %}
+                                                    <li style="display:flex; align-items:center; justify-content:space-between; padding:3px 0; border-bottom:1px solid #f0f0f0;">
+                                                        <a href="{{ path('backend_user_show', {'id': item.id}) }}" style="text-decoration:none; color:inherit; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ item.name }}">
+                                                            {{ item.name }}
+                                                        </a>
+                                                        <span style="font-size:11px; color:#888; white-space:nowrap; text-align:right; margin-left:8px;">
+                                                            {% for event in item.events %}
+                                                                {% if event.type == 'transaction' %}1ra Compra{% elseif event.type == 'class' %}1ra Clase{% else %}Se unió al equipo{% endif %} · {{ event.year }}° año{% if event.date %} ({{ event.date }}){% endif %}{% if not loop.last %}<br>{% endif %}
+                                                            {% endfor %}
+                                                        </span>
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            <p style="text-align:center; color:#aaa; margin:8px 0 0; font-size:12px;">Sin aniversarios</p>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p style="text-align:center; color:#aaa; margin:8px 0 0; font-size:12px;">Sin aniversarios calculados</p>
+                        {% endif %}
+                    </div>
+                    <div class="clearfix"></div>
+                    <div class="x_footer text-center">
+                        <a href="{{ path('backend_user') }}" class="btn btn-default btn-sm">Ver todos los usuarios</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
 {% endblock %}
 
 {% block javascripts %}
     {{ parent() }}
+    <script>
+        $(document).ready(function () {
+            var STORAGE_KEY    = 'pbstudio_dashboard_panels';
+            var DEFAULT_CLOSED = ['birthdays', 'anniversaries'];
+
+            // Detecta si es recarga (F5) o navegación nueva
+            var isReload = false;
+            try {
+                var navEntries = performance.getEntriesByType('navigation');
+                if (navEntries.length > 0) {
+                    isReload = (navEntries[0].type === 'reload');
+                } else {
+                    isReload = (performance.navigation.type === 1);
+                }
+            } catch (e) {}
+
+            function getSavedState() {
+                try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch (e) { return null; }
+            }
+
+            function saveState() {
+                var state = {};
+                $('.x_title--collapsible').each(function () {
+                    var id = $(this).data('panel-id');
+                    if (id) {
+                        var $content = $(this).closest('.x_panel').find('.x_content').first();
+                        state[id] = $content.is(':visible') ? 'open' : 'closed';
+                    }
+                });
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+            }
+
+            function applyState($title, open) {
+                var $panel   = $title.closest('.x_panel');
+                var $content = $panel.find('.x_content, .x_footer');
+                var $chevron = $title.find('.dash-panel-chevron');
+                if (open) {
+                    $content.show();
+                    $chevron.css('transform', 'rotate(180deg)');
+                } else {
+                    $content.hide();
+                    $chevron.css('transform', 'rotate(0deg)');
+                }
+            }
+
+            // Si es navegación nueva, limpiar estado guardado y usar defaults
+            var savedState = null;
+            if (isReload) {
+                savedState = getSavedState();
+            } else {
+                try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+            }
+
+            // Inicializa cada panel
+            $('.x_title--collapsible').each(function () {
+                var id = $(this).data('panel-id');
+                var open;
+                if (savedState && savedState.hasOwnProperty(id)) {
+                    open = (savedState[id] === 'open');
+                } else {
+                    open = (DEFAULT_CLOSED.indexOf(id) === -1);
+                }
+                applyState($(this), open);
+            });
+
+            // Toggle con animación + guardar estado al terminar todas las animaciones
+            $('.x_title--collapsible').on('click', function () {
+                var $panel   = $(this).closest('.x_panel');
+                var $content = $panel.find('.x_content, .x_footer');
+                var $chevron = $(this).find('.dash-panel-chevron');
+                if ($content.is(':hidden')) {
+                    $content.slideDown(200).promise().done(saveState);
+                    $chevron.css('transform', 'rotate(180deg)');
+                } else {
+                    $content.slideUp(200).promise().done(saveState);
+                    $chevron.css('transform', 'rotate(0deg)');
+                }
+            });
+        });
+    </script>
 {% endblock %}

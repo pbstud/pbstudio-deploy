@@ -10,6 +10,7 @@ use App\Repository\BranchOfficeRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -30,8 +31,9 @@ class UserType extends AbstractType
             ->add('phone', null, [
                 'label' => 'label.phone',
             ])
-            ->add('email', null, [
+            ->add('email', EmailType::class, [
                 'label' => 'label.email',
+                'required' => true,
             ])
             ->add('branchOffice', EntityType::class, [
                 'placeholder' => 'Sucursal preferida',
@@ -42,10 +44,11 @@ class UserType extends AbstractType
                 },
             ])
             ->add('birthday', DateType::class, [
-                'label' => 'label.birthday',
-                'format' => 'dd/MM',
-                'widget' => 'single_text',
-                'html5' => false,
+                'label'    => 'label.birthday',
+                'format'   => 'dd/MM',
+                'widget'   => 'single_text',
+                'html5'    => false,
+                'required' => true,
             ])
             ->add('emergencyContactName', null, [
                 'label' => 'label.emergency_contact_name',

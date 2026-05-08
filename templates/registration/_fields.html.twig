@@ -43,6 +43,16 @@
 }) }}
 {{ form_errors(form.phone) }}
 
+{{ form_widget(form.birthday, {
+    'attr': {
+        'placeholder': 'Cumpleaños (dd/mm)',
+        'maxlength': '5',
+        'inputmode': 'numeric',
+        'autocomplete': 'bday',
+    }
+}) }}
+{{ form_errors(form.birthday) }}
+
 <button type="submit" class="btn-submit">Registrarme</button>
 
 {{ form_rest(form) }}

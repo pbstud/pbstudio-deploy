@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Backend;
 
-use App\Repository\SessionRepository;
-use App\Repository\TransactionRepository;
-use App\Repository\UserRepository;
 use App\Security\Voter\RouteAccessVoter;
-use App\Service\SessionTimeCancel\TimeToCancel;
-use App\Util\PackageSessionType;
+use App\Service\Stats\StatsService;
+use Carbon\CarbonImmutable;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,13 +15,12 @@ use Symfony\Component\Routing\Attribute\Route;
 class DashboardController extends AbstractController
 {
     public function __construct(
-        private readonly TransactionRepository $transactionRepository,
-        private readonly UserRepository $userRepository,
+        private readonly StatsService $statsService,
     ) {
     }
 
     #[Route('/backend', name: 'backend_dashboard')]
-    public function index(): Response
+    public function index(Request $request): Response
     {
         if ($this->isGranted('ROLE_INSTRUCTOR')) {
             return $this->redirectToRoute('backend_session');
@@ -32,73 +28,123 @@ class DashboardController extends AbstractController
 
         $data = [];
 
-        if ($this->isGranted(RouteAccessVoter::ALLOWED_ROUTE_ACCESS, 'dashboard_stats')) {
-            $data['stats'] = $this->getStats();
+        if ($this->isGranted(RouteAccessVoter::ALLOWED_ROUTE_ACCESS, 'backend_transaction')) {
+            $data['billing']          = $this->statsService->getBillingBlock();
+            $data['discounts']        = $this->statsService->getBlock3DiscountsBySucursal();
+            $data['payments']         = $this->statsService->getBlock4PaymentMethodsBySucursal();
+            $data['lastTransactions'] = $this->statsService->getBlock2LastTransactions();
         }
 
-        if ($this->isGranted(RouteAccessVoter::ALLOWED_ROUTE_ACCESS, 'backend_transaction')) {
-            $data['lastTransactions'] = $this->getLastTransactions();
+        if ($this->isGranted(RouteAccessVoter::ALLOWED_ROUTE_ACCESS, 'backend_session')) {
+            $data['classes'] = $this->statsService->getBlock5Classes();
+            $data['instructors'] = $this->statsService->getBlock6Instructors();
         }
 
         if ($this->isGranted(RouteAccessVoter::ALLOWED_ROUTE_ACCESS, 'backend_user')) {
-            $data['lastUsers'] = $this->getLastUsers();
+            $data['users']     = $this->statsService->getBlock9UserSummary();
+            $data['lastUsers'] = $this->statsService->getBlock10LastUsers();
+            $data['birthdays'] = $this->statsService->getBlock11Birthdays();
+            $data['anniversaries'] = $this->statsService->getBlock12Anniversaries();
+        }
+
+        if ($this->isGranted(RouteAccessVoter::ALLOWED_ROUTE_ACCESS, 'backend_user_show')) {
+            $data['fitpass'] = $this->statsService->getBlock7Fitpass();
+        }
+
+        $rankingPermissions = [
+            'weekdays' => $this->isGranted(RouteAccessVoter::ALLOWED_ROUTE_ACCESS, 'backend_session'),
+            'schedules' => $this->isGranted(RouteAccessVoter::ALLOWED_ROUTE_ACCESS, 'backend_session'),
+            'packages' => $this->isGranted(RouteAccessVoter::ALLOWED_ROUTE_ACCESS, 'backend_transaction'),
+            'clients' => $this->isGranted(RouteAccessVoter::ALLOWED_ROUTE_ACCESS, 'backend_transaction'),
+            'ratingsDetail' => $this->isGranted(RouteAccessVoter::ALLOWED_ROUTE_ACCESS, 'backend_stats_ratings'),
+        ];
+        $rankingPermissions['showRanking'] =
+            $rankingPermissions['weekdays']
+            || $rankingPermissions['schedules']
+            || $rankingPermissions['packages']
+            || $rankingPermissions['clients'];
+
+        if ($rankingPermissions['showRanking']) {
+            $data['rankingPermissions'] = $rankingPermissions;
+            $data['ratingFilters'] = $this->getDashboardRatingFilters($request);
+
+            if ($rankingPermissions['weekdays']) {
+                $data['ratingsWeekdays'] = $this->statsService->getBlock8WeekdaysBySucursal(
+                    $data['ratingFilters']['from'],
+                    $data['ratingFilters']['to']
+                );
+            }
+
+            if ($rankingPermissions['schedules']) {
+                $data['ratingsSchedules'] = $this->statsService->getBlock8SchedulesBySucursal(
+                    $data['ratingFilters']['from'],
+                    $data['ratingFilters']['to']
+                );
+            }
+
+            if ($rankingPermissions['packages']) {
+                $data['ratingsPackages'] = $this->statsService->getBlock8PackagesBySucursal(
+                    $data['ratingFilters']['from'],
+                    $data['ratingFilters']['to']
+                );
+            }
+
+            if ($rankingPermissions['clients']) {
+                $data['ratingsClients'] = $this->statsService->getBlock8ClientsBySucursal(
+                    $data['ratingFilters']['from'],
+                    $data['ratingFilters']['to']
+                );
+            }
         }
 
         return $this->render('backend/dashboard/index.html.twig', $data);
     }
 
-    #[Route('/backend/test', name: 'backend_dashboard_test')]
-    public function backTest(Request $request, SessionRepository $sessionRepository, TimeToCancel $sessionTimeToCancel)
+    private function getDashboardRatingFilters(Request $request): array
     {
-        $session = $sessionRepository->find($request->query->get('id'));
+        $defaultDateStart = CarbonImmutable::today()->startOfMonth();
+        $defaultDateEnd = CarbonImmutable::today();
 
-        $currentDate = new \DateTime();
-        var_dump('Current: ', $currentDate);
+        $dateStartRaw = trim((string) $request->query->get('rating_date_start', ''));
+        $dateEndRaw = trim((string) $request->query->get('rating_date_end', ''));
 
-        $dateStartValue = $session->getDateStart();
-        $timeStartValue = $session->getTimeStart();
+        $dateStart = $this->parseDashboardRatingDate($dateStartRaw, $defaultDateStart);
+        $dateEnd = $this->parseDashboardRatingDate($dateEndRaw, $defaultDateEnd);
 
-        if (!$dateStartValue || !$timeStartValue) {
-            throw $this->createNotFoundException('La sesión no tiene fecha u hora de inicio configurada.');
+        if ($dateStart > $dateEnd) {
+            [$dateStart, $dateEnd] = [$dateEnd, $dateStart];
         }
 
-        $dateStart = \DateTimeImmutable::createFromInterface($dateStartValue);
-        var_dump('Date start: ', $dateStart);
-        $dateStart = $dateStart->setTime((int) $timeStartValue->format('H'), (int) $timeStartValue->format('i'));
-        var_dump('Date start 2: ', $dateStart);
-
-        $diffSeconds = $dateStart->getTimestamp() - $currentDate->getTimestamp();
-        var_dump('Diff seconds: ', $diffSeconds);
-
-        $timeToCancel = PackageSessionType::TYPE_INDIVIDUAL === $session->getType() ?
-            $sessionTimeToCancel->getTimeToCancelIndividual() :
-            $sessionTimeToCancel->getTimeToCancelGroup()
-        ;
-
-        var_dump('Time cancel: ', $timeToCancel);
-        phpinfo();
-        exit();
-    }
-
-    private function getStats(): array
-    {
-        $currentDate = new \DateTime('first day of this month');
-        $endDate = new \DateTime('last day of this month');
-
         return [
-            'totalAmountProcessed' => $this->transactionRepository->getTotalAmount(),
-            'totalAmountInCurrentMonth' => $this->transactionRepository->getTotalAmountForRageDate($currentDate, $endDate),
-            'totalActiveUsers' => $this->userRepository->getTotalActiveUsers(),
+            'rating_date_start' => $dateStart->format('d/m/Y'),
+            'rating_date_end' => $dateEnd->format('d/m/Y'),
+            'from' => $dateStart,
+            'to' => $dateEnd,
         ];
     }
 
-    private function getLastTransactions(): array
+    private function parseDashboardRatingDate(string $value, CarbonImmutable $fallback): CarbonImmutable
     {
-        return $this->transactionRepository->getLastCompleted();
+        if ('' === $value) {
+            return $fallback;
+        }
+
+        $date = CarbonImmutable::createFromFormat('d/m/Y', $value);
+        if (false === $date) {
+            return $fallback;
+        }
+
+        $today = CarbonImmutable::today();
+        return $date->gt($today) ? $today : $date;
     }
 
-    private function getLastUsers(): array
+    #[Route('/backend/access-denied', name: 'backend_access_denied')]
+    public function accessDenied(): Response
     {
-        return $this->userRepository->getLastUsers();
+        return $this->render(
+            'backend/security/access_denied.html.twig',
+            [],
+            new Response('', Response::HTTP_FORBIDDEN)
+        );
     }
 }

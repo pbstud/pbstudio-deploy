@@ -70,9 +70,13 @@
                 <tr>
                     <th>Estado</th>
                     <td>
-                        <span class="label label-{{ reservation.isAvailable|ReservationStatusLabel }}">
-                            {{ reservation.isAvailable|ReservationStatusDescription }}
-                        </span>
+                        {% if not reservation.isAvailable %}
+                            <span class="label label-default">Cancelada</span>
+                        {% elseif reservation.attended %}
+                            <span class="label label-success">Tomada</span>
+                        {% else %}
+                            <span class="label label-primary">Reservada</span>
+                        {% endif %}
                     </td>
                 </tr>
             </tbody>

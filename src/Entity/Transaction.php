@@ -42,8 +42,10 @@ class Transaction implements TimestampableInterface
 
     public const DATE_START = '2017-06-01 00:00:00';
 
-    public const WITH_DISCOUNT = 1;
+    public const PERCENTAGE_DISCOUNT = 1;
     public const WITHOUT_DISCOUNT = 2;
+    public const SPECIAL_PRICE = 3;
+    public const WITH_DISCOUNT = self::PERCENTAGE_DISCOUNT;
 
     public const WITH_GIFT_PURCHASE = 1;
     public const WITHOUT_GIFT_PURCHASE = 2;

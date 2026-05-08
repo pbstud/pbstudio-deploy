@@ -121,7 +121,6 @@ main:
     backend_staff: Staff
     backend_staff_edit: Editar Staff
     backend_staff_new: Nuevo Staff
-    backend_stats: Estadísticas
     backend_stats_ratings: Calificaciones
     backend_transaction: Transacciones
     backend_transaction_new: Caja

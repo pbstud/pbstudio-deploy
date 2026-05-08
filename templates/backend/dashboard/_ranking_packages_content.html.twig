@@ -1,0 +1,40 @@
+{% if ratingsPackages is defined and ratingsPackages.data is not empty %}
+    {% for branchOfficeId, branch in ratingsPackages.data %}
+        {% if branch.packages is not empty %}
+        <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #f0f0f0;">
+            <h4 style="margin:0 0 6px 0; text-align:center; font-weight:700;">{{ branch.name }}</h4>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center;">
+                {% for package in branch.packages %}
+                    {% if package.packageId is not null %}
+                        <a href="{{ path('backend_transaction', {
+                            filter_package: package.packageId,
+                            filter_date_start: ratingFilters.rating_date_start,
+                            filter_date_end: ratingFilters.rating_date_end,
+                            filter_branchOffice: branchOfficeId,
+                            filter_status: constant('App\\Entity\\Transaction::STATUS_PAID')
+                        }) }}" style="flex:1 1 180px; min-width:170px; text-align:center; text-decoration:none; color:inherit; padding:8px 10px; display:block;">
+                            <div style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:.5px;">Paquete m&aacute;s comprado #{{ loop.index }}</div>
+                            <div style="font-size:18px; font-weight:700; line-height:1.2;">{{ package.label }}</div>
+                            {% if package.price is not null %}
+                                <div style="font-size:12px; color:#888; margin-top:2px;">${{ package.price|number_format(2, '.', ',') }}</div>
+                            {% endif %}
+                            <div style="font-size:13px; color:#666; margin-top:4px;">{{ package.purchases }} compra{{ package.purchases == 1 ? '' : 's' }}</div>
+                        </a>
+                    {% else %}
+                        <div style="flex:1 1 180px; min-width:170px; text-align:center; padding:8px 10px;">
+                            <div style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:.5px;">Paquete m&aacute;s comprado #{{ loop.index }}</div>
+                            <div style="font-size:18px; font-weight:700; line-height:1.2;">{{ package.label }}</div>
+                            {% if package.price is not null %}
+                                <div style="font-size:12px; color:#888; margin-top:2px;">${{ package.price|number_format(2, '.', ',') }}</div>
+                            {% endif %}
+                            <div style="font-size:13px; color:#666; margin-top:4px;">{{ package.purchases }} compra{{ package.purchases == 1 ? '' : 's' }}</div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
+{% else %}
+    {{ include('backend/default/partials/not_records.html.twig') }}
+{% endif %}

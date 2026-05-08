@@ -35,6 +35,7 @@ doctrine:
                 addtime: DoctrineExtensions\Query\Mysql\AddTime
                 dateadd: DoctrineExtensions\Query\Mysql\DateAdd
                 dayname: DoctrineExtensions\Query\Mysql\DayName
+                dayofweek: DoctrineExtensions\Query\Mysql\DayOfWeek
 
             string_functions:
                 ifelse: DoctrineExtensions\Query\Mysql\IfElse

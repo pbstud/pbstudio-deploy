@@ -424,11 +424,27 @@ class ReservationRepository extends ServiceEntityRepository
             ->setParameter('session_status_cancel', Session::STATUS_CANCEL)
         ;
 
-        if ('' !== $filters['filter_status']) {
+        if (null !== $filters['filter_status'] && '' !== (string) $filters['filter_status']) {
+            $isAvailable = in_array((string) $filters['filter_status'], ['1', 'true'], true);
             $qb
                 ->andWhere('r.isAvailable = :isAvailable')
-                ->setParameter('isAvailable', $filters['filter_status'])
+                ->setParameter('isAvailable', $isAvailable)
             ;
+        }
+
+        if (null !== ($filters['filter_attended'] ?? null) && '' !== (string) $filters['filter_attended']) {
+            $attended = in_array((string) $filters['filter_attended'], ['1', 'true'], true);
+            if ($attended) {
+                $qb
+                    ->andWhere('r.attended = :attended')
+                    ->setParameter('attended', true)
+                ;
+            } else {
+                $qb
+                    ->andWhere('(r.attended = :attended OR r.attended IS NULL)')
+                    ->setParameter('attended', false)
+                ;
+            }
         }
 
         if ($filters['filter_session_date_start'] && $filters['filter_session_date_end']) {
@@ -500,6 +516,72 @@ class ReservationRepository extends ServiceEntityRepository
             ->setParameter('to', $to->format('Y-m-d'))
             ->setParameter('isAvailable', true)
             ->setParameter('statusClosed', Session::STATUS_CLOSED)
+        ;
+
+        return $qb->getQuery()->getScalarResult();
+    }
+
+    public function getAttendanceGroupedByInstructor(\DateTimeInterface $from, \DateTimeInterface $to): array
+    {
+        $qb = $this->createQueryBuilder('r');
+
+        $qb
+            ->select('COUNT(r.id) as attendances')
+            ->addSelect('b.id as studioId', 'b.name as studio')
+            ->addSelect('i.id as instructorId', 'p.firstname', 'p.paternalSurname', 'p.maternalSurname')
+            ->join('r.session', 's')
+            ->join('s.instructor', 'i')
+            ->join('i.profile', 'p')
+            ->join('s.branchOffice', 'b')
+            ->where($qb->expr()->between('s.dateStart', ':from', ':to'))
+            ->andWhere('r.isAvailable = :isAvailable')
+            ->andWhere('r.attended = :attended')
+            ->andWhere('s.status = :statusClosed')
+            ->groupBy('b.id')
+            ->addGroupBy('b.name')
+            ->addGroupBy('i.id')
+            ->addGroupBy('p.firstname')
+            ->addGroupBy('p.paternalSurname')
+            ->addGroupBy('p.maternalSurname')
+            ->orderBy('b.name', 'ASC')
+            ->addOrderBy('p.firstname', 'ASC')
+            ->setParameter('from', $from->format('Y-m-d 00:00:00'))
+            ->setParameter('to', $to->format('Y-m-d 23:59:59'))
+            ->setParameter('isAvailable', true)
+            ->setParameter('attended', true)
+            ->setParameter('statusClosed', Session::STATUS_CLOSED)
+        ;
+
+        return $qb->getQuery()->getScalarResult();
+    }
+
+    public function getFitpassAttendedByPublicBranchOffice(
+        \DateTimeInterface $from,
+        \DateTimeInterface $to,
+        int $fitpassUserId,
+    ): array {
+        $qb = $this->createQueryBuilder('r');
+
+        $qb
+            ->select('b.id as branchOfficeId')
+            ->addSelect('SUM(CASE WHEN r.isAvailable = true THEN 1 ELSE 0 END) as reserved')
+            ->addSelect('SUM(CASE WHEN r.isAvailable = true AND r.attended = true THEN 1 ELSE 0 END) as attended')
+            ->addSelect('SUM(CASE WHEN r.isAvailable = true AND s.status = :statusClosed AND (r.attended = false OR r.attended IS NULL) THEN 1 ELSE 0 END) as notAttended')
+            ->join('r.session', 's')
+            ->join('s.branchOffice', 'b')
+            ->where($qb->expr()->between('s.dateStart', ':from', ':to'))
+            ->andWhere('IDENTITY(r.user) = :fitpassUserId')
+            ->andWhere('s.status != :statusCancel')
+            ->andWhere('b.isActive = :branchActive')
+            ->andWhere('b.public = :branchPublic')
+            ->groupBy('b.id')
+            ->setParameter('from', $from->format('Y-m-d'))
+            ->setParameter('to', $to->format('Y-m-d'))
+            ->setParameter('fitpassUserId', $fitpassUserId)
+            ->setParameter('statusCancel', Session::STATUS_CANCEL)
+            ->setParameter('statusClosed', Session::STATUS_CLOSED)
+            ->setParameter('branchActive', true)
+            ->setParameter('branchPublic', true)
         ;
 
         return $qb->getQuery()->getScalarResult();
@@ -778,9 +860,75 @@ class ReservationRepository extends ServiceEntityRepository
         return $qb->getQuery()->getScalarResult();
     }
 
+    public function getWeekdayAttendancesByPublicBranchOffice(\DateTimeInterface $from, \DateTimeInterface $to): array
+    {
+        $qb = $this->createQueryBuilder('r');
+
+        $qb
+            ->select('b.id as branchOfficeId', 'b.name as branchOfficeName')
+            ->addSelect('DAYOFWEEK(s.dateStart) as dayOfWeek')
+            ->addSelect('COUNT(r.id) as attendances')
+            ->join('r.session', 's')
+            ->join('s.branchOffice', 'b')
+            ->where($qb->expr()->between('s.dateStart', ':from', ':to'))
+            ->andWhere('r.isAvailable = :isAvailable')
+            ->andWhere('r.attended = :attended')
+            ->andWhere('s.status = :statusClosed')
+            ->andWhere('b.public = :branchPublic')
+            ->andWhere('b.isActive = :branchActive')
+            ->groupBy('b.id')
+            ->addGroupBy('b.name')
+            ->addGroupBy('dayOfWeek')
+            ->orderBy('b.name', 'ASC')
+            ->addOrderBy('attendances', 'DESC')
+            ->addOrderBy('dayOfWeek', 'ASC')
+            ->setParameter('from', $from->format('Y-m-d 00:00:00'))
+            ->setParameter('to', $to->format('Y-m-d 23:59:59'))
+            ->setParameter('isAvailable', true)
+            ->setParameter('attended', true)
+            ->setParameter('statusClosed', Session::STATUS_CLOSED)
+            ->setParameter('branchPublic', true)
+            ->setParameter('branchActive', true)
+        ;
+
+        return $qb->getQuery()->getScalarResult();
+    }
+
+    public function getScheduleAttendancesByPublicBranchOffice(\DateTimeInterface $from, \DateTimeInterface $to): array
+    {
+        $qb = $this->createQueryBuilder('r');
+
+        $qb
+            ->select('b.id as branchOfficeId', 'b.name as branchOfficeName')
+            ->addSelect('s.timeStart as schedule')
+            ->addSelect('COUNT(r.id) as attendances')
+            ->join('r.session', 's')
+            ->join('s.branchOffice', 'b')
+            ->where($qb->expr()->between('s.dateStart', ':from', ':to'))
+            ->andWhere('r.isAvailable = :isAvailable')
+            ->andWhere('r.attended = :attended')
+            ->andWhere('s.status = :statusClosed')
+            ->andWhere('b.public = :branchPublic')
+            ->andWhere('b.isActive = :branchActive')
+            ->groupBy('b.id')
+            ->addGroupBy('b.name')
+            ->addGroupBy('s.timeStart')
+            ->orderBy('b.name', 'ASC')
+            ->addOrderBy('attendances', 'DESC')
+            ->addOrderBy('s.timeStart', 'ASC')
+            ->setParameter('from', $from->format('Y-m-d 00:00:00'))
+            ->setParameter('to', $to->format('Y-m-d 23:59:59'))
+            ->setParameter('isAvailable', true)
+            ->setParameter('attended', true)
+            ->setParameter('statusClosed', Session::STATUS_CLOSED)
+            ->setParameter('branchPublic', true)
+            ->setParameter('branchActive', true)
+        ;
+
+        return $qb->getQuery()->getScalarResult();
+    }
+
     /**
-     * @return array{
-     *   sessionId:int,
      *   ratedReservations:int,
      *   averages:array{general:?float,exercise:?float,instructor:?float,class_type:?float},
      *   distribution:array{exercise:array<int,int>,instructor:array<int,int>,class_type:array<int,int>},

@@ -1030,11 +1030,14 @@ class SessionDayController extends AbstractController
                             /** @var ExerciseRoom $exerciseRoomEntity */
                             $exerciseRoomEntity = $exerciseRoomRepository->findOneById($exerciseRoom);
                             $instructorEntity = $instructorRepository->findOneById($session['instructor']);
-                            $capacity = $capacity > 0 ? (int) $capacity : (int) ($exerciseRoomEntity?->getCapacity() ?? 0);
+                            if (!$instructorEntity || !$exerciseRoomEntity) {
+                                continue;
+                            }
+                            $capacity = $capacity > 0 ? (int) $capacity : (int) ($exerciseRoomEntity->getCapacity() ?? 0);
                             $placesNotAvailable = SeatLayoutMapper::buildPersistedPlacesNotAvailable(
-                                $exerciseRoomEntity?->getPlacesNotAvailable(),
+                                $exerciseRoomEntity->getPlacesNotAvailable(),
                                 $capacity,
-                                (int) ($exerciseRoomEntity?->getCapacity() ?? 0)
+                                (int) ($exerciseRoomEntity->getCapacity() ?? 0)
                             );
 
                             foreach ($applyDates as $applyDate) {

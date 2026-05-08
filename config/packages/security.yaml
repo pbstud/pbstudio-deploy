@@ -32,6 +32,7 @@ security:
             lazy: true
             provider: app_staff_provider
             user_checker: App\Security\UserChecker
+            access_denied_url: /backend/access-denied
 
             form_login:
                 login_path: backend_login

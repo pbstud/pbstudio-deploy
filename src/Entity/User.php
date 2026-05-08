@@ -47,7 +47,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Timesta
     private ?string $phone = null;
 
     #[ORM\Column(type: Types::DATE_MUTABLE, nullable: true)]
+    #[Assert\NotBlank(message: 'El cumpleaños es obligatorio.')]
     private ?\DateTimeInterface $birthday = null;
+
+    #[ORM\Column(type: Types::JSON)]
+    private array $anniversaryTransactionHistory = [];
+
+    #[ORM\Column(type: Types::JSON)]
+    private array $anniversaryClassHistory = [];
+
+    #[ORM\Column(type: Types::JSON)]
+    private array $anniversaryWindowHistory = [];
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Assert\Length(min: 3, max: 100, groups: ['Profile'])]
@@ -75,6 +85,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Timesta
     private Collection $waitingLists;
 
     #[ORM\Column(length: 180, unique: true)]
+    #[Assert\NotBlank(message: 'El correo es obligatorio.')]
+    #[Assert\Email(message: 'El correo no es válido.')]
     private ?string $email = null;
 
     #[ORM\Column]
@@ -177,6 +189,54 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Timesta
     public function setBirthday(?\DateTimeInterface $birthday): static
     {
         $this->birthday = $birthday;
+
+        return $this;
+    }
+
+    public function getAnniversaryTransactionHistory(): array
+    {
+        return $this->anniversaryTransactionHistory;
+    }
+
+    public function setAnniversaryTransactionHistory(array $anniversaryTransactionHistory): static
+    {
+        $this->anniversaryTransactionHistory = array_values(array_filter(array_map('intval', $anniversaryTransactionHistory), static fn (int $year): bool => $year > 0));
+
+        return $this;
+    }
+
+    public function getAnniversaryClassHistory(): array
+    {
+        return $this->anniversaryClassHistory;
+    }
+
+    public function setAnniversaryClassHistory(array $anniversaryClassHistory): static
+    {
+        $this->anniversaryClassHistory = array_values(array_filter(array_map('intval', $anniversaryClassHistory), static fn (int $year): bool => $year > 0));
+
+        return $this;
+    }
+
+    public function getAnniversaryWindowHistory(): array
+    {
+        return $this->anniversaryWindowHistory;
+    }
+
+    public function setAnniversaryWindowHistory(array $anniversaryWindowHistory): static
+    {
+        $this->anniversaryWindowHistory = array_values(array_filter($anniversaryWindowHistory, static function ($row): bool {
+            if (!is_array($row)) {
+                return false;
+            }
+
+            $window = (string) ($row['window'] ?? '');
+            $type = (string) ($row['type'] ?? '');
+            $year = (int) ($row['year'] ?? 0);
+
+            return in_array($window, ['this_week', 'this_month'], true)
+                && in_array($type, ['transaction', 'class', 'joined'], true)
+                && $year > 0;
+        }));
 
         return $this;
     }

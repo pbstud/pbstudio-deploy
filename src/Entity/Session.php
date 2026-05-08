@@ -67,6 +67,7 @@ class Session implements TimestampableInterface
     private ?Discipline $discipline = null;
 
     #[ORM\ManyToOne]
+    #[Assert\NotBlank(message: 'El instructor es obligatorio.')]
     private ?Staff $instructor = null;
 
     #[ORM\Column(type: Types::SMALLINT)]

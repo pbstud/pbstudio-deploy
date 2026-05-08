@@ -40,9 +40,6 @@ final class BackendBuilder
         // Payment
         $this->createPaymentMenu();
 
-        // Reports
-        $this->createReportsMenu();
-
         // System
         $this->createSystemMenu();
 
@@ -89,6 +86,7 @@ final class BackendBuilder
                 'backend_session_day_new',
                 'backend_session_day_edit',
             ],
+            'backend_stats_ratings' => [],
         ];
 
         $this->addSubmenu($menu, $submenu);
@@ -131,19 +129,6 @@ final class BackendBuilder
                 'backend_gift_card_resend',
                 'backend_gift_card_cancel',
             ],
-        ];
-
-        $this->addSubmenu($menu, $submenu);
-    }
-
-    private function createReportsMenu(): void
-    {
-        /** @var ItemInterface $menu */
-        $menu = $this->addMenu('report', 'bar-chart');
-
-        $submenu = [
-            'backend_stats' => [],
-            'backend_stats_ratings' => [],
         ];
 
         $this->addSubmenu($menu, $submenu);

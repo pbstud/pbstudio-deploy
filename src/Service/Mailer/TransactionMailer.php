@@ -60,8 +60,13 @@ class TransactionMailer extends AbstractMailManager
 
         try {
             $this->sendMessage($template, $context, $user->getEmail());
-        } catch (TransportExceptionInterface $e) {
-            // Registrar error.
+        } catch (\Throwable $e) {
+            $this->logger->warning(sprintf(
+                'No se pudo enviar correo de transaccion expirada (tx=%d, email=%s): %s',
+                (int) $transaction->getId(),
+                (string) $user->getEmail(),
+                $e->getMessage(),
+            ));
         }
     }
 
@@ -81,7 +86,7 @@ class TransactionMailer extends AbstractMailManager
 
         try {
             $this->sendMessage($template, $context, $user->getEmail());
-        } catch (TransportExceptionInterface $e) {
+        } catch (\Throwable $e) {
             $this->logger->error('Error al enviar correo de expiración de paquete a 24h: '.$e->getMessage());
         }
     }

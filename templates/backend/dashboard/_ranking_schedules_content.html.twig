@@ -1,0 +1,29 @@
+{% if ratingsSchedules is defined and ratingsSchedules.data is not empty %}
+    {% for branchOfficeId, branch in ratingsSchedules.data %}
+        {% if branch.schedules is not empty %}
+        <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #f0f0f0;">
+            <h4 style="margin:0 0 6px 0; text-align:center; font-weight:700;">{{ branch.name }}</h4>
+            <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center;">
+                {% for schedule in branch.schedules %}
+                    <a href="{{ path('backend_session', {
+                        filters: {
+                            date_start: ratingFilters.rating_date_start,
+                            date_end: ratingFilters.rating_date_end,
+                            status: constant('App\\Entity\\Session::STATUS_CLOSED'),
+                            branchOffice: branchOfficeId,
+                            schedule: schedule.value,
+                            hasTakenReservations: 1
+                        }
+                    }) }}" style="flex:1 1 180px; min-width:170px; text-align:center; text-decoration:none; color:inherit; padding:8px 10px; display:block;">
+                        <div style="font-size:11px; color:#888; text-transform:uppercase; letter-spacing:.5px;">Horario m&aacute;s lleno #{{ loop.index }}</div>
+                        <div style="font-size:18px; font-weight:700; line-height:1.2;">{{ schedule.label }}</div>
+                        <div style="font-size:13px; color:#666; margin-top:4px;">{{ schedule.attendances }} asistencia{{ schedule.attendances == 1 ? '' : 's' }}</div>
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
+{% else %}
+    {{ include('backend/default/partials/not_records.html.twig') }}
+{% endif %}

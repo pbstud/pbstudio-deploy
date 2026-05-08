@@ -173,7 +173,8 @@ class SessionType extends AbstractType
                 'label' => 'label.instructor',
                 'class' => Staff::class,
                 'choices' => $instructors,
-                'placeholder' => null,
+                'placeholder' => '',
+                'required' => true,
             ]);
         };
 

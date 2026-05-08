@@ -9,6 +9,8 @@ use App\Entity\User;
 use App\Repository\BranchOfficeRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\RepeatedType;
 use Symfony\Component\Form\FormBuilderInterface;
@@ -46,7 +48,9 @@ class RegistrationFormType extends AbstractType
                 ],
             ])
             ->add('phone')
-            ->add('email')
+            ->add('email', EmailType::class, [
+                'required' => true,
+            ])
             ->add('plainPassword', RepeatedType::class, [
                 'type' => PasswordType::class,
                 'attr' => [
@@ -59,6 +63,13 @@ class RegistrationFormType extends AbstractType
                 'query_builder' => static function (BranchOfficeRepository $branchOfficeRepository) {
                     return $branchOfficeRepository->queryPublic();
                 },
+            ])
+            ->add('birthday', DateType::class, [
+                'label'    => 'label.birthday',
+                'format'   => 'dd/MM',
+                'widget'   => 'single_text',
+                'html5'    => false,
+                'required' => true,
             ])
         ;
     }

@@ -104,8 +104,9 @@ class TransactionController extends AbstractController
         }
 
         $filterDiscount = [
-            Transaction::WITH_DISCOUNT,
+            Transaction::PERCENTAGE_DISCOUNT,
             Transaction::WITHOUT_DISCOUNT,
+            Transaction::SPECIAL_PRICE,
         ];
 
         $filterGiftPurchase = [

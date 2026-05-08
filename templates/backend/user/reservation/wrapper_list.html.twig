@@ -15,18 +15,29 @@
         <div class="x_content">
             <form id="form_filter" action="{{ path('backend_user_reservations', { 'id': user.id }) }}" method="get">
                 <div class="row">
-                    <div class="col-md-4 col-sm-4 col-xs-12">
+                    <div class="col-md-3 col-sm-6 col-xs-12">
                         <div class="form-group">
                             <label for="filter_status">Estado:</label>
                             <select id="filter_status" name="filter_status" class="form-control" data-current="{{ filter_status }}">
                                 <option value="">- Todos -</option>
-                                <option value="1">{{ '1'|ReservationStatusDescription }}</option>
-                                <option value="0">{{ '0'|ReservationStatusDescription }}</option>
+                                <option value="1" {% if filter_status is not null and filter_status|striptags == '1' %}selected{% endif %}>{{ '1'|ReservationStatusDescription }}</option>
+                                <option value="0" {% if filter_status is not null and filter_status|striptags == '0' %}selected{% endif %}>{{ '0'|ReservationStatusDescription }}</option>
                             </select>
                         </div>
                     </div>
 
-                    <div class="col-md-4 col-sm-4 col-xs-12">
+                    <div class="col-md-3 col-sm-6 col-xs-12">
+                        <div class="form-group">
+                            <label for="filter_attended">Asistencia:</label>
+                            <select id="filter_attended" name="filter_attended" class="form-control">
+                                <option value="">- Todos -</option>
+                                <option value="1" {% if filter_attended is not null and filter_attended|striptags == '1' %}selected{% endif %}>Sí asistió</option>
+                                <option value="0" {% if filter_attended is not null and filter_attended|striptags == '0' %}selected{% endif %}>No asistió</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3 col-sm-6 col-xs-12">
                         <div class="form-group">
                             <label for="filter_session_date_start">Fecha inicio:</label>
                             <div class="date-action-field">
@@ -41,7 +52,7 @@
                         </div>
                     </div>
 
-                    <div class="col-md-4 col-sm-4 col-xs-12">
+                    <div class="col-md-3 col-sm-6 col-xs-12">
                         <div class="form-group">
                             <label for="filter_session_date_end">Fecha de término:</label>
                             <div class="date-action-field">
@@ -64,7 +75,7 @@
                             <select id="filter_branch_office" name="filter_branch_office" class="form-control">
                                 <option value="">- Todos -</option>
                                 {% for branch_office in branch_offices %}
-                                    <option value="{{ branch_office.id }}">{{ branch_office.name }}</option>
+                                    <option value="{{ branch_office.id }}" {% if filter_branch_office is not null and filter_branch_office|striptags == branch_office.id|striptags %}selected{% endif %}>{{ branch_office.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -78,7 +89,7 @@
                                 {% for branch_office, rooms in exercise_rooms %}
                                     <optgroup label="{{ branch_office }}">
                                         {% for exercise_room in rooms %}
-                                            <option value="{{ exercise_room.id }}">{{ exercise_room.name }}</option>
+                                            <option value="{{ exercise_room.id }}" {% if filter_exercise_room is not null and filter_exercise_room|striptags == exercise_room.id|striptags %}selected{% endif %}>{{ exercise_room.name }}</option>
                                         {% endfor %}
                                     </optgroup>
                                 {% endfor %}

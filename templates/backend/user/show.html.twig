@@ -116,7 +116,15 @@
                                         <a href="{{ path('backend_user_transactions', { 'id': user.id }) }}">Transacciones</a>
                                     </li>
                                     <li role="presentation">
-                                        <a href="{{ path('backend_user_reservations', { 'id': user.id }) }}">Reservaciones</a>
+                                        <a href="{{ path('backend_user_reservations', {
+                                            'id': user.id,
+                                            'embedded': 1,
+                                            'filter_status': app.request.query.get('filter_status'),
+                                            'filter_attended': app.request.query.get('filter_attended'),
+                                            'filter_branch_office': app.request.query.get('filter_branch_office'),
+                                            'filter_session_date_start': app.request.query.get('filter_session_date_start'),
+                                            'filter_session_date_end': app.request.query.get('filter_session_date_end')
+                                        }) }}">Reservaciones</a>
                                     </li>
                                 </ul>
                                 <div id="userTabContent" class="tab-content">
@@ -173,7 +181,12 @@
                 $('#userTabContent').load(url);
             });
 
-            $('#userTab li:first-child a').trigger('click');
+            var preferredTab = '{{ app.request.query.get('tab')|default('transactions')|e('js') }}';
+            if (preferredTab === 'reservations') {
+                $('#userTab li:nth-child(2) a').trigger('click');
+            } else {
+                $('#userTab li:first-child a').trigger('click');
+            }
 
             //////////////////////////////////
             // Enable / Disable

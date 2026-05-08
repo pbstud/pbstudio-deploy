@@ -14,7 +14,16 @@
 
         <div class="row">
             {{ form_row(form.branchOffice, {'row_attr': {'class': 'col-md-6'}}) }}
-            {{ form_row(form.birthday, {'row_attr': {'class': 'col-md-6'}}) }}
+            {{ form_row(form.birthday, {
+                'row_attr': {'class': 'col-md-6'},
+                'attr': {
+                    'class': 'form-control birthday-mask',
+                    'placeholder': 'dd/mm',
+                    'maxlength': '5',
+                    'inputmode': 'numeric',
+                    'autocomplete': 'bday',
+                }
+            }) }}
         </div>
 
         <div class="row">
@@ -30,4 +39,39 @@
 
         {{ include('backend/default/_btn_save.html.twig', {'button_label': 'btn.update'}) }}
     {{ form_end(form) }}
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        (function () {
+            var input = document.querySelector('#form-user .birthday-mask');
+            if (!input) { return; }
+
+            var normalizeLive = function (value) {
+                var digits = (value || '').replace(/\D/g, '').slice(0, 4);
+                if (digits.length <= 2) { return digits; }
+                return digits.slice(0, 2) + '/' + digits.slice(2);
+            };
+
+            var normalizeOnBlur = function (value) {
+                var digits = (value || '').replace(/\D/g, '').slice(0, 4);
+                if (!digits) { return ''; }
+                if (digits.length === 3) {
+                    return digits.slice(0, 1).padStart(2, '0') + '/' + digits.slice(1).padStart(2, '0');
+                }
+                if (digits.length === 4) {
+                    return digits.slice(0, 2) + '/' + digits.slice(2);
+                }
+                return digits;
+            };
+
+            input.addEventListener('input', function () {
+                this.value = normalizeLive(this.value);
+            });
+            input.addEventListener('blur', function () {
+                this.value = normalizeOnBlur(this.value);
+            });
+        })();
+    </script>
 {% endblock %}

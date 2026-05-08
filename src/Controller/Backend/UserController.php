@@ -313,8 +313,9 @@ class UserController extends AbstractController
         $filters['filter_session_date_end'] = $request->query->get('filter_session_date_end');
         $filters['filter_branch_office'] = $request->query->get('filter_branch_office');
         $filters['filter_exercise_room'] = $request->query->get('filter_exercise_room');
+        $filters['filter_attended'] = $request->query->get('filter_attended');
 
-        if ($request->query->has('filter_status')) {
+        if ($request->query->has('filter_status') && !$request->query->has('embedded')) {
             $view = 'list.html.twig';
 
             $reservations = $reservationRepository->getByUserList($user, $filters);

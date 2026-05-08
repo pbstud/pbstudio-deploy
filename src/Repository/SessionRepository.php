@@ -43,7 +43,7 @@ class SessionRepository extends ServiceEntityRepository
             ->join('s.exerciseRoom', 'e')
             ->join('s.discipline', 'd')
             ->join('s.instructor', 'i')
-            ->join('i.profile', 'ip')
+            ->leftJoin('i.profile', 'ip')
             ->join('e.branchOffice', 'b')
             ->leftJoin('s.reservations', 'r', Join::WITH, $qb->expr()->eq('r.isAvailable', ':isAvailable'))
             ->setParameter('isAvailable', true)
@@ -69,7 +69,7 @@ class SessionRepository extends ServiceEntityRepository
             ->join('s.exerciseRoom', 'e')
             ->join('s.discipline', 'd')
             ->join('s.instructor', 'i')
-            ->join('i.profile', 'ip')
+            ->leftJoin('i.profile', 'ip')
             ->join('e.branchOffice', 'b')
             ->leftJoin('s.reservations', 'r', Join::WITH, $qb->expr()->eq('r.isAvailable', ':isAvailable'))
             ->setParameter('isAvailable', true)
@@ -198,11 +198,20 @@ class SessionRepository extends ServiceEntityRepository
             ;
         }
 
+        $this->applyActiveReservationsFilter($qb, $filters);
+
         return $qb->getQuery()->getResult();
     }
 
     private function applyBackendListFilters(QueryBuilder $qb, array $filters): void
     {
+        if (!empty($filters['id']) && ctype_digit((string) $filters['id'])) {
+            $qb
+                ->andWhere('s.id = :id')
+                ->setParameter('id', (int) $filters['id'])
+            ;
+        }
+
         if (!empty($filters['type'])) {
             $qb
                 ->andWhere('s.type = :type')
@@ -307,6 +316,42 @@ class SessionRepository extends ServiceEntityRepository
                 ->setParameter('timeStart', $filters['schedule'])
             ;
         }
+
+        $this->applyTakenReservationsFilter($qb, $filters);
+    }
+
+    private function applyTakenReservationsFilter(QueryBuilder $qb, array $filters): void
+    {
+        if (!array_key_exists('hasTakenReservations', $filters) || '' === (string) $filters['hasTakenReservations']) {
+            return;
+        }
+
+        $mustHaveTakenReservations = in_array((string) $filters['hasTakenReservations'], ['1', 'true'], true);
+
+        $subQb = $this->getEntityManager()->createQueryBuilder();
+        $subQb
+            ->select('1')
+            ->from(Reservation::class, 'rTaken')
+            ->where('rTaken.session = s')
+            ->andWhere('rTaken.attended = :takenReservationAttended')
+        ;
+
+        $qb->setParameter('takenReservationAttended', true);
+
+        if ($mustHaveTakenReservations) {
+            $qb->andWhere($qb->expr()->exists($subQb->getDQL()));
+        } else {
+            $qb->andWhere($qb->expr()->not($qb->expr()->exists($subQb->getDQL())));
+        }
+    }
+
+    /**
+     * Proxy para applyTakenReservationsFilter: filtra sesiones con (o sin) reservaciones asistidas.
+     * Usado por findForBackendList (endpoint JSON del calendario).
+     */
+    private function applyActiveReservationsFilter(QueryBuilder $qb, array $filters): void
+    {
+        $this->applyTakenReservationsFilter($qb, $filters);
     }
 
     /**
@@ -614,5 +659,96 @@ class SessionRepository extends ServiceEntityRepository
         ;
 
         return $qb;
+    }
+
+    /**
+     * Cuenta sesiones grupales (type='g') cerradas agrupadas por sucursal publica y disciplina activa,
+     * dentro del rango [$from, $to], considerando solo sesiones con al menos una reservacion asistida.
+     *
+     * @return array<int, array{branchOfficeId: int, branchOfficeName: string, disciplineId: int, disciplineName: string, sessions: int}>
+     */
+    public function getCountByDisciplineAndPublicBranchOffice(\DateTimeInterface $from, \DateTimeInterface $to): array
+    {
+        return $this->createQueryBuilder('s')
+            ->select('bo.id as branchOfficeId, bo.name as branchOfficeName')
+            ->addSelect('d.id as disciplineId, d.name as disciplineName')
+            ->addSelect('COUNT(DISTINCT s.id) as sessions')
+            ->join('s.branchOffice', 'bo')
+            ->join('s.discipline', 'd')
+            ->innerJoin('s.reservations', 'r', 'WITH', 'r.attended = :reservationAttended')
+            ->where('s.status = :statusClosed')
+            ->andWhere('s.type = :typeGroup')
+            ->andWhere('s.dateStart >= :from')
+            ->andWhere('s.dateStart <= :to')
+            ->andWhere('bo.public = :public')
+            ->andWhere('bo.isActive = :branchActive')
+            ->andWhere('d.isActive = :disciplineActive')
+            ->groupBy('bo.id, d.id')
+            ->orderBy('bo.name', 'ASC')
+            ->addOrderBy('d.name', 'ASC')
+            ->setParameter('statusClosed', Session::STATUS_CLOSED)
+            ->setParameter('typeGroup', \App\Util\PackageSessionType::TYPE_GROUP)
+            ->setParameter('from', $from->format('Y-m-d'))
+            ->setParameter('to', $to->format('Y-m-d'))
+            ->setParameter('public', true)
+            ->setParameter('branchActive', true)
+            ->setParameter('disciplineActive', true)
+            ->setParameter('reservationAttended', true)
+            ->getQuery()
+            ->getScalarResult()
+        ;
+    }
+
+    /**
+     * Cuenta sesiones individuales/privadas (type='i') cerradas agrupadas por sucursal publica,
+     * dentro del rango [$from, $to], considerando solo sesiones con al menos una reservacion asistida.
+     *
+     * @return array<int, array{branchOfficeId: int, sessions: int}>
+     */
+    public function getCountPrivateByPublicBranchOffice(\DateTimeInterface $from, \DateTimeInterface $to): array
+    {
+        return $this->createQueryBuilder('s')
+            ->select('bo.id as branchOfficeId')
+            ->addSelect('COUNT(DISTINCT s.id) as sessions')
+            ->join('s.branchOffice', 'bo')
+            ->innerJoin('s.reservations', 'r', 'WITH', 'r.attended = :reservationAttended')
+            ->where('s.status = :statusClosed')
+            ->andWhere('s.type = :typeIndividual')
+            ->andWhere('s.dateStart >= :from')
+            ->andWhere('s.dateStart <= :to')
+            ->andWhere('bo.public = :public')
+            ->andWhere('bo.isActive = :branchActive')
+            ->groupBy('bo.id')
+            ->setParameter('statusClosed', Session::STATUS_CLOSED)
+            ->setParameter('typeIndividual', \App\Util\PackageSessionType::TYPE_INDIVIDUAL)
+            ->setParameter('from', $from->format('Y-m-d'))
+            ->setParameter('to', $to->format('Y-m-d'))
+            ->setParameter('public', true)
+            ->setParameter('branchActive', true)
+            ->setParameter('reservationAttended', true)
+            ->getQuery()
+            ->getScalarResult()
+        ;
+    }
+
+    public function getInstructorBranchOfficeMap(): array
+    {
+        $qb = $this->createQueryBuilder('s');
+
+        $qb
+            ->select('DISTINCT b.id as branchOfficeId', 'i.id as instructorId')
+            ->join('s.branchOffice', 'b')
+            ->join('s.instructor', 'i')
+            ->where('b.isActive = :branchActive')
+            ->andWhere('b.public = :branchPublic')
+            ->andWhere('s.status != :statusCancel')
+            ->setParameter('branchActive', true)
+            ->setParameter('branchPublic', true)
+            ->setParameter('statusCancel', Session::STATUS_CANCEL)
+            ->orderBy('b.name', 'ASC')
+            ->addOrderBy('i.id', 'ASC')
+        ;
+
+        return $qb->getQuery()->getScalarResult();
     }
 }
