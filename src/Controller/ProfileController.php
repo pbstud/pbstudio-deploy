@@ -8,10 +8,12 @@ use App\Entity\Discipline;
 use App\Entity\Reservation;
 use App\Entity\Session;
 use App\Entity\User;
+use App\Event\RatingSubmittedEvent;
 use App\Event\ReservationCanceledEvent;
 use App\Event\SecurityCredentialChangedEvent;
 use App\Event\WaitingListRemovedEvent;
 use App\Form\ProfileFormType;
+use App\Repository\AchievementRepository;
 use App\Repository\BranchOfficeRepository;
 use App\Repository\ConfigurationRepository;
 use App\Repository\DisciplineRepository;
@@ -49,13 +51,69 @@ class ProfileController extends AbstractController
     #[Route('/', name: 'profile', methods: ['GET'])]
     public function index(
         TransactionRepository $transactionRepository,
+        AchievementRepository $achievementRepository,
     ): Response {
         /** @var User $user */
         $user = $this->getUser();
 
+        $allAchievements = $achievementRepository->findBy(
+            ['active' => true, 'visibleProfile' => true],
+            ['categoryKey' => 'ASC', 'sortOrder' => 'ASC']
+        );
+
+        // IDs de logros activos y visibles en BD
+        $activeIds = array_map(fn($ach) => $ach->getId(), $allAchievements);
+
+        // Índice de IDs ganados para excluirlos del listado "por conquistar"
+        $earnedIds = array_column($user->getEarnedAchievements(), 'achievementId');
+
+        // Solo mostrar logros ganados cuyo achievement siga activo en BD
+        $earnedAchievements = array_values(array_filter(
+            $user->getEarnedAchievements(),
+            fn($entry) => in_array($entry['achievementId'], $activeIds, true)
+        ));
+
+        // Índice achievementId → conditionKey para ordenar por condición
+        // Índice achievementId → Achievement para acceder a badgeIcon/badgeLabel custom
+        $conditionKeyIndex = [];
+        $achievementIndex  = [];
+        foreach ($allAchievements as $ach) {
+            $conditionKeyIndex[$ach->getId()] = $ach->getConditionKey() ?? '';
+            $achievementIndex[$ach->getId()]  = $ach;
+        }
+
+        // Orden: categoría ASC → condición ASC → nivel de medalla ASC (bronze → legend)
+        $badgeLevelOrder = [
+            'bronze'         => 1,  'silver'        => 2,  'gold'          => 3,
+            'platinum'       => 4,  'diamond'       => 5,  'master'        => 6,  'legend' => 7,
+            'challenge_1'    => 1,  'challenge_2'   => 2,  'challenge_3'   => 3,
+            'challenge_4'    => 4,  'challenge_5'   => 5,
+            'season_special' => 1,  'season_spring' => 2,  'season_summer' => 3,
+            'season_fall'    => 4,  'season_winter' => 5,  'season_xmas'   => 5,
+        ];
+        usort($earnedAchievements, static function (array $a, array $b) use ($badgeLevelOrder, $conditionKeyIndex): int {
+            $catCmp = strcmp($a['categoryKey'] ?? '', $b['categoryKey'] ?? '');
+            if ($catCmp !== 0) {
+                return $catCmp;
+            }
+            $condCmp = strcmp($conditionKeyIndex[$a['achievementId']] ?? '', $conditionKeyIndex[$b['achievementId']] ?? '');
+            if ($condCmp !== 0) {
+                return $condCmp;
+            }
+            return ($badgeLevelOrder[$a['badgeLevel'] ?? ''] ?? 99) <=> ($badgeLevelOrder[$b['badgeLevel'] ?? ''] ?? 99);
+        });
+
+        $pendingAchievements = array_filter(
+            $allAchievements,
+            fn($ach) => !in_array($ach->getId(), $earnedIds, true)
+        );
+
         return $this->render('profile/index.html.twig', [
-            'user' => $user,
-            'lastTransactions' => $transactionRepository->getLastHistoryByUser($user),
+            'user'                => $user,
+            'lastTransactions'    => $transactionRepository->getLastHistoryByUser($user),
+            'earnedAchievements'  => $earnedAchievements,
+            'pendingAchievements' => array_values($pendingAchievements),
+            'achievementIndex'    => $achievementIndex,
         ]);
     }
 
@@ -240,6 +298,7 @@ class ProfileController extends AbstractController
         Request $request,
         Reservation $reservation,
         EntityManagerInterface $em,
+        EventDispatcherInterface $dispatcher,
     ): Response {
         /** @var User $user */
         $user = $this->getUser();
@@ -341,6 +400,8 @@ class ProfileController extends AbstractController
         $userRatingAverage = $reservation->getUserRatingAverage();
 
         $em->flush();
+
+        $dispatcher->dispatch(new RatingSubmittedEvent($reservation));
 
         $successMessage = $wasRated
             ? 'Calificacion actualizada correctamente.'

@@ -363,6 +363,97 @@ class StatsService
     }
 
     /**
+     * Ranking — Top usuarios por asistencias confirmadas por sucursal pública en el rango.
+     */
+    public function getBlock8TopAttendanceBySucursal(\DateTimeInterface $from, \DateTimeInterface $to, int $top = 2): array
+    {
+        $data = [];
+        foreach ($this->branchOfficeRepository->getPublic() as $branchOffice) {
+            $branchOfficeId = $branchOffice->getId();
+            if (null === $branchOfficeId) {
+                continue;
+            }
+            $data[$branchOfficeId] = [
+                'name' => $branchOffice->getName(),
+                'users' => [],
+            ];
+        }
+
+        foreach ($this->reservationRepository->getTopAttendedUsersByPublicBranchOffice($from, $to) as $row) {
+            $branchOfficeId = (int) $row['branchOfficeId'];
+            if (!isset($data[$branchOfficeId])) {
+                continue;
+            }
+            if (count($data[$branchOfficeId]['users']) >= $top) {
+                continue;
+            }
+            $fullName = trim(($row['userName'] ?? '') . ' ' . ($row['userLastname'] ?? ''));
+            $data[$branchOfficeId]['users'][] = [
+                'userId' => (int) $row['userId'],
+                'name' => $fullName ?: 'Usuario sin nombre',
+                'email' => (string) ($row['userEmail'] ?? ''),
+                'attendanceCount' => (int) $row['attendanceCount'],
+            ];
+        }
+
+        return [
+            'from' => $from,
+            'to' => $to,
+            'top' => $top,
+            'data' => $data,
+        ];
+    }
+
+    /**
+     * Ranking completo — lista plana de usuarios por gasto en sucursales públicas.
+     * Ordenado por sucursal ASC, luego por total gastado DESC.
+     *
+     * @return array{from: \DateTimeInterface, to: \DateTimeInterface, rows: array<int, array<string, mixed>>}
+     */
+    public function getFullSpendingRanking(?\DateTimeInterface $from = null, ?\DateTimeInterface $to = null): array
+    {
+        $rows = [];
+        foreach ($this->transactionRepository->getTopClientsBySpendingAndPublicBranchOffice($from, $to) as $row) {
+            $userId   = isset($row['userId']) && null !== $row['userId'] ? (int) $row['userId'] : null;
+            $fullName = trim(($row['userName'] ?? '') . ' ' . ($row['userLastname'] ?? ''));
+
+            $rows[] = [
+                'branchOfficeName' => (string) ($row['branchOfficeName'] ?? ''),
+                'userId'           => $userId,
+                'name'             => $fullName ?: 'Usuario sin nombre',
+                'email'            => (string) ($row['userEmail'] ?? ''),
+                'totalSpent'       => (float) $row['totalSpent'],
+                'purchases'        => (int) $row['purchases'],
+            ];
+        }
+
+        return ['from' => $from, 'to' => $to, 'rows' => $rows];
+    }
+
+    /**
+     * Ranking completo — lista plana de usuarios por asistencias confirmadas en sucursales públicas.
+     * Ordenado por sucursal ASC, luego por asistencias DESC.
+     *
+     * @return array{from: ?\DateTimeInterface, to: ?\DateTimeInterface, rows: array<int, array<string, mixed>>}
+     */
+    public function getFullAttendanceRanking(?\DateTimeInterface $from = null, ?\DateTimeInterface $to = null): array
+    {
+        $rows = [];
+        foreach ($this->reservationRepository->getTopAttendedUsersByPublicBranchOffice($from, $to) as $row) {
+            $fullName = trim(($row['userName'] ?? '') . ' ' . ($row['userLastname'] ?? ''));
+            $rows[] = [
+                'branchOfficeName' => (string) ($row['branchOfficeName'] ?? ''),
+                'userId'           => (int) $row['userId'],
+                'name'             => $fullName ?: 'Usuario sin nombre',
+                'email'            => (string) ($row['userEmail'] ?? ''),
+                'attendanceCount'  => (int) $row['attendanceCount'],
+            ];
+        }
+
+        return ['from' => $from, 'to' => $to, 'rows' => $rows];
+    }
+
+    /**
      * Bloque 2 — Ultimas transacciones completadas.
      */
     public function getBlock2LastTransactions(int $limit = 5): array
@@ -691,7 +782,7 @@ class StatsService
      * Incluye reservadas, asistidas y no asistidas.
      * El usuario Fitpass se toma de sessions.fitpass_user_id en Configuracion.
      */
-    public function getBlock7Fitpass(): array
+    private function getBlock7ByProvider(string $configKey): array
     {
         $today = CarbonImmutable::today();
         $currentYear = $today->startOfYear();
@@ -702,22 +793,24 @@ class StatsService
         $currentWeekEnd = $currentWeek->addDays(6);
 
         $sessionsConfig = $this->configurationRepository->findSessions()?->getData() ?? [];
-        $fitpassUserIdRaw = $sessionsConfig['fitpass_user_id'] ?? null;
-        $fitpassUserId = is_numeric((string) $fitpassUserIdRaw) ? (int) $fitpassUserIdRaw : 0;
+        $userIdRaw = $sessionsConfig[$configKey] ?? null;
+        $userId = is_numeric((string) $userIdRaw) ? (int) $userIdRaw : 0;
 
-        if ($fitpassUserId <= 0 || null === $this->userRepository->find($fitpassUserId)) {
-            return [
-                'hasFitpassUser' => false,
-                'fitpassUserId' => null,
-                'currentYear' => $currentYear,
-                'currentYearEnd' => $currentYearEnd,
-                'currentMonth' => $currentMonth,
-                'currentMonthEnd' => $currentMonthEnd,
-                'currentWeek' => $currentWeek,
-                'currentWeekEnd' => $currentWeekEnd,
-                'currentDay' => $today,
-                'data' => [],
-            ];
+        $base = [
+            'hasFitpassUser' => false,
+            'fitpassUserId'  => null,
+            'currentYear'     => $currentYear,
+            'currentYearEnd'  => $currentYearEnd,
+            'currentMonth'    => $currentMonth,
+            'currentMonthEnd' => $currentMonthEnd,
+            'currentWeek'     => $currentWeek,
+            'currentWeekEnd'  => $currentWeekEnd,
+            'currentDay'      => $today,
+            'data'            => [],
+        ];
+
+        if ($userId <= 0 || null === $this->userRepository->find($userId)) {
+            return $base;
         }
 
         $data = [];
@@ -728,11 +821,11 @@ class StatsService
             }
 
             $data[$branchOfficeId] = [
-                'name' => $branchOffice->getName(),
-                'year' => ['reserved' => 0, 'attended' => 0, 'notAttended' => 0],
+                'name'    => $branchOffice->getName(),
+                'year'    => ['reserved' => 0, 'attended' => 0, 'notAttended' => 0],
                 'monthly' => ['reserved' => 0, 'attended' => 0, 'notAttended' => 0],
-                'weekly' => ['reserved' => 0, 'attended' => 0, 'notAttended' => 0],
-                'daily' => ['reserved' => 0, 'attended' => 0, 'notAttended' => 0],
+                'weekly'  => ['reserved' => 0, 'attended' => 0, 'notAttended' => 0],
+                'daily'   => ['reserved' => 0, 'attended' => 0, 'notAttended' => 0],
             ];
         }
 
@@ -744,41 +837,80 @@ class StatsService
                 }
 
                 $data[$branchOfficeId][$key] = [
-                    'reserved' => (int) ($row['reserved'] ?? 0),
-                    'attended' => (int) ($row['attended'] ?? 0),
+                    'reserved'    => (int) ($row['reserved']    ?? 0),
+                    'attended'    => (int) ($row['attended']    ?? 0),
                     'notAttended' => (int) ($row['notAttended'] ?? 0),
                 ];
             }
         };
 
         $apply(
-            $this->reservationRepository->getFitpassAttendedByPublicBranchOffice($currentYear->toDate(), $currentYearEnd->toDate(), $fitpassUserId),
+            $this->reservationRepository->getFitpassAttendedByPublicBranchOffice($currentYear->toDate(), $currentYearEnd->toDate(), $userId),
             'year'
         );
         $apply(
-            $this->reservationRepository->getFitpassAttendedByPublicBranchOffice($currentMonth->toDate(), $currentMonthEnd->toDate(), $fitpassUserId),
+            $this->reservationRepository->getFitpassAttendedByPublicBranchOffice($currentMonth->toDate(), $currentMonthEnd->toDate(), $userId),
             'monthly'
         );
         $apply(
-            $this->reservationRepository->getFitpassAttendedByPublicBranchOffice($currentWeek->toDate(), $currentWeekEnd->toDate(), $fitpassUserId),
+            $this->reservationRepository->getFitpassAttendedByPublicBranchOffice($currentWeek->toDate(), $currentWeekEnd->toDate(), $userId),
             'weekly'
         );
         $apply(
-            $this->reservationRepository->getFitpassAttendedByPublicBranchOffice($today->toDate(), $today->toDate(), $fitpassUserId),
+            $this->reservationRepository->getFitpassAttendedByPublicBranchOffice($today->toDate(), $today->toDate(), $userId),
             'daily'
         );
 
-        return [
+        return array_merge($base, [
             'hasFitpassUser' => true,
-            'fitpassUserId' => $fitpassUserId,
-            'currentYear' => $currentYear,
-            'currentYearEnd' => $currentYearEnd,
-            'currentMonth' => $currentMonth,
-            'currentMonthEnd' => $currentMonthEnd,
-            'currentWeek' => $currentWeek,
-            'currentWeekEnd' => $currentWeekEnd,
-            'currentDay' => $today,
-            'data' => $data,
+            'fitpassUserId'  => $userId,
+            'data'           => $data,
+        ]);
+    }
+
+    public function getBlock7Fitpass(): array
+    {
+        return $this->getBlock7ByProvider('fitpass_user_id');
+    }
+
+    public function getBlock7Wellhub(): array
+    {
+        return $this->getBlock7ByProvider('wellhub_user_id');
+    }
+
+    public function getBlock7TotalPass(): array
+    {
+        return $this->getBlock7ByProvider('totalpass_user_id');
+    }
+
+    public function getNewUserRetentionBlock(\DateTimeInterface $from, \DateTimeInterface $to): array
+    {
+        $rows = $this->transactionRepository->getNewUserPurchasersInRange($from, $to);
+
+        $sinRenovacion = [];
+        $conRenovacion = [];
+
+        foreach ($rows as $row) {
+            $entry = [
+                'userId'          => (int) $row['userId'],
+                'fullName'        => trim($row['firstName'] . ' ' . $row['lastName']),
+                'email'           => $row['email'],
+                'firstPurchaseAt' => $row['firstPurchaseAt'],
+                'subsequentCount' => (int) $row['subsequentCount'],
+            ];
+
+            if ($entry['subsequentCount'] === 0) {
+                $sinRenovacion[] = $entry;
+            } else {
+                $conRenovacion[] = $entry;
+            }
+        }
+
+        return [
+            'from'          => $from,
+            'to'            => $to,
+            'sinRenovacion' => $sinRenovacion,
+            'conRenovacion' => $conRenovacion,
         ];
     }
 

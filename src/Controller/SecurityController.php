@@ -28,9 +28,15 @@ class SecurityController extends AbstractController
         $isModalRequest = $request->query->has('_modaltarget') || $request->isXmlHttpRequest();
         $template = $isModalRequest ? 'login_modal' : 'login';
 
+        // Leer y limpiar el timestamp de retry del throttle (se guarda en AuthenticationFailureHandler)
+        $session = $request->hasSession() ? $request->getSession() : null;
+        $retryAfter = $session?->get('_login_retry_after');
+        $session?->remove('_login_retry_after');
+
         return $this->render(sprintf('security/%s.html.twig', $template), [
             'last_username' => $lastUsername,
-            'error' => $error,
+            'error'        => $error,
+            'retry_after'  => $retryAfter,
         ]);
     }
 

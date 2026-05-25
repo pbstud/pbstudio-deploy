@@ -54,10 +54,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Timesta
     private array $anniversaryTransactionHistory = [];
 
     #[ORM\Column(type: Types::JSON)]
-    private array $anniversaryClassHistory = [];
-
-    #[ORM\Column(type: Types::JSON)]
     private array $anniversaryWindowHistory = [];
+
+    /**
+     * Logros ganados por el usuario.
+     * Estructura: [['achievementId' => int, 'earnedAt' => 'Y-m-d H:i:s', 'name' => string, 'badgeLevel' => string, 'badgeColor' => string, 'categoryKey' => string], ...]
+     */
+    #[ORM\Column(type: Types::JSON)]
+    private array $earnedAchievements = [];
+
+    /**
+     * Progreso parcial de logros aún no ganados.
+     * Estructura: { "<achievementId>": <currentValue>, ... }
+     */
+    #[ORM\Column(type: Types::JSON)]
+    private array $achievementProgress = [];
 
     #[ORM\Column(length: 255, nullable: true)]
     #[Assert\Length(min: 3, max: 100, groups: ['Profile'])]
@@ -205,18 +216,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Timesta
         return $this;
     }
 
-    public function getAnniversaryClassHistory(): array
-    {
-        return $this->anniversaryClassHistory;
-    }
-
-    public function setAnniversaryClassHistory(array $anniversaryClassHistory): static
-    {
-        $this->anniversaryClassHistory = array_values(array_filter(array_map('intval', $anniversaryClassHistory), static fn (int $year): bool => $year > 0));
-
-        return $this;
-    }
-
     public function getAnniversaryWindowHistory(): array
     {
         return $this->anniversaryWindowHistory;
@@ -230,16 +229,118 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface, Timesta
             }
 
             $window = (string) ($row['window'] ?? '');
-            $type = (string) ($row['type'] ?? '');
             $year = (int) ($row['year'] ?? 0);
 
             return in_array($window, ['this_week', 'this_month'], true)
-                && in_array($type, ['transaction', 'class', 'joined'], true)
+                && ($row['type'] ?? '') === 'transaction'
                 && $year > 0;
         }));
 
         return $this;
     }
+
+    public function getEarnedAchievements(): array
+    {
+        return is_array($this->earnedAchievements) ? $this->earnedAchievements : [];
+    }
+
+    public function setEarnedAchievements(array $earnedAchievements): static
+    {
+        $this->earnedAchievements = $earnedAchievements;
+
+        return $this;
+    }
+
+    public function addEarnedAchievement(int $achievementId, string $name, string $badgeLevel, string $badgeColor, string $categoryKey, ?\DateTimeImmutable $earnedAt = null, int|float $currentValue = 0): static
+    {
+        foreach ($this->earnedAchievements as $entry) {
+            if ((int) ($entry['achievementId'] ?? 0) === $achievementId) {
+                return $this; // ya existe, no duplicar
+            }
+        }
+
+        $this->earnedAchievements[] = [
+            'achievementId' => $achievementId,
+            'earnedAt'      => ($earnedAt ?? new \DateTimeImmutable())->format('Y-m-d H:i:s'),
+            'name'          => $name,
+            'badgeLevel'    => $badgeLevel,
+            'badgeColor'    => $badgeColor,
+            'categoryKey'   => $categoryKey,
+            'lastValue'     => $currentValue,
+        ];
+
+        return $this;
+    }
+
+    public function getEarnedAchievementLastValue(int $achievementId): int|float
+    {
+        foreach ($this->earnedAchievements as $entry) {
+            if ((int) ($entry['achievementId'] ?? 0) === $achievementId) {
+                $v = $entry['lastValue'] ?? 0;
+                return is_int($v) ? $v : (float) $v;
+            }
+        }
+
+        return 0;
+    }
+
+    public function hasEarnedAchievement(int $achievementId): bool
+    {
+        foreach ($this->earnedAchievements as $entry) {
+            if ((int) ($entry['achievementId'] ?? 0) === $achievementId) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function getEarnedAchievementEarnedAt(int $achievementId): ?\DateTimeImmutable
+    {
+        foreach ($this->earnedAchievements as $entry) {
+            if ((int) ($entry['achievementId'] ?? 0) === $achievementId) {
+                $raw = $entry['earnedAt'] ?? null;
+                if ($raw === null) {
+                    return null;
+                }
+                try {
+                    return new \DateTimeImmutable($raw);
+                } catch (\Exception) {
+                    return null;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    // ── Achievement progress (partial, not-yet-earned) ────────────────────────
+
+    public function getAchievementProgress(): array
+    {
+        return is_array($this->achievementProgress) ? $this->achievementProgress : [];
+    }
+
+    public function getAchievementProgressValue(int $achievementId): int|float
+    {
+        return $this->achievementProgress[(string) $achievementId] ?? 0;
+    }
+
+    public function setAchievementProgressValue(int $achievementId, int|float $currentValue): static
+    {
+        $this->achievementProgress[(string) $achievementId] = $currentValue;
+
+        return $this;
+    }
+
+    public function clearAchievementProgressValue(int $achievementId): static
+    {
+        unset($this->achievementProgress[(string) $achievementId]);
+
+        return $this;
+    }
+
+    // ── Emergency contact ─────────────────────────────────────────────────────
 
     public function getEmergencyContactName(): ?string
     {

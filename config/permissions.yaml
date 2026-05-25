@@ -60,6 +60,7 @@ sections:
             - { label: 'Listado',   route: 'backend_user' }
             - { label: 'Exportar',   route: 'backend_user_export' }
             - { label: 'Crear',     route: 'backend_user_new' }
+            - { label: 'Ranking',   route: 'backend_user_ranking' }
             - { label: 'Perfil',    route: 'backend_user_show' }
             - { label: 'Habilitar / Deshabilitar',    route: 'backend_user_toggle_enable' }
             - { label: 'Restablecer Contraseña',    route: 'backend_user_reset_password' }
@@ -92,3 +93,8 @@ sections:
         label: 'Calificaciones'
         actions:
             - { label: 'Listado y detalles', route: 'backend_stats_ratings' }
+
+    Achievements:
+        label: 'Logros'
+        actions:
+            - { label: 'Listado y CRUD', route: 'backend_achievement' }

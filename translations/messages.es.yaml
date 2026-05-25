@@ -93,6 +93,9 @@ main:
     backend_coupon_edit: Editar Cupón
     backend_coupon_new: Nuevo Cupón
     backend_coupon_show: Detalle de Cupón
+    backend_achievement: Logros
+    backend_achievement_new: Nuevo Logro
+    backend_achievement_edit: Editar Logro
     backend_configuration: Configuración
     backend_discipline: Disciplinas
     backend_discipline_edit: Editar Disciplina
@@ -133,6 +136,7 @@ main:
     backend_user_edit: Editar Usuario
     backend_user_show: Perfil del usuario
     backend_user_new: Nuevo registro
+    backend_user_ranking: Ranking
     catalog: Catálogos
     dashboard: Dashboard
     payment: Pagos

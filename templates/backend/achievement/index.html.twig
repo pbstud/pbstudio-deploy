@@ -1,0 +1,175 @@
+{% extends 'backend/default/list.html.twig' %}
+
+{% block title %}Listado de Logros{% endblock %}
+
+{% block pagination_filter %}
+<form method="get" action="{{ path('backend_achievement') }}" style="display:inline-flex; gap:6px; margin-bottom:10px;">
+    <input type="text" name="q" value="{{ searchQuery|default('') }}" placeholder="Buscar por nombre, categoría o condición…" class="form-control" style="width:320px;">
+    <button type="submit" class="btn btn-default"><span class="glyphicon glyphicon-search"></span></button>
+    {% if searchQuery is defined and searchQuery != '' %}
+        <a href="{{ path('backend_achievement') }}" class="btn btn-default">&#x2715; Limpiar</a>
+    {% endif %}
+</form>
+{% endblock %}
+
+{% block actions %}
+    <a href="{{ path('backend_achievement_new') }}" class="btn btn-dark" style="margin-right:8px;">
+        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+        {{ 'main.backend_achievement_new'|trans }}
+    </a>
+{% endblock %}
+
+{% block table_thead %}
+    <tr>
+        <th>{{ knp_pagination_sortable(pagination, 'label.id'|trans, 'a.id') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'label.name'|trans, 'a.name') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Categoría', 'a.categoryKey') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Condición', 'a.conditionKey') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Meta', 'a.targetValue') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Nivel', 'a.badgeLevel') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'Recompensa', 'a.rewardType') }}</th>
+        <th>{{ knp_pagination_sortable(pagination, 'label.active'|trans, 'a.active') }}</th>
+        <th>Acción</th>
+    </tr>
+{% endblock %}
+
+{% block table_tbody %}
+    {% set catColors = {
+        'asistencia':  '#2e86ab',
+        'compras':     '#e07b39',
+        'antiguedad':  '#6d4c7d',
+        'racha':       '#c0392b',
+        'disciplina':  '#27ae60',
+        'calificacion':'#d4a017',
+        'instructor':  '#1a7a6e',
+        'comunidad':   '#d63384',
+        'habitos':     '#5b6e8c'
+    } %}
+    {% set badgeColors = {
+        'bronze':         '#8f5d43',
+        'silver':         '#8f9db1',
+        'gold':           '#c9a227',
+        'platinum':       '#3f7f93',
+        'diamond':        '#3f78c8',
+        'master':         '#7a42b5',
+        'legend':         '#bfa24e',
+        'challenge_1':    '#e05c2a',
+        'challenge_2':    '#d4287e',
+        'challenge_3':    '#1a7a6e',
+        'challenge_4':    '#5b6e8c',
+        'challenge_5':    '#2e3d6b',
+        'season_spring':  '#4caf50',
+        'season_summer':  '#f9a825',
+        'season_fall':    '#bf6c1a',
+        'season_winter':  '#5b9bd5',
+        'season_xmas':    '#c0392b',
+        'season_special': '#8e44ad'
+    } %}
+    {% set badgePoints = {
+        'bronze':         100,
+        'silver':         250,
+        'gold':           500,
+        'platinum':       1000,
+        'diamond':        2000,
+        'master':         5000,
+        'legend':         10000,
+        'challenge_1':    300,
+        'challenge_2':    600,
+        'challenge_3':    900,
+        'challenge_4':    1500,
+        'challenge_5':    3000,
+        'season_spring':  400,
+        'season_summer':  400,
+        'season_fall':    400,
+        'season_winter':  400,
+        'season_xmas':    800,
+        'season_special': 1200
+    } %}
+    {% set badgeIconMap = {
+        'bronze':         '🥉',
+        'silver':         '🥈',
+        'gold':           '🥇',
+        'platinum':       '💠',
+        'diamond':        '💎',
+        'master':         '👑',
+        'legend':         '🏆',
+        'challenge_1':    '🎯',
+        'challenge_2':    '⚡',
+        'challenge_3':    '🔥',
+        'challenge_4':    '💪',
+        'challenge_5':    '🛡️',
+        'season_spring':  '🌸',
+        'season_summer':  '☀️',
+        'season_fall':    '🍂',
+        'season_winter':  '❄️',
+        'season_xmas':    '🎄',
+        'season_special': '✨'
+    } %}
+    {% for achievement in pagination %}
+        <tr>
+            <td>{{ achievement.id }}</td>
+            <td>{{ achievement.name }}</td>
+            <td>
+                {% set catColor = catColors[achievement.categoryKey] ?? '#666' %}
+                <span style="color: {{ catColor }}; font-weight:600;">
+                    {{ categoryLabels[achievement.categoryKey] ?? achievement.categoryKey }}
+                </span>
+            </td>
+            <td>{{ conditionLabels[achievement.conditionKey] ?? achievement.conditionKey }}</td>
+            <td>
+                {% set val = achievement.targetValue|number_format(0) %}
+                {% set type = achievement.thresholdType %}
+                {% if type == 'amount' %}
+                    ${{ achievement.targetValue|number_format(0, '.', ',') }}
+                {% elseif type == 'days' %}
+                    {{ val }} días
+                {% elseif type == 'months' %}
+                    {% if val < 12 %}
+                        {{ val }} meses
+                    {% elseif val == 12 %}
+                        1 año
+                    {% else %}
+                        {{ (val / 12)|round(1) }} años
+                    {% endif %}
+                {% elseif type == 'rating' %}
+                    ≥ {{ achievement.targetValue }} ★
+                {% else %}
+                    {{ val }}
+                {% endif %}
+            </td>
+            <td>
+                {% if achievement.badgeLevel %}
+                    <span style="color: {{ badgeColors[achievement.badgeLevel] ?? '#aaa' }}; font-weight:600;">
+                        {{ achievement.badgeIcon ?? badgeIconMap[achievement.badgeLevel] ?? '' }} {{ achievement.badgeLabel ?? badgeLevelLabels[achievement.badgeLevel] ?? achievement.badgeLevel|replace({'_': ' '})|title }}
+                    </span>
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if achievement.rewardValue is not null %}
+                    <span style="color: {{ badgeColors[achievement.badgeLevel] ?? '#aaa' }}; font-weight:600;">
+                        {{ achievement.rewardValue }} pts
+                    </span>
+                {% elseif achievement.badgeLevel and badgePoints[achievement.badgeLevel] is defined %}
+                    <span style="color: {{ badgeColors[achievement.badgeLevel] ?? '#aaa' }}; font-weight:600;">
+                        {{ badgePoints[achievement.badgeLevel] }} pts
+                    </span>
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if achievement.active %}
+                    <span class="label label-primary">Sí</span>
+                {% else %}
+                    <span class="label label-danger">No</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{{ path('backend_achievement_show', {'id': achievement.id}) }}" class="btn btn-success btn-xs">Detalles</a>
+                <a href="{{ path('backend_achievement_edit', {'id': achievement.id}) }}" class="btn btn-primary btn-xs">Editar</a>
+            </td>
+        </tr>
+    {% endfor %}
+{% endblock %}

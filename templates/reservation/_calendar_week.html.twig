@@ -63,13 +63,13 @@
                    data-remodal
                    data-event data-event-type="{{ session.type }}"
                    data-event-discipline="{{ session.discipline }}"
-                   data-event-instructor="{{ session.instructor.profile.firstname }}">
+                   data-event-instructor="{{ session.instructor ? session.instructor.profile.firstname : '' }}">
 
                     {% if is_reserved %}<span class="class__reserved-badge" title="Ya tienes {{ reserved_count }} reserva{{ reserved_count > 1 ? 's' : '' }} aquí">{{ reserved_count }}</span>{% endif %}
                     <span class="icon-{{  session.individual ? 'individual' : 'group' }}"></span>
                     <h6>{{ session.discipline }}</h6>
                     <p>{{ session.timeStart|date('h:i a') }}</p>
-                    <p>{{ session.instructor.profile.firstname }}</p>
+                    <p>{{ session.instructor ? session.instructor.profile.firstname : '' }}</p>
                     {% if class_description != '' %}
                         <div class="class-description js-class-description" data-collapsed="1">
                             <div class="class-description__text js-class-description-text">{{ class_description }}</div>

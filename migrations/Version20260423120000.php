@@ -26,15 +26,13 @@ final class Version20260423120000 extends AbstractMigration
     public function up(Schema $schema): void
     {
         // 1. Columnas de estado de congelación en la tabla transaction
-        $this->addSql(
-            'ALTER TABLE transaction
-             ADD is_frozen       TINYINT(1)   NOT NULL DEFAULT 0     AFTER is_expired,
-             ADD frozen_at       DATETIME     DEFAULT NULL            AFTER is_frozen,
-             ADD frozen_days_remaining INT    DEFAULT NULL            AFTER frozen_at,
-             ADD frozen_seconds_remaining INT DEFAULT NULL            AFTER frozen_days_remaining'
-        );
+        $this->addColumnIfNotExists('transaction', 'is_frozen       TINYINT(1)   NOT NULL DEFAULT 0');
+        $this->addColumnIfNotExists('transaction', 'frozen_at       DATETIME     DEFAULT NULL');
+        $this->addColumnIfNotExists('transaction', 'frozen_days_remaining INT    DEFAULT NULL');
+        $this->addColumnIfNotExists('transaction', 'frozen_seconds_remaining INT DEFAULT NULL');
 
         // 2. Tabla de auditoría de freeze/unfreeze
+        if (!$this->tableExists('transaction_freeze_log')) {
         $this->addSql(
             'CREATE TABLE transaction_freeze_log (
                 id               INT          AUTO_INCREMENT NOT NULL,
@@ -57,6 +55,7 @@ final class Version20260423120000 extends AbstractMigration
                     FOREIGN KEY (staff_id)       REFERENCES staff (id)       ON DELETE RESTRICT
             ) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB'
         );
+        } // end if !tableExists
     }
 
     public function down(Schema $schema): void
@@ -80,6 +79,31 @@ final class Version20260423120000 extends AbstractMigration
 
         if ($table->hasColumn('frozen_seconds_remaining')) {
             $this->addSql('ALTER TABLE transaction DROP COLUMN frozen_seconds_remaining');
+        }
+    }
+
+    private function tableExists(string $tableName): bool
+    {
+        $count = (int) $this->connection->fetchOne(
+            'SELECT COUNT(1) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :t',
+            ['t' => $tableName]
+        );
+
+        return $count > 0;
+    }
+
+    private function addColumnIfNotExists(string $tableName, string $columnDefinition): void
+    {
+        // Extraer nombre de columna (primera palabra de la definición)
+        $columnName = preg_split('/\s+/', trim($columnDefinition))[0];
+
+        $exists = (int) $this->connection->fetchOne(
+            'SELECT COUNT(1) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = :t AND column_name = :c',
+            ['t' => $tableName, 'c' => $columnName]
+        );
+
+        if (0 === $exists) {
+            $this->addSql(sprintf('ALTER TABLE `%s` ADD %s', $tableName, $columnDefinition));
         }
     }
 }

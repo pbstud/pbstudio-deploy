@@ -105,7 +105,8 @@ final class BackendBuilder
                 'backend_user_show',
                 'backend_user_edit',
             ],
-            'backend_user_new' => [],
+            'backend_user_new'     => [],
+            'backend_user_ranking' => [],
         ];
 
         $this->addSubmenu($menu, $submenu);
@@ -156,6 +157,10 @@ final class BackendBuilder
                     'backend_coupon_new',
                     'backend_coupon_edit',
                     'backend_coupon_show',
+                ],
+                'backend_achievement' => [
+                    'backend_achievement_new',
+                    'backend_achievement_edit',
                 ],
                 'backend_configuration' => [],
             ];

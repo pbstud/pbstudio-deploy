@@ -17,6 +17,10 @@ class RouteAccessVoter extends Voter
     private const ROUTE_PERMISSION_ALIASES = [
         // Calificaciones se maneja como permiso unico de modulo.
         'backend_stats_ratings_detail' => 'backend_stats_ratings',
+        // Logros usa permiso unico de modulo para acciones CRUD.
+        'backend_achievement_new' => 'backend_achievement',
+        'backend_achievement_edit' => 'backend_achievement',
+        'backend_achievement_delete' => 'backend_achievement',
     ];
 
     public function __construct(

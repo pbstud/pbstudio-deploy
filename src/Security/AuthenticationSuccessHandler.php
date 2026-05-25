@@ -19,6 +19,14 @@ readonly class AuthenticationSuccessHandler implements AuthenticationSuccessHand
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token): ?Response
     {
+        // Clear any pending throttle state on successful login.
+        if ($request->hasSession()) {
+            $session = $request->getSession();
+            $session->remove('_login_failed_attempts');
+            $session->remove('_login_failed_attempts_at');
+            $session->remove('_login_retry_after');
+        }
+
         $url = $this->urlGenerator->generate('profile');
 
         if ($request->request->has('_modaltarget')) {

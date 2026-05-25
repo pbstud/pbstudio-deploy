@@ -6,10 +6,12 @@ namespace App\Controller\Backend;
 
 use App\Entity\Reservation;
 use App\Entity\Session;
+use App\Event\AttendanceMarkedEvent;
 use Doctrine\ORM\EntityManagerInterface;
 use OpenSpout\Writer\XLSX\Writer;
 use OpenSpout\Common\Entity\Row;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,6 +28,7 @@ class ReservationController extends AbstractController
         Request $request,
         Reservation $reservation,
         EntityManagerInterface $em,
+        EventDispatcherInterface $dispatcher,
     ): Response {
         if (!$this->isCsrfTokenValid('backend_reservation_attended_'.$reservation->getId(), (string) $request->request->get('_token'))) {
             return $this->json([
@@ -34,8 +37,17 @@ class ReservationController extends AbstractController
             ], Response::HTTP_FORBIDDEN);
         }
 
-        $reservation->setAttended($request->request->getBoolean('attended'));
+        $wasAttended = (bool) $reservation->isAttended();
+        $nowAttended = $request->request->getBoolean('attended');
+
+        $reservation->setAttended($nowAttended);
         $em->flush();
+
+        // Dispatch only when marking as attended for the first time (false → true).
+        // Un-marking attendance does not trigger achievement evaluation.
+        if (!$wasAttended && $nowAttended) {
+            $dispatcher->dispatch(new AttendanceMarkedEvent($reservation));
+        }
 
         return $this->json([
             'success' => true,

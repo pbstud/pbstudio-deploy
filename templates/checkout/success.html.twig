@@ -195,3 +195,55 @@
     </script>
     {% endif %}
 {% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+    $(function () {
+        {# Failsafe: muestra el toast de la notificación de compra aunque el mecanismo
+           de sessionStorage no haya capturado el delta (p.ej. primer tab, polling tardío).
+           La clave por transacción garantiza que solo dispara una vez por pestaña. #}
+        var toastKey = 'pb_checkout_toast_{{ transaction.id }}';
+        try {
+            if (!sessionStorage.getItem(toastKey)) {
+                sessionStorage.setItem(toastKey, '1');
+
+                // Captura ANTES de que el AJAX del init retorne: si lastUnreadCount es -1
+                // significa que checkout.js seteó el sessionStorage y el init va a detectar
+                // el delta correctamente → no necesitamos hacer nada más.
+                var nc = window.NotificationCenter;
+                var initHadMinusOne = nc && nc.lastUnreadCount === -1;
+
+                setTimeout(function () {
+                    nc = window.NotificationCenter;
+                    if (!nc || !nc.listUrl) { return; }
+
+                    // Si init tenía -1 Y su AJAX ya retornó (lastUnreadCount >= 0):
+                    // el delta fue procesado correctamente, evitar duplicados.
+                    if (initHadMinusOne && nc.lastUnreadCount >= 0) { return; }
+
+                    // Fallback: init no cubrió el delta (sessionStorage no era -1, o AJAX falló).
+                    // Mostrar solo notificaciones creadas en los últimos 90 segundos
+                    // (las de esta compra) para no duplicar toasts de compras anteriores.
+                    $.getJSON(nc.listUrl + '?page=1&limit=10')
+                        .done(function (response) {
+                            var now = Date.now();
+                            var fresh = (response.data || []).filter(function (item) {
+                                return item.createdAt && (now - new Date(item.createdAt).getTime()) < 10000;
+                            });
+                            fresh.forEach(function (item, index) {
+                                setTimeout(function () {
+                                    if ((item.type === 'achievement_unlocked' || item.type === 'achievement_unlocked_special') && item.payload) {
+                                        PBNotify.achievementToast(item, nc.markReadUrlTemplate);
+                                    } else {
+                                        PBNotify.notif(item.id, item.title || 'Notificación nueva', item.body || '', item.targetUrl || null, nc.markReadUrlTemplate || null);
+                                    }
+                                }, index * 220);
+                            });
+                        });
+                }, 900);
+            }
+        } catch (e) {}
+    });
+    </script>
+{% endblock %}

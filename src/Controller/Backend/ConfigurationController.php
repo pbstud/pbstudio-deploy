@@ -26,7 +26,9 @@ class ConfigurationController extends AbstractController
 
     private array $cast = [
         'sessions' => [
-            'fitpass_user_id' => 'int',
+            'fitpass_user_id'   => 'int',
+            'wellhub_user_id'   => 'int',
+            'totalpass_user_id' => 'int',
         ],
         'stats' => [
             'start_date' => 'date',
@@ -194,13 +196,13 @@ class ConfigurationController extends AbstractController
     private function castValues(string $module, array $values): array
     {
         foreach ($values as $field => $value) {
-            if (empty($value) || !isset($this->cast[$module][$field])) {
+            if (!isset($this->cast[$module][$field])) {
                 continue;
             }
 
             $values[$field] = match ($this->cast[$module][$field]) {
-                'date' => $this->castDateValue($module, $field, (string) $value),
-                'int' => $this->castIntValue($module, $field, $value),
+                'date' => empty($value) ? $value : $this->castDateValue($module, $field, (string) $value),
+                'int'  => $this->castIntValue($module, $field, $value),
                 default => $value,
             };
         }
@@ -211,16 +213,8 @@ class ConfigurationController extends AbstractController
     private function castIntValue(string $module, string $field, mixed $value): ?int
     {
         $input = trim((string) $value);
-        if ('' === $input) {
+        if ('' === $input || !ctype_digit($input) || (int) $input <= 0) {
             return null;
-        }
-
-        if (!ctype_digit($input) || (int) $input <= 0) {
-            throw new \InvalidArgumentException(sprintf(
-                'El valor para "%s.%s" es invalido. Debe ser un entero positivo.',
-                $module,
-                $field,
-            ));
         }
 
         return (int) $input;
@@ -232,16 +226,18 @@ class ConfigurationController extends AbstractController
             return;
         }
 
-        $fitpassUserId = $values['fitpass_user_id'] ?? null;
-        if (null === $fitpassUserId) {
-            return;
-        }
-
-        if (null === $userRepository->find((int) $fitpassUserId)) {
-            throw new \InvalidArgumentException(sprintf(
-                'No existe un usuario con id %d para sessions.fitpass_user_id.',
-                (int) $fitpassUserId,
-            ));
+        foreach (['fitpass_user_id', 'wellhub_user_id', 'totalpass_user_id'] as $field) {
+            $userId = $values[$field] ?? null;
+            if (null === $userId) {
+                continue;
+            }
+            if (null === $userRepository->find((int) $userId)) {
+                throw new \InvalidArgumentException(sprintf(
+                    'No existe un usuario con id %d para sessions.%s.',
+                    (int) $userId,
+                    $field,
+                ));
+            }
         }
     }
 

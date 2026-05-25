@@ -252,8 +252,8 @@ class TransactionRepository extends ServiceEntityRepository
 
     /**
      * Bloque 4 — Totales por metodo de pago y sucursal publica activa desde $from hasta hoy.
-     * Las compras regalo se suman a su metodo real (cash/card/pos).
-     * Se excluyen FREE y GIFT porque payment.gift representa un canje de regalo.
+     * Las compras de regalos (persona A compra para regalar a B) se registran con su metodo real (cash/card/pos).
+     * Se excluyen FREE (canjes gratuitos) y GIFT (canjes de regalos) porque son transacciones sin dinero (total=0.00).
      * Retorna una fila por sucursal con columnas: cash, card, pos.
      */
     public function getTotalsByChargeMethodAndPublicBranchOffice(\DateTimeInterface $from, \DateTimeInterface $to): array
@@ -341,7 +341,7 @@ class TransactionRepository extends ServiceEntityRepository
      * Retorna los clientes con mayor gasto total por sucursal publica en el rango dado.
      * Excluye transacciones gratuitas y de gift card.
      */
-    public function getTopClientsBySpendingAndPublicBranchOffice(\DateTimeInterface $from, \DateTimeInterface $to): array
+    public function getTopClientsBySpendingAndPublicBranchOffice(?\DateTimeInterface $from = null, ?\DateTimeInterface $to = null): array
     {
         $qb = $this->createQueryBuilder('t');
 
@@ -356,8 +356,6 @@ class TransactionRepository extends ServiceEntityRepository
             ->join('t.user', 'u')
             ->join('t.branchOffice', 'b')
             ->where('t.status = :status')
-            ->andWhere('t.createdAt >= :from')
-            ->andWhere('t.createdAt <= :to')
             ->andWhere('t.chargeMethod != :free')
             ->andWhere('t.chargeMethod != :gift')
             ->andWhere('b.public = :public')
@@ -372,13 +370,20 @@ class TransactionRepository extends ServiceEntityRepository
             ->addOrderBy('totalSpent', 'DESC')
             ->addOrderBy('purchases', 'DESC')
             ->setParameter('status', Transaction::STATUS_PAID)
-            ->setParameter('from', \DateTimeImmutable::createFromInterface($from)->setTime(0, 0, 0))
-            ->setParameter('to', \DateTimeImmutable::createFromInterface($to)->setTime(23, 59, 59))
             ->setParameter('free', Transaction::CHARGE_METHOD_FREE)
             ->setParameter('gift', Transaction::CHARGE_METHOD_GIFT)
             ->setParameter('public', true)
             ->setParameter('isActive', true)
         ;
+
+        if (null !== $from) {
+            $qb->andWhere('t.createdAt >= :from')
+               ->setParameter('from', \DateTimeImmutable::createFromInterface($from)->setTime(0, 0, 0));
+        }
+        if (null !== $to) {
+            $qb->andWhere('t.createdAt <= :to')
+               ->setParameter('to', \DateTimeImmutable::createFromInterface($to)->setTime(23, 59, 59));
+        }
 
         return $qb->getQuery()->getArrayResult();
     }
@@ -753,6 +758,101 @@ class TransactionRepository extends ServiceEntityRepository
         return (float) $qb->getQuery()->getSingleScalarResult();
     }
 
+    /**
+     * Sums the `total` of all PAID transactions for $user within an optional date range.
+     *
+     * Both bounds are inclusive. $from / $until are DATETIME values; when derived from a
+     * DATE-only period_deadline, the caller is responsible for setting end-of-day time.
+     *
+     * Used by PurchaseConditionResolver for first-earn evaluation.
+     */
+    public function sumTotalPaidByUser(
+        User $user,
+        ?\DateTimeImmutable $from = null,
+        ?\DateTimeImmutable $until = null,
+    ): float {
+        $qb = $this->createQueryBuilder('t')
+            ->select('COALESCE(SUM(t.total), 0)')
+            ->where('t.user = :user')
+            ->andWhere('t.status = :status')
+            ->setParameter('user', $user)
+            ->setParameter('status', Transaction::STATUS_PAID);
+
+        if ($from !== null) {
+            $qb->andWhere('t.createdAt >= :from')
+               ->setParameter('from', $from->format('Y-m-d H:i:s'));
+        }
+
+        if ($until !== null) {
+            $qb->andWhere('t.createdAt <= :until')
+               ->setParameter('until', $until->format('Y-m-d H:i:s'));
+        }
+
+        return (float) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Counts PAID transactions for $user, optionally bounded by $from and/or $until.
+     *
+     * Both bounds are inclusive. Pass null to omit the bound.
+     *
+     * Used by PurchaseConditionResolver for first-earn evaluation of total_transactions.
+     */
+    public function countPaidTransactionsByUser(
+        User $user,
+        ?\DateTimeImmutable $from = null,
+        ?\DateTimeImmutable $until = null,
+    ): int {
+        $qb = $this->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->where('t.user = :user')
+            ->andWhere('t.status = :status')
+            ->setParameter('user', $user)
+            ->setParameter('status', Transaction::STATUS_PAID);
+
+        if ($from !== null) {
+            $qb->andWhere('t.createdAt >= :from')
+               ->setParameter('from', $from->format('Y-m-d H:i:s'));
+        }
+
+        if ($until !== null) {
+            $qb->andWhere('t.createdAt <= :until')
+               ->setParameter('until', $until->format('Y-m-d H:i:s'));
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Returns createdAt + expirationAt for all PAID transactions of $user whose
+     * createdAt is on or before $windowEnd.
+     *
+     * Result is used by PurchaseConditionResolver to evaluate consecutive_paid_months
+     * without issuing one query per month: a single fetch + PHP loop is faster for
+     * the typical case of dozens of transactions per user.
+     *
+     * A transaction covers calendar month M when:
+     *   createdAt  ≤ last_day(M)  AND
+     *   (expirationAt ≥ first_day(M)  OR  expirationAt IS NULL)
+     *
+     * @return array<int, array{createdAt: \DateTimeInterface, expirationAt: ?\DateTimeInterface}>
+     */
+    public function findPaidTransactionsForConsecutiveMonths(
+        User $user,
+        \DateTimeImmutable $windowEnd,
+    ): array {
+        return $this->createQueryBuilder('t')
+            ->select('t.createdAt', 't.expirationAt')
+            ->where('t.user = :user')
+            ->andWhere('t.status = :status')
+            ->andWhere('t.createdAt <= :windowEnd')
+            ->setParameter('user', $user)
+            ->setParameter('status', Transaction::STATUS_PAID)
+            ->setParameter('windowEnd', $windowEnd->format('Y-m-d H:i:s'))
+            ->getQuery()
+            ->getArrayResult();
+    }
+
     private function findTransactionAvailableByUser(User $user): QueryBuilder
     {
         $qb = $this->createQueryBuilder('t');
@@ -936,5 +1036,150 @@ class TransactionRepository extends ServiceEntityRepository
         $search = trim((string) ($filters['filter_search'] ?? ''));
 
         return '' !== $search && !ctype_digit($search);
+    }
+
+    /**
+     * Retorna los usuarios que compraron al menos un paquete de nuevo usuario
+     * en el rango [from, to] y si tienen compras adicionales después.
+     *
+     * Cada fila: userId, firstName, lastName, email, firstPurchaseAt (string Y-m-d H:i:s), subsequentCount (int).
+     */
+    public function getNewUserPurchasersInRange(
+        \DateTimeInterface $from,
+        \DateTimeInterface $to,
+    ): array {
+        $conn = $this->getEntityManager()->getConnection();
+
+        $sql = <<<'SQL'
+            SELECT
+                u.id            AS userId,
+                u.name          AS firstName,
+                u.lastname      AS lastName,
+                u.email,
+                nu.firstPurchaseAt,
+                COUNT(t2.id)    AS subsequentCount
+            FROM (
+                SELECT
+                    t.user_id,
+                    MIN(t.created_at) AS firstPurchaseAt
+                FROM `transaction` t
+                INNER JOIN `package` p ON p.id = t.package_id
+                WHERE t.status      = :statusPaid
+                  AND p.new_user    = 1
+                  AND t.created_at >= :from
+                  AND t.created_at <= :to
+                GROUP BY t.user_id
+            ) nu
+            INNER JOIN `user` u ON u.id = nu.user_id
+            -- Recompras: cualquier transacción pagada posterior (solo paquetes propios;
+            -- fitpass/wellhub/totalpass no aparecen en esta tabla).
+            LEFT JOIN `transaction` t2
+                ON  t2.user_id    = nu.user_id
+                AND t2.status     = :statusPaid
+                AND t2.created_at > nu.firstPurchaseAt
+            -- Solo incluir usuarios cuya primera transacción pagada de vida
+            -- coincide con la compra del paquete nuevo usuario en el rango.
+            -- Si ya tenían alguna transacción pagada anterior, se excluyen.
+            WHERE NOT EXISTS (
+                SELECT 1
+                FROM `transaction` t_prev
+                WHERE t_prev.user_id    = nu.user_id
+                  AND t_prev.status     = :statusPaid
+                  AND t_prev.created_at < nu.firstPurchaseAt
+            )
+            GROUP BY u.id, u.name, u.lastname, u.email, nu.firstPurchaseAt
+            ORDER BY nu.firstPurchaseAt ASC
+            SQL;
+
+        return $conn->fetchAllAssociative($sql, [
+            'statusPaid' => Transaction::STATUS_PAID,
+            'from'       => $from->format('Y-m-d 00:00:00'),
+            'to'         => $to->format('Y-m-d 23:59:59'),
+        ]);
+    }
+
+    /**
+     * Counts PAID transactions for $user where the associated package ID is in $packageIds.
+     * Used by PurchaseConditionResolver for specific_package_count with mode="total".
+     *
+     * @param int[] $packageIds
+     */
+    public function countPaidTransactionsByUserAndPackages(
+        User $user,
+        array $packageIds,
+        ?\DateTimeImmutable $from = null,
+        ?\DateTimeImmutable $until = null,
+    ): int {
+        if ($packageIds === []) {
+            return 0;
+        }
+
+        $qb = $this->createQueryBuilder('t')
+            ->select('COUNT(t.id)')
+            ->where('t.user = :user')
+            ->andWhere('t.status = :status')
+            ->andWhere('IDENTITY(t.package) IN (:packageIds)')
+            ->setParameter('user', $user)
+            ->setParameter('status', Transaction::STATUS_PAID)
+            ->setParameter('packageIds', $packageIds);
+
+        if ($from !== null) {
+            $qb->andWhere('t.createdAt >= :from')
+               ->setParameter('from', $from->format('Y-m-d H:i:s'));
+        }
+
+        if ($until !== null) {
+            $qb->andWhere('t.createdAt <= :until')
+               ->setParameter('until', $until->format('Y-m-d H:i:s'));
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Returns a per-package count of PAID transactions for $user, restricted to $packageIds.
+     * Used by PurchaseConditionResolver for specific_package_count with mode="each".
+     *
+     * @param  int[]          $packageIds
+     * @return array<int,int>  package_id → count (IDs with zero purchases are NOT included)
+     */
+    public function countPaidTransactionsByUserPerPackage(
+        User $user,
+        array $packageIds,
+        ?\DateTimeImmutable $from = null,
+        ?\DateTimeImmutable $until = null,
+    ): array {
+        if ($packageIds === []) {
+            return [];
+        }
+
+        $qb = $this->createQueryBuilder('t')
+            ->select('IDENTITY(t.package) AS packageId', 'COUNT(t.id) AS cnt')
+            ->where('t.user = :user')
+            ->andWhere('t.status = :status')
+            ->andWhere('IDENTITY(t.package) IN (:packageIds)')
+            ->groupBy('t.package')
+            ->setParameter('user', $user)
+            ->setParameter('status', Transaction::STATUS_PAID)
+            ->setParameter('packageIds', $packageIds);
+
+        if ($from !== null) {
+            $qb->andWhere('t.createdAt >= :from')
+               ->setParameter('from', $from->format('Y-m-d H:i:s'));
+        }
+
+        if ($until !== null) {
+            $qb->andWhere('t.createdAt <= :until')
+               ->setParameter('until', $until->format('Y-m-d H:i:s'));
+        }
+
+        $rows = $qb->getQuery()->getArrayResult();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $result[(int) $row['packageId']] = (int) $row['cnt'];
+        }
+
+        return $result;
     }
 }

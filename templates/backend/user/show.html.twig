@@ -126,6 +126,9 @@
                                             'filter_session_date_end': app.request.query.get('filter_session_date_end')
                                         }) }}">Reservaciones</a>
                                     </li>
+                                    <li role="presentation">
+                                        <a href="{{ path('backend_user_achievements', { 'id': user.id }) }}">🏅 Logros</a>
+                                    </li>
                                 </ul>
                                 <div id="userTabContent" class="tab-content">
                                 </div>
@@ -184,6 +187,8 @@
             var preferredTab = '{{ app.request.query.get('tab')|default('transactions')|e('js') }}';
             if (preferredTab === 'reservations') {
                 $('#userTab li:nth-child(2) a').trigger('click');
+            } else if (preferredTab === 'achievements') {
+                $('#userTab li:nth-child(3) a').trigger('click');
             } else {
                 $('#userTab li:first-child a').trigger('click');
             }

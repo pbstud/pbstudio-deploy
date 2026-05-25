@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\GiftCard;
 use App\Entity\Transaction;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -174,5 +175,38 @@ class GiftCardRepository extends ServiceEntityRepository
         $qb
             ->andWhere('gc.status = :status')
             ->setParameter('status', $status);
+    }
+
+    /**
+     * Counts gift cards purchased by $user (i.e. where purchaserUser = $user),
+     * excluding cancelled records.
+     *
+     * Optionally bounded by purchasedAt:
+     *   $from  — only gift cards purchased on or after this date/time.
+     *   $until — only gift cards purchased on or before this date/time.
+     */
+    public function countPurchasedByUser(
+        User $user,
+        ?\DateTimeImmutable $from = null,
+        ?\DateTimeImmutable $until = null,
+    ): int {
+        $qb = $this->createQueryBuilder('gc')
+            ->select('COUNT(gc.id)')
+            ->where('gc.purchaserUser = :user')
+            ->andWhere('gc.status != :cancelled')
+            ->setParameter('user', $user)
+            ->setParameter('cancelled', GiftCard::STATUS_CANCELLED);
+
+        if ($from !== null) {
+            $qb->andWhere('gc.purchasedAt >= :from')
+               ->setParameter('from', $from->format('Y-m-d H:i:s'));
+        }
+
+        if ($until !== null) {
+            $qb->andWhere('gc.purchasedAt <= :until')
+               ->setParameter('until', $until->format('Y-m-d H:i:s'));
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
     }
 }

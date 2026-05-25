@@ -41,6 +41,41 @@
         .tile_count .tile_stats_count {
             min-height: 120px;
         }
+
+        /* ── Dashboard: sistema tipográfico unificado ── */
+        .dash-section-sep    { margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #f0f0f0; }
+        .dash-section-title  { margin: 0 0 8px; text-align: center; font-weight: 700; font-size: 15px; color: #1a2340; }
+        .dash-period-header  { margin: 0 0 6px; text-align: center; font-weight: 700; font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: .4px; }
+        .dash-provider-sep   { margin: 0 0 12px; padding-bottom: 7px; border-bottom: 2px solid #e8eaf0; font-size: 15px; font-weight: 700; color: #1a2340; text-align: center; }
+        .dash-provider-name  { margin: 6px 0 14px; padding-bottom: 7px; border-bottom: 1px solid #dde2f0; text-align: center; font-weight: 700; font-size: 17px; color: #1a2340; }
+        .dash-person-row     { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #f0f0f0; }
+        .dash-person-link    { text-decoration: none; color: inherit; font-size: 14px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .dash-person-link:hover, .dash-person-link:focus { color: inherit; text-decoration: none; }
+        .dash-person-meta    { font-size: 12px; color: #888; margin-left: 8px; white-space: nowrap; }
+        .dash-empty-msg      { text-align: center; color: #aaa; margin: 8px 0 0; font-size: 13px; }
+        /* Normalización de tamaños de fuente en tiles de estadísticas */
+        div[style*="font-size:16px; font-weight:700; line-height:1.2"],
+        div[style*="font-size:20px; font-weight:700; line-height:1.2"] { font-size: 18px !important; }
+        div[style*="font-size:10px; color:#888; text-transform"],
+        div[style*="font-size:12px; color:#888; white-space:nowrap"] { font-size: 11px !important; color: #888; }
+        /* ── Retención nuevo usuario ── */
+        .nu-retention-cols  { display: flex; flex-wrap: wrap; gap: 0; }
+        .nu-retention-col   { flex: 1 1 300px; min-width: 0; padding: 0 12px 16px; box-sizing: border-box; }
+        .nu-retention-col--left  { border-right: 1px solid #eee; }
+        .nu-retention-col h4     { margin: 0 0 10px; font-weight: 700; }
+        .nu-retention-col table  { width: 100%; table-layout: auto; }
+        .nu-retention-col table th,
+        .nu-retention-col table td { padding: 6px 8px; vertical-align: middle; word-break: break-word; }
+        .nu-retention-col table td.nu-email { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #888; }
+        .nu-retention-col table td.nu-date  { white-space: nowrap; text-align: center; }
+        .nu-retention-col table td.nu-badge { text-align: center; }
+        @media (max-width: 767px) {
+            .nu-retention-col--left { border-right: none; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 12px; }
+            .nu-retention-col { flex: 1 1 100%; padding: 0 0 16px; }
+            .nu-retention-col table th,
+            .nu-retention-col table td { padding: 5px 6px; font-size: 12px; }
+            .nu-retention-col table td.nu-email { max-width: 110px; }
+        }
     </style>
 
     {% if billing is defined %}
@@ -98,7 +133,7 @@
             <div class="col-xs-12">
                 <div class="x_panel">
                     <div class="x_title x_title--collapsible" style="text-align:center; cursor:pointer;" data-panel-id="last-transactions">
-                        <h2 style="width:100%; text-align:center;">Últimas transacciones <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
+                        <h2 style="width:100%; text-align:center;"><i class="fa fa-exchange" aria-hidden="true"></i> Últimas transacciones <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
                         <div class="clearfix"></div>
                     </div>
                     <div class="x_content">
@@ -154,22 +189,22 @@
             <div class="col-xs-12">
                 <div class="x_panel">
                     <div class="x_title x_title--collapsible" style="text-align:center; cursor:pointer;" data-panel-id="discounts">
-                        <h2 style="width:100%; text-align:center;"><i class="fa fa-tags" aria-hidden="true"></i> Transacciones <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
+                        <h2 style="width:100%; text-align:center;"><i class="fa fa-money" aria-hidden="true"></i> Transacciones <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
                         <div class="clearfix"></div>
                     </div>
                     <div class="x_content">
                         {% if discounts is defined and discounts.data is not empty %}
                             {% for branchOfficeId, branch in discounts.data %}
                                 {% if branch.annually.without_discount > 0 or branch.annually.percentage_discount > 0 or branch.annually.special_price > 0 or branch.monthly.without_discount > 0 or branch.monthly.percentage_discount > 0 or branch.monthly.special_price > 0 %}
-                                <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #f0f0f0;">
-                                    <h4 style="margin:0 0 6px 0; text-align:center; font-weight:700;">{{ branch.name }}</h4>
+                                <div class="dash-section-sep">
+                                    <h4 class="dash-section-title">{{ branch.name }}</h4>
                                     <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start;">
                                         {% for periodKey, periodLabel in {'annually': 'Año', 'monthly': 'Mes'} %}
                                             {% set dateStartParam = periodKey == 'annually' ? discounts.currentYear|date('d/m/Y') : discounts.currentMonth|date('d/m/Y') %}
                                             {% set dateEndParam = 'now'|date('d/m/Y') %}
                                             {% set periodData = attribute(branch, periodKey) %}
                                             <div style="flex:1 1 220px; min-width:180px; padding:4px 6px;">
-                                                <h4 style="margin:0 0 4px 0; text-align:center; font-weight:700; font-size:13px; color:#555; text-transform:uppercase; letter-spacing:.5px;">{{ periodLabel }}</h4>
+                                                <h4 class="dash-period-header">{{ periodLabel }}</h4>
                                                 <div style="display:flex; flex-wrap:wrap; gap:2px; justify-content:center;">
                                                     <a href="{{ path('backend_transaction', {
                                                         filter_date_start: dateStartParam,
@@ -181,25 +216,15 @@
                                                         <div style="font-size:10px; color:#888; text-transform:uppercase; white-space:nowrap;">Sin descuento</div>
                                                         <div style="font-size:16px; font-weight:700; line-height:1.2; {% if periodData.without_discount == 0 %}color:#ccc;{% endif %}">${{ periodData.without_discount|number_format(2, '.', ',') }}</div>
                                                     </a>
+                                                    {% set combinedDiscount = periodData.percentage_discount + periodData.special_price %}
                                                     <a href="{{ path('backend_transaction', {
                                                         filter_date_start: dateStartParam,
                                                         filter_date_end: dateEndParam,
                                                         filter_status: constant('App\\Entity\\Transaction::STATUS_PAID'),
-                                                        filter_branchOffice: branchOfficeId,
-                                                        filter_discount: constant('App\\Entity\\Transaction::PERCENTAGE_DISCOUNT')
+                                                        filter_branchOffice: branchOfficeId
                                                     }) }}" style="flex:1 1 90px; min-width:85px; text-align:center; text-decoration:none; color:inherit; padding:2px 4px; display:block;">
-                                                        <div style="font-size:10px; color:#888; text-transform:uppercase; white-space:nowrap;">Desc. %</div>
-                                                        <div style="font-size:16px; font-weight:700; line-height:1.2; {% if periodData.percentage_discount == 0 %}color:#ccc;{% endif %}">${{ periodData.percentage_discount|number_format(2, '.', ',') }}</div>
-                                                    </a>
-                                                    <a href="{{ path('backend_transaction', {
-                                                        filter_date_start: dateStartParam,
-                                                        filter_date_end: dateEndParam,
-                                                        filter_status: constant('App\\Entity\\Transaction::STATUS_PAID'),
-                                                        filter_branchOffice: branchOfficeId,
-                                                        filter_discount: constant('App\\Entity\\Transaction::SPECIAL_PRICE')
-                                                    }) }}" style="flex:1 1 90px; min-width:85px; text-align:center; text-decoration:none; color:inherit; padding:2px 4px; display:block;">
-                                                        <div style="font-size:10px; color:#888; text-transform:uppercase; white-space:nowrap;">Precio especial</div>
-                                                        <div style="font-size:16px; font-weight:700; line-height:1.2; {% if periodData.special_price == 0 %}color:#ccc;{% endif %}">${{ periodData.special_price|number_format(2, '.', ',') }}</div>
+                                                        <div style="font-size:10px; color:#888; text-transform:uppercase; white-space:nowrap;">Con descuento</div>
+                                                        <div style="font-size:16px; font-weight:700; line-height:1.2; {% if combinedDiscount == 0 %}color:#ccc;{% endif %}">${{ combinedDiscount|number_format(2, '.', ',') }}</div>
                                                     </a>
                                                 </div>
                                             </div>
@@ -232,15 +257,15 @@
                     <div class="x_content">
                         {% for branchOfficeId, branch in payments.data %}
                             {% if branch.annually.cash > 0 or branch.annually.card > 0 or branch.annually.pos > 0 or branch.monthly.cash > 0 or branch.monthly.card > 0 or branch.monthly.pos > 0 %}
-                            <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #f0f0f0;">
-                                <h4 style="margin:0 0 6px 0; text-align:center; font-weight:700;">{{ branch.name }}</h4>
+                            <div class="dash-section-sep">
+                                <h4 class="dash-section-title">{{ branch.name }}</h4>
                                 <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start;">
                                     {% for periodKey, periodLabel in {'annually': 'Año', 'monthly': 'Mes'} %}
                                         {% set dateStartParam = periodKey == 'annually' ? payments.currentYear|date('d/m/Y') : payments.currentMonth|date('d/m/Y') %}
                                         {% set dateEndParam = 'now'|date('d/m/Y') %}
                                         {% set periodData = attribute(branch, periodKey) %}
                                         <div class="dash-period dash-period--{{ periodKey }}" style="flex:1 1 220px; min-width:180px; padding:4px 6px;">
-                                            <h4 style="margin:0 0 4px 0; text-align:center; font-weight:700; font-size:13px; color:#555; text-transform:uppercase; letter-spacing:.5px;">{{ periodLabel }}</h4>
+                                            <h4 class="dash-period-header">{{ periodLabel }}</h4>
                                             <div style="display:flex; flex-wrap:wrap; gap:2px; justify-content:center;">
                                                 {% set methods = {
                                                     'cash': {'label': 'Efectivo',  'const': constant('App\\Entity\\Transaction::CHARGE_METHOD_CASH')},
@@ -282,19 +307,19 @@
             <div class="col-xs-12">
                 <div class="x_panel">
                     <div class="x_title x_title--collapsible" style="text-align:center; cursor:pointer;" data-panel-id="classes">
-                        <h2 style="width:100%; text-align:center;"><i class="fa fa-heartbeat" aria-hidden="true"></i> Clases <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
+                        <h2 style="width:100%; text-align:center;"><i class="fa fa-calendar-check-o" aria-hidden="true"></i> Clases <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
                         <div class="clearfix"></div>
                     </div>
                     <div class="x_content">
                         {% for branchOfficeId, studio in classes.data %}
-                            <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #f0f0f0;">
-                                <h4 style="margin:0 0 6px 0; text-align:center; font-weight:700;">{{ studio.name }}</h4>
+                            <div class="dash-section-sep">
+                                <h4 class="dash-section-title">{{ studio.name }}</h4>
                                 <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start;">
                                     {% for periodKey, periodLabel in {'monthly': 'Mes', 'weekly': 'Semana', 'daily': 'Día'} %}
                                         {% set dateParam    = periodKey == 'monthly' ? classes.currentMonth|date('d/m/Y')    : (periodKey == 'weekly' ? classes.currentWeek|date('d/m/Y')    : classes.currentDay|date('d/m/Y')) %}
                                         {% set dateEndParam = periodKey == 'monthly' ? classes.currentMonthEnd|date('d/m/Y') : (periodKey == 'weekly' ? classes.currentWeekEnd|date('d/m/Y') : classes.currentDay|date('d/m/Y')) %}
                                         <div class="dash-period dash-period--{{ periodKey }}" style="flex:1 1 160px; min-width:130px; padding:4px 6px;">
-                                            <h4 style="margin:0 0 4px 0; text-align:center; font-weight:700; font-size:13px; color:#555; text-transform:uppercase; letter-spacing:.5px;">{{ periodLabel }}</h4>
+                                            <h4 class="dash-period-header">{{ periodLabel }}</h4>
                                             <div style="display:flex; flex-wrap:wrap; gap:2px; justify-content:center;">
                                                 {% for disciplineId, discipline in studio.disciplines %}
                                                     {% set count = attribute(discipline, periodKey) %}
@@ -357,14 +382,14 @@
                         {% else %}
                             {% for branchOfficeId, studio in instructors.data %}
                                 {% if studio.instructors is not empty %}
-                                <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #f0f0f0;">
-                                    <h4 style="margin:0 0 6px 0; text-align:center; font-weight:700;">{{ studio.name }}</h4>
+                                <div class="dash-section-sep">
+                                    <h4 class="dash-section-title">{{ studio.name }}</h4>
                                     <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start;">
                                         {% for periodKey, periodLabel in {'monthly': 'Mes', 'catorcena': 'Catorcena'} %}
                                             {% set dateStartParam = periodKey == 'monthly' ? instructors.startMonth|date('d/m/Y') : instructors.startCatorcena|date('d/m/Y') %}
                                             {% set dateEndParam = periodKey == 'monthly' ? instructors.endMonth|date('d/m/Y') : instructors.endCatorcena|date('d/m/Y') %}
                                             <div class="dash-period dash-period--{{ periodKey }}" style="flex:1 1 220px; min-width:180px; padding:4px 6px;">
-                                                <h4 style="margin:0 0 4px 0; text-align:center; font-weight:700; font-size:13px; color:#555; text-transform:uppercase; letter-spacing:.5px;">
+                                                <h4 class="dash-period-header">
                                                     {% if periodKey == 'catorcena' %}
                                                         {{ periodLabel }} (inicio: {{ instructors.startCatorcena|date('d/m/Y') }})
                                                     {% else %}
@@ -406,75 +431,102 @@
         </div>
     {% endif %}
 
-    {% if fitpass is defined %}
+    {% if fitpass is defined or wellhub is defined or totalpass is defined %}
+        {# ── Macro: stats por sucursal para un proveedor ──────────────────── #}
+        {% macro provider_stats(providerData) %}
+            {% if not providerData.hasFitpassUser %}
+                <div class="alert alert-info" style="margin:0 0 4px;">
+                    <i class="fa fa-info-circle" aria-hidden="true"></i>
+                    No hay ningún usuario asignado a este proveedor. Ve a <strong>Configuración &rarr; Clases</strong> e introduce el ID del usuario correspondiente para que aparezcan las estadísticas aquí.
+                </div>
+            {% else %}
+                {% for branchOfficeId, studio in providerData.data %}
+                    {% if studio.year.reserved > 0 or studio.monthly.reserved > 0 or studio.weekly.reserved > 0 or studio.daily.reserved > 0 %}
+                    <div class="dash-section-sep">
+                        <h4 class="dash-section-title">{{ studio.name }}</h4>
+                        <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start;">
+                            {% for periodKey, periodLabel in {'year': 'Año', 'monthly': 'Mes', 'weekly': 'Semana', 'daily': 'Día'} %}
+                                {% set dateStartParam = periodKey == 'year' ? providerData.currentYear|date('d/m/Y') : (periodKey == 'monthly' ? providerData.currentMonth|date('d/m/Y') : (periodKey == 'weekly' ? providerData.currentWeek|date('d/m/Y') : providerData.currentDay|date('d/m/Y'))) %}
+                                {% set dateEndParam   = periodKey == 'year' ? providerData.currentYearEnd|date('d/m/Y') : (periodKey == 'monthly' ? providerData.currentMonthEnd|date('d/m/Y') : (periodKey == 'weekly' ? providerData.currentWeekEnd|date('d/m/Y') : providerData.currentDay|date('d/m/Y'))) %}
+                                <div class="dash-period dash-period--{{ periodKey }}" style="flex:1 1 160px; min-width:130px; padding:4px 6px;">
+                                    <h4 class="dash-period-header">{{ periodLabel }}</h4>
+                                    {% set periodData = attribute(studio, periodKey) %}
+                                    <div style="display:flex; flex-wrap:wrap; gap:2px; justify-content:center;">
+                                        <a href="{{ path('backend_user_show', {
+                                            'id': providerData.fitpassUserId,
+                                            'tab': 'reservations',
+                                            'filter_status': 1,
+                                            'filter_branch_office': branchOfficeId,
+                                            'filter_session_date_start': dateStartParam,
+                                            'filter_session_date_end': dateEndParam
+                                        }) }}" style="flex:1 1 50px; min-width:45px; text-align:center; text-decoration:none; color:inherit; padding:2px 4px; display:block;">
+                                            <div style="font-size:10px; color:#888; text-transform:uppercase; white-space:nowrap;">Reservadas</div>
+                                            <div style="font-size:16px; font-weight:700; line-height:1.2; {% if periodData.reserved == 0 %}color:#ccc;{% endif %}">{{ periodData.reserved }}</div>
+                                        </a>
+                                        <a href="{{ path('backend_user_show', {
+                                            'id': providerData.fitpassUserId,
+                                            'tab': 'reservations',
+                                            'filter_status': 1,
+                                            'filter_attended': 1,
+                                            'filter_branch_office': branchOfficeId,
+                                            'filter_session_date_start': dateStartParam,
+                                            'filter_session_date_end': dateEndParam
+                                        }) }}" style="flex:1 1 50px; min-width:45px; text-align:center; text-decoration:none; color:inherit; padding:2px 4px; display:block;">
+                                            <div style="font-size:10px; color:#888; text-transform:uppercase; white-space:nowrap;">Asistidas</div>
+                                            <div style="font-size:16px; font-weight:700; line-height:1.2; {% if periodData.attended == 0 %}color:#ccc;{% endif %}">{{ periodData.attended }}</div>
+                                        </a>
+                                        <a href="{{ path('backend_user_show', {
+                                            'id': providerData.fitpassUserId,
+                                            'tab': 'reservations',
+                                            'filter_status': 1,
+                                            'filter_attended': 0,
+                                            'filter_branch_office': branchOfficeId,
+                                            'filter_session_date_start': dateStartParam,
+                                            'filter_session_date_end': dateEndParam
+                                        }) }}" style="flex:1 1 50px; min-width:45px; text-align:center; text-decoration:none; color:inherit; padding:2px 4px; display:block;">
+                                            <div style="font-size:10px; color:#888; text-transform:uppercase; white-space:nowrap;">No asistidas</div>
+                                            <div style="font-size:16px; font-weight:700; line-height:1.2; {% if periodData.notAttended == 0 %}color:#ccc;{% endif %}">{{ periodData.notAttended }}</div>
+                                        </a>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
+        {% endmacro %}
+
         <div class="row">
             <div class="col-xs-12">
                 <div class="x_panel">
-                    <div class="x_title x_title--collapsible" style="text-align:center; cursor:pointer;" data-panel-id="fitpass">
-                        <h2 style="width:100%; text-align:center;"><i class="fa fa-ticket" aria-hidden="true"></i> Fitpass <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
+                    <div class="x_title x_title--collapsible" style="text-align:center; cursor:pointer;" data-panel-id="providers">
+                        <h2 style="width:100%; text-align:center;"><i class="fa fa-globe" aria-hidden="true"></i> Plataformas deportivas aliadas <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
                         <div class="clearfix"></div>
                     </div>
                     <div class="x_content">
-                        {% if not fitpass.hasFitpassUser %}
-                            <div class="alert alert-warning" style="margin-bottom:0;">
-                                Configura el ID de usuario Fitpass en Configuración &rarr; Clases para calcular este bloque.
-                            </div>
-                        {% else %}
-                            {% for branchOfficeId, studio in fitpass.data %}
-                                {% if studio.year.reserved > 0 or studio.monthly.reserved > 0 or studio.weekly.reserved > 0 or studio.daily.reserved > 0 %}
-                                <div style="margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #f0f0f0;">
-                                    <h4 style="margin:0 0 6px 0; text-align:center; font-weight:700;">{{ studio.name }}</h4>
-                                    <div style="display:flex; flex-wrap:wrap; gap:6px; align-items:flex-start;">
-                                        {% for periodKey, periodLabel in {'year': 'Año', 'monthly': 'Mes', 'weekly': 'Semana', 'daily': 'Día'} %}
-                                            {% set dateStartParam = periodKey == 'year' ? fitpass.currentYear|date('d/m/Y') : (periodKey == 'monthly' ? fitpass.currentMonth|date('d/m/Y') : (periodKey == 'weekly' ? fitpass.currentWeek|date('d/m/Y') : fitpass.currentDay|date('d/m/Y'))) %}
-                                            {% set dateEndParam = periodKey == 'year' ? fitpass.currentYearEnd|date('d/m/Y') : (periodKey == 'monthly' ? fitpass.currentMonthEnd|date('d/m/Y') : (periodKey == 'weekly' ? fitpass.currentWeekEnd|date('d/m/Y') : fitpass.currentDay|date('d/m/Y'))) %}
-                                            <div class="dash-period dash-period--{{ periodKey }}" style="flex:1 1 160px; min-width:130px; padding:4px 6px;">
-                                                <h4 style="margin:0 0 4px 0; text-align:center; font-weight:700; font-size:13px; color:#555; text-transform:uppercase; letter-spacing:.5px;">{{ periodLabel }}</h4>
-                                                {% set periodData = attribute(studio, periodKey) %}
-                                                <div style="display:flex; flex-wrap:wrap; gap:2px; justify-content:center;">
-                                                    <a href="{{ path('backend_user_show', {
-                                                        'id': fitpass.fitpassUserId,
-                                                        'tab': 'reservations',
-                                                        'filter_status': 1,
-                                                        'filter_branch_office': branchOfficeId,
-                                                        'filter_session_date_start': dateStartParam,
-                                                        'filter_session_date_end': dateEndParam
-                                                    }) }}" style="flex:1 1 50px; min-width:45px; text-align:center; text-decoration:none; color:inherit; padding:2px 4px; display:block;">
-                                                        <div style="font-size:10px; color:#888; text-transform:uppercase; white-space:nowrap;">Reservadas</div>
-                                                        <div style="font-size:16px; font-weight:700; line-height:1.2; {% if periodData.reserved == 0 %}color:#ccc;{% endif %}">{{ periodData.reserved }}</div>
-                                                    </a>
-                                                    <a href="{{ path('backend_user_show', {
-                                                        'id': fitpass.fitpassUserId,
-                                                        'tab': 'reservations',
-                                                        'filter_status': 1,
-                                                        'filter_attended': 1,
-                                                        'filter_branch_office': branchOfficeId,
-                                                        'filter_session_date_start': dateStartParam,
-                                                        'filter_session_date_end': dateEndParam
-                                                    }) }}" style="flex:1 1 50px; min-width:45px; text-align:center; text-decoration:none; color:inherit; padding:2px 4px; display:block;">
-                                                        <div style="font-size:10px; color:#888; text-transform:uppercase; white-space:nowrap;">Asistidas</div>
-                                                        <div style="font-size:16px; font-weight:700; line-height:1.2; {% if periodData.attended == 0 %}color:#ccc;{% endif %}">{{ periodData.attended }}</div>
-                                                    </a>
-                                                    <a href="{{ path('backend_user_show', {
-                                                        'id': fitpass.fitpassUserId,
-                                                        'tab': 'reservations',
-                                                        'filter_status': 1,
-                                                        'filter_attended': 0,
-                                                        'filter_branch_office': branchOfficeId,
-                                                        'filter_session_date_start': dateStartParam,
-                                                        'filter_session_date_end': dateEndParam
-                                                    }) }}" style="flex:1 1 50px; min-width:45px; text-align:center; text-decoration:none; color:inherit; padding:2px 4px; display:block;">
-                                                        <div style="font-size:10px; color:#888; text-transform:uppercase; white-space:nowrap;">No asistidas</div>
-                                                        <div style="font-size:16px; font-weight:700; line-height:1.2; {% if periodData.notAttended == 0 %}color:#ccc;{% endif %}">{{ periodData.notAttended }}</div>
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                                {% endif %}
-                            {% endfor %}
+
+                        {% if fitpass is defined %}
+                        <h3 class="dash-provider-name">
+                            <i class="fa fa-ticket" aria-hidden="true"></i> Fitpass
+                        </h3>
+                        {{ _self.provider_stats(fitpass) }}
                         {% endif %}
+
+                        {% if wellhub is defined %}
+                        <h3 class="dash-provider-name">
+                            <i class="fa fa-ticket" aria-hidden="true"></i> WellHub
+                        </h3>
+                        {{ _self.provider_stats(wellhub) }}
+                        {% endif %}
+
+                        {% if totalpass is defined %}
+                        <h3 class="dash-provider-name">
+                            <i class="fa fa-ticket" aria-hidden="true"></i> TotalPass
+                        </h3>
+                        {{ _self.provider_stats(totalpass) }}
+                        {% endif %}
+
                     </div>
                 </div>
             </div>
@@ -564,7 +616,15 @@
                             {{ include('backend/dashboard/_ranking_clients_content.html.twig') }}
                         {% endif %}
 
-                        {% if not rankingPermissions.weekdays and not rankingPermissions.schedules and not rankingPermissions.packages and not rankingPermissions.clients %}
+                        {% if rankingPermissions.attendance %}
+                            {% if rankingPermissions.weekdays or rankingPermissions.schedules or rankingPermissions.packages or rankingPermissions.clients %}
+                                <hr style="margin:14px 0;" />
+                            {% endif %}
+                            <h4 style="margin:0 0 10px 0; text-align:center; font-weight:700;">Top asistencias</h4>
+                            {{ include('backend/dashboard/_ranking_attendance_content.html.twig') }}
+                        {% endif %}
+
+                        {% if not rankingPermissions.weekdays and not rankingPermissions.schedules and not rankingPermissions.packages and not rankingPermissions.clients and not rankingPermissions.attendance %}
                             <div class="alert alert-info" style="margin-bottom:0;">
                                 No tienes permisos para ver los bloques de ranking.
                             </div>
@@ -604,7 +664,7 @@
             <div class="col-xs-12">
                 <div class="x_panel">
                     <div class="x_title x_title--collapsible" style="text-align:center; cursor:pointer;" data-panel-id="last-users">
-                        <h2 style="width:100%; text-align:center;">Registros recientes <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
+                        <h2 style="width:100%; text-align:center;"><i class="fa fa-user-plus" aria-hidden="true"></i> Registros recientes <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
                         <div class="clearfix"></div>
                     </div>
                     <div class="x_content">
@@ -665,21 +725,21 @@
                             <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start;">
                                 {% for windowKey, windowLabel in {'this_week': 'Esta semana', 'this_month': 'Este mes', 'next_month': 'Próximo mes'} %}
                                     <div class="dash-period dash-period--{{ windowKey }}" style="flex:1 1 220px; min-width:200px; padding:8px 10px;">
-                                        <h4 style="margin:0 0 8px 0; text-align:center; font-weight:700; font-size:13px; color:#555; text-transform:uppercase; letter-spacing:.5px;">{{ windowLabel }}</h4>
+                                        <h4 class="dash-period-header">{{ windowLabel }}</h4>
                                         {% set users = attribute(birthdays, windowKey) %}
                                         {% if users is not empty %}
                                             <ul class="list-unstyled" style="margin:0;">
                                                 {% for user in users %}
-                                                    <li style="display:flex; align-items:center; justify-content:space-between; padding:3px 0; border-bottom:1px solid #f0f0f0;">
-                                                        <a href="{{ path('backend_user_show', {'id': user.id}) }}" style="text-decoration:none; color:inherit; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ user.name }} {{ user.lastname }}">
+                                                    <li class="dash-person-row">
+                                                        <a href="{{ path('backend_user_show', {'id': user.id}) }}" class="dash-person-link" title="{{ user.name }} {{ user.lastname }}">
                                                             {{ user.name }} {{ user.lastname }}
                                                         </a>
-                                                        <span style="font-size:11px; color:#888; margin-left:8px; white-space:nowrap;">{{ user.birthdayFormatted }}</span>
+                                                        <span class="dash-person-meta">{{ user.birthdayFormatted }}</span>
                                                     </li>
                                                 {% endfor %}
                                             </ul>
                                         {% else %}
-                                            <p style="text-align:center; color:#aaa; margin:8px 0 0; font-size:12px;">Sin cumpleaños</p>
+                                            <p class="dash-empty-msg">Sin cumpleaños</p>
                                         {% endif %}
                                     </div>
                                 {% endfor %}
@@ -712,36 +772,182 @@
                             <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start;">
                                 {% for windowKey, windowLabel in {'this_week': 'Esta semana', 'this_month': 'Este mes'} %}
                                     {% set rows = attribute(anniversaries, windowKey)|default([]) %}
-                                    <div class="dash-period dash-period--{{ windowKey }}" style="flex:1 1 260px; min-width:220px; padding:8px 10px;">
-                                        <h4 style="margin:0 0 8px 0; text-align:center; font-weight:700; font-size:13px; color:#555; text-transform:uppercase; letter-spacing:.5px;">{{ windowLabel }}</h4>
+                                    <div class="dash-period dash-period--{{ windowKey }}" style="flex:1 1 220px; min-width:200px; padding:8px 10px;">
+                                        <h4 class="dash-period-header">{{ windowLabel }}</h4>
                                         {% if rows is not empty %}
                                             <ul class="list-unstyled" style="margin:0;">
                                                 {% for item in rows %}
-                                                    <li style="display:flex; align-items:center; justify-content:space-between; padding:3px 0; border-bottom:1px solid #f0f0f0;">
-                                                        <a href="{{ path('backend_user_show', {'id': item.id}) }}" style="text-decoration:none; color:inherit; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="{{ item.name }}">
+                                                    {% for event in item.events %}
+                                                    <li class="dash-person-row">
+                                                        <a href="{{ path('backend_user_show', {'id': item.id}) }}" class="dash-person-link" title="{{ item.name }}">
                                                             {{ item.name }}
                                                         </a>
-                                                        <span style="font-size:11px; color:#888; white-space:nowrap; text-align:right; margin-left:8px;">
-                                                            {% for event in item.events %}
-                                                                {% if event.type == 'transaction' %}1ra Compra{% elseif event.type == 'class' %}1ra Clase{% else %}Se unió al equipo{% endif %} · {{ event.year }}° año{% if event.date %} ({{ event.date }}){% endif %}{% if not loop.last %}<br>{% endif %}
-                                                            {% endfor %}
+                                                        <span class="dash-person-meta">
+                                                            {{ event.date }}/{{ "now"|date('Y') - event.year }} &middot; {{ event.year }}&deg; aniversario
                                                         </span>
                                                     </li>
+                                                    {% endfor %}
                                                 {% endfor %}
                                             </ul>
                                         {% else %}
-                                            <p style="text-align:center; color:#aaa; margin:8px 0 0; font-size:12px;">Sin aniversarios</p>
+                                            <p class="dash-empty-msg">Sin aniversarios</p>
                                         {% endif %}
                                     </div>
                                 {% endfor %}
                             </div>
                         {% else %}
-                            <p style="text-align:center; color:#aaa; margin:8px 0 0; font-size:12px;">Sin aniversarios calculados</p>
+                            <p class="dash-empty-msg">Sin aniversarios calculados</p>
                         {% endif %}
                     </div>
                     <div class="clearfix"></div>
                     <div class="x_footer text-center">
                         <a href="{{ path('backend_user') }}" class="btn btn-default btn-sm">Ver todos los usuarios</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if nuRetention is defined %}
+        <div class="row">
+            <div class="col-xs-12">
+                <div class="x_panel">
+                    <div class="x_title x_title--collapsible" style="text-align:center; cursor:pointer;" data-panel-id="new-user-retention">
+                        <h2 style="width:100%; text-align:center;"><i class="fa fa-users" aria-hidden="true"></i> Retenci&oacute;n <i class="fa fa-chevron-down dash-panel-chevron" aria-hidden="true"></i></h2>
+                        <div class="clearfix"></div>
+                    </div>
+                    <div class="x_content">
+
+                        <form method="get" action="{{ path('backend_dashboard') }}" style="margin-bottom:15px;">
+                            <div class="row">
+                                <div class="col-md-4 col-sm-6 col-xs-12">
+                                    <div class="form-group">
+                                        <label for="nu_date_start">Fecha inicio:</label>
+                                        <div class="date-action-field">
+                                            <input type="text"
+                                                   id="nu_date_start"
+                                                   name="nu_date_start"
+                                                   class="form-control datepicker"
+                                                   value="{{ nuRetentionFilters.nu_date_start }}"
+                                                   autocomplete="off"
+                                                   style="padding-right:32px;" />
+                                            <span class="date-action-icon" aria-hidden="true" style="right:0; border-radius:0 4px 4px 0; border-right:1px solid #ccc;">
+                                                <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-sm-6 col-xs-12">
+                                    <div class="form-group">
+                                        <label for="nu_date_end">Fecha de t&eacute;rmino:</label>
+                                        <div class="date-action-field">
+                                            <input type="text"
+                                                   id="nu_date_end"
+                                                   name="nu_date_end"
+                                                   class="form-control datepicker"
+                                                   value="{{ nuRetentionFilters.nu_date_end }}"
+                                                   autocomplete="off"
+                                                   style="padding-right:32px;" />
+                                            <span class="date-action-icon" aria-hidden="true" style="right:0; border-radius:0 4px 4px 0; border-right:1px solid #ccc;">
+                                                <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-sm-12 col-xs-12">
+                                    <label class="hidden-xs">&nbsp;</label>
+                                    <div class="text-right">
+                                        <button type="submit" class="btn btn-primary btn-block-xs">Recalcular</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+
+                        {% set totalNu = nuRetention.sinRenovacion|length + nuRetention.conRenovacion|length %}
+                        {% if totalNu == 0 %}
+                            <div class="alert alert-info" style="margin-bottom:0;">
+                                <i class="fa fa-info-circle" aria-hidden="true"></i>
+                                No se encontraron compras de paquete de nuevo usuario en el periodo seleccionado.
+                            </div>
+                        {% else %}
+                            <div class="nu-retention-cols">
+                                <div class="nu-retention-col nu-retention-col--left">
+                                    <h4 style="color:#c0392b;">
+                                        <i class="fa fa-times-circle" aria-hidden="true"></i>
+                                        No volvieron a comprar
+                                        <span class="badge" style="background:#c0392b;">{{ nuRetention.sinRenovacion|length }}</span>
+                                    </h4>
+                                    {% if nuRetention.sinRenovacion is empty %}
+                                        <p class="text-muted" style="font-size:13px;">Ninguno en este periodo.</p>
+                                    {% else %}
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Usuario</th>
+                                                        <th>Email</th>
+                                                        <th class="text-center">Compra</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for item in nuRetention.sinRenovacion %}
+                                                        <tr>
+                                                            <td>
+                                                                <a href="{{ path('backend_user_show', {'id': item.userId}) }}">
+                                                                    {{ item.fullName }}
+                                                                </a>
+                                                            </td>
+                                                            <td class="nu-email" title="{{ item.email }}">{{ item.email }}</td>
+                                                            <td class="nu-date">{{ item.firstPurchaseAt|date('d/m/Y') }}</td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="nu-retention-col">
+                                    <h4 style="color:#27ae60;">
+                                        <i class="fa fa-check-circle" aria-hidden="true"></i>
+                                        S&iacute; siguieron comprando
+                                        <span class="badge" style="background:#27ae60;">{{ nuRetention.conRenovacion|length }}</span>
+                                    </h4>
+                                    {% if nuRetention.conRenovacion is empty %}
+                                        <p class="text-muted" style="font-size:13px;">Ninguno en este periodo.</p>
+                                    {% else %}
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Usuario</th>
+                                                        <th>Email</th>
+                                                        <th class="text-center">Compra</th>
+                                                        <th class="text-center">Recompras</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for item in nuRetention.conRenovacion %}
+                                                        <tr>
+                                                            <td>
+                                                                <a href="{{ path('backend_user_show', {'id': item.userId}) }}">
+                                                                    {{ item.fullName }}
+                                                                </a>
+                                                            </td>
+                                                            <td class="nu-email" title="{{ item.email }}">{{ item.email }}</td>
+                                                            <td class="nu-date">{{ item.firstPurchaseAt|date('d/m/Y') }}</td>
+                                                            <td class="nu-badge">
+                                                                <span class="badge" style="background:#27ae60;">{{ item.subsequentCount }}</span>
+                                                            </td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+
                     </div>
                 </div>
             </div>
@@ -754,7 +960,7 @@
     <script>
         $(document).ready(function () {
             var STORAGE_KEY    = 'pbstudio_dashboard_panels';
-            var DEFAULT_CLOSED = ['birthdays', 'anniversaries'];
+            var DEFAULT_CLOSED = ['birthdays', 'anniversaries', 'new-user-retention'];
 
             // Detecta si es recarga (F5) o navegación nueva
             var isReload = false;
@@ -766,6 +972,14 @@
                     isReload = (performance.navigation.type === 1);
                 }
             } catch (e) {}
+
+            // Detecta si venimos de un submit de filtro en esta misma página
+            var hasFilterParams = /[?&](nu_date_start|nu_date_end|rating_date_start|rating_date_end)=/.test(window.location.search);
+
+            // Guardar estado antes de cualquier submit de formulario
+            $(document).on('submit', 'form', function () {
+                saveState();
+            });
 
             function getSavedState() {
                 try { return JSON.parse(localStorage.getItem(STORAGE_KEY)); } catch (e) { return null; }
@@ -796,9 +1010,9 @@
                 }
             }
 
-            // Si es navegación nueva, limpiar estado guardado y usar defaults
+            // Si es navegación nueva sin filtros, limpiar estado guardado y usar defaults
             var savedState = null;
-            if (isReload) {
+            if (isReload || hasFilterParams) {
                 savedState = getSavedState();
             } else {
                 try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
@@ -816,16 +1030,19 @@
                 applyState($(this), open);
             });
 
-            // Toggle con animación + guardar estado al terminar todas las animaciones
+            // Recalcular altura tras colapso inicial
+            $(window).trigger('resize');
+
+            // Toggle con animación + guardar estado + recalcular altura de right_col
             $('.x_title--collapsible').on('click', function () {
                 var $panel   = $(this).closest('.x_panel');
                 var $content = $panel.find('.x_content, .x_footer');
                 var $chevron = $(this).find('.dash-panel-chevron');
                 if ($content.is(':hidden')) {
-                    $content.slideDown(200).promise().done(saveState);
+                    $content.slideDown(200).promise().done(function () { saveState(); $(window).trigger('resize'); });
                     $chevron.css('transform', 'rotate(180deg)');
                 } else {
-                    $content.slideUp(200).promise().done(saveState);
+                    $content.slideUp(200).promise().done(function () { saveState(); $(window).trigger('resize'); });
                     $chevron.css('transform', 'rotate(0deg)');
                 }
             });

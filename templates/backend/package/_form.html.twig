@@ -23,8 +23,14 @@
     </div>
 
     <div class="row">
-        {{ form_row(form.amount, {'row_attr': {'class': 'col-md-6'}}) }}
-        {{ form_row(form.specialPrice, {'row_attr': {'class': 'col-md-6'}}) }}
+        {{ form_row(form.amount, {'row_attr': {'class': 'col-md-4'}}) }}
+        {{ form_row(form.specialPrice, {'row_attr': {'class': 'col-md-4'}}) }}
+        <div class="col-md-4 has-feedback">
+            <label class="control-label">Descuento</label>
+            <input type="number" id="pkg_discount_pct" class="form-control has-feedback-right"
+                   step="0.01" min="0" max="100" placeholder="0.00">
+            <span class="form-control-feedback right" aria-hidden="true">%</span>
+        </div>
     </div>
 
     <div class="row">
@@ -219,5 +225,53 @@
         form.addEventListener('submit', function () {
             syncHidden();
         });
+    })();
+
+    (function () {
+        var amountInput   = document.getElementById('package_amount');
+        var spInput       = document.getElementById('package_specialPrice');
+        var discountInput = document.getElementById('pkg_discount_pct');
+
+        if (!amountInput || !spInput || !discountInput) { return; }
+
+        function parseNum(v) {
+            var n = parseFloat(String(v).replace(/[^0-9.\-]/g, ''));
+            return isNaN(n) ? 0 : n;
+        }
+
+        function round2(v) { return Math.round(v * 100) / 100; }
+
+        function isEmpty(input) {
+            return input.value.trim() === '' || parseNum(input.value) === 0;
+        }
+
+        function updateDiscount() {
+            var amount = parseNum(amountInput.value);
+            if (amount <= 0 || isEmpty(spInput)) { discountInput.value = ''; return; }
+            discountInput.value = round2((amount - parseNum(spInput.value)) / amount * 100);
+        }
+
+        function updateSpecialPrice() {
+            var amount   = parseNum(amountInput.value);
+            var discount = parseNum(discountInput.value);
+            if (amount <= 0 || isEmpty(discountInput)) { spInput.value = ''; return; }
+            if (discount > 100) { discount = 100; discountInput.value = 100; }
+            spInput.value = Math.round(amount * (1 - discount / 100));
+        }
+
+        // Inicializar descuento si specialPrice ya tiene valor
+        if (spInput.value !== '') { updateDiscount(); }
+
+        spInput.addEventListener('input',  updateDiscount);
+        spInput.addEventListener('change', updateDiscount);
+        discountInput.addEventListener('input',  updateSpecialPrice);
+        discountInput.addEventListener('change', updateSpecialPrice);
+
+        function onAmountChange() {
+            if (discountInput.value !== '') { updateSpecialPrice(); }
+            else if (spInput.value !== '')  { updateDiscount(); }
+        }
+        amountInput.addEventListener('input',  onAmountChange);
+        amountInput.addEventListener('change', onAmountChange);
     })();
 </script>

@@ -1,0 +1,2642 @@
+﻿{% extends 'backend/layout.html.twig' %}
+
+{% block title %}{% if isEditMode is defined and isEditMode %}Editar Logro{% else %}Crear Logro - Wizard{% endif %}{% endblock %}
+
+{% block section %}
+<div class="row">
+  <div class="col-md-12">
+    <div class="x_panel">
+      <div class="x_title">
+        <h2>{% if isEditMode is defined and isEditMode %}Editar Logro{% else %}Nuevo Logro{% endif %}</h2>
+        {% if isEditMode is defined and isEditMode %}
+        <ul class="nav navbar-right panel_toolbox">
+          <li>
+            <form method="post" action="{{ path('backend_achievement_delete', {'id': achievement.id}) }}"
+              onsubmit="return confirm('Esta acción eliminará el logro de forma permanente. ¿Deseas continuar?');">
+              <input type="hidden" name="_token" value="{{ csrf_token('delete_achievement_' ~ achievement.id) }}">
+              <button type="submit" class="btn btn-danger btn-sm" style="margin-top:2px;">
+                <i class="fa fa-trash-o" aria-hidden="true"></i> Eliminar logro
+              </button>
+            </form>
+          </li>
+        </ul>
+        {% endif %}
+        <div class="clearfix"></div>
+      </div>
+
+      <div class="x_content">
+        <div class="wizard-layout-row row" style="margin: 0 -15px; background: #f0f2f7; padding: 24px 0;">
+          <div class="col-lg-8 col-md-7 wizard-main-col" style="padding-left: 24px; padding-right: 12px;">
+            <div class="wizard-main-card" style="background: white; border-radius: 10px; padding: 24px;">
+              <!-- HEADER -->
+              <p style="font-size: 12px; color: #8a93aa; margin: 0 0 20px;">Configura las condiciones y recompensas del logro paso a paso</p>
+
+              <!-- STEPPER -->
+              <div style="display: flex; align-items: center; margin-bottom: 24px; flex-wrap: wrap;">
+                {% for i in 1..5 %}
+                  <div style="display: flex; align-items: center;">
+                    <div class="step-circle" id="sc{{ i }}" style="width: 28px; height: 28px; border-radius: 50%; border: 2px solid #c8d0e0; background: white; color: #aab; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; {% if i == 1 %}border-color: #2a5bd7; background: #2a5bd7; color: white;{% endif %}">{{ i }}</div>
+                    <span class="step-label" style="font-size: 10px; margin-left: 6px; white-space: nowrap; {% if i == 1 %}color: #2a5bd7; font-weight: 700;{% else %}color: #9aa;{% endif %}" id="sl{{ i }}">
+                      {% if i == 1 %}Categoría{% elseif i == 2 %}Condición{% elseif i == 3 %}Umbral{% elseif i == 4 %}Recompensa{% else %}Revisar{% endif %}
+                    </span>
+                  </div>
+                  {% if i < 5 %}<div class="step-line" id="line{{ i }}" style="flex: 1; min-width: 10px; height: 2px; background: #dde4f0; margin: 0 8px;"></div>{% endif %}
+                {% endfor %}
+              </div>
+
+              <!-- PASO 1: CATEGORÍA -->
+              <div class="step-section visible" id="step1">
+                <div style="background: white; border: 1px solid #dde4f0; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px;">
+                  <div style="font-size: 13px; font-weight: 700; color: #1a2340; margin: 0 0 12px; border-bottom: 1px solid #eef; padding-bottom: 8px;">¿Qué tipo de logro quieres crear?</div>
+                  <p style="font-size: 11px; color: #8a93aa; margin: 0 0 10px;">La categoría define sobre qué actividad se mide el logro</p>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(148px, 1fr)); gap: 10px; margin-bottom: 16px;">
+                    {% set categoryMeta = {
+                      'asistencia': {'emoji': '🏋️', 'label': 'Asistencia', 'desc': 'Clases asistidas en el studio'},
+                      'compras': {'emoji': '💳', 'label': 'Compras', 'desc': 'Transacciones o monto gastado'},
+                      'antiguedad': {'emoji': '📅', 'label': 'Antigüedad', 'desc': 'Tiempo siendo cliente activo'},
+                      'racha': {'emoji': '🔥', 'label': 'Racha', 'desc': 'Semanas o meses sin faltar'},
+                      'disciplina': {'emoji': '⭐', 'label': 'Por Disciplina', 'desc': 'Clases de un tipo específico'},
+                      'calificacion': {'emoji': '🌟', 'label': 'Calificación', 'desc': 'Promedio o cantidad de 5★'},
+                      'instructor': {'emoji': '🤵', 'label': 'Instructor', 'desc': 'Relación y fidelidad con los instructores'},
+                      'comunidad': {'emoji': '🤝', 'label': 'Comunidad', 'desc': 'Referidos y participación en retos'},
+                      'habitos': {'emoji': '⏰', 'label': 'Hábitos', 'desc': 'Rutinas de asistencia específicas'}
+                    } %}
+                    {% for catKey, meta in categoryMeta %}
+                      <div class="cat-card" data-cat="{{ catKey }}" style="border: 2px solid #dde4f0; background: white; border-radius: 10px; padding: 14px 12px; text-align: center; cursor: pointer; transition: all 0.15s;">
+                        <span style="font-size: 26px; margin-bottom: 6px; display: block;">{{ meta.emoji }}</span>
+                        <div style="font-size: 12px; font-weight: 700; color: #1a2340;">{{ meta.label }}</div>
+                        <div style="font-size: 10px; color: #8a93aa; margin-top: 3px; line-height: 1.3;">{{ meta.desc }}</div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+
+              <!-- PASO 2: CONDICIÓN -->
+              <div class="step-section" id="step2">
+                <div style="background: white; border: 1px solid #dde4f0; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px;">
+                  <div style="font-size: 13px; font-weight: 700; color: #1a2340; margin: 0 0 12px; border-bottom: 1px solid #eef; padding-bottom: 8px;">Elige la condición</div>
+                  <div id="cond-container"></div>
+                  <div id="discipline-picker-step2"></div>
+                  <div id="package-picker-step2"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                  <button class="btn-back" style="background: #f0f2f7; color: #556; padding: 9px 22px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none;" onclick="goStep(1)">← Atrás</button>
+                  <button id="btn2next" style="display:none; background: #2a5bd7; color: white; padding: 9px 22px; border-radius: 8px; font-size: 13px; font-weight: 700; border: none; opacity: 0.5; cursor: not-allowed;" disabled onclick="advanceFromStep2()">Siguiente →</button>
+                </div>
+              </div>
+
+              <!-- PASO 3: UMBRAL -->
+              <div class="step-section" id="step3">
+                <div style="background: white; border: 1px solid #dde4f0; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px;">
+                  <div style="font-size: 13px; font-weight: 700; color: #1a2340; margin: 0 0 12px; border-bottom: 1px solid #eef; padding-bottom: 8px;">Define el umbral</div>
+                  <p style="font-size: 11px; color: #8a93aa; margin: 0 0 10px;">Selecciona el valor objetivo que el usuario debe alcanzar</p>
+                  <div id="threshold-container"></div>
+                  <div id="threshold-extra-fields"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 8px;"><button class="btn-back" style="background: #f0f2f7; color: #556; padding: 9px 22px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none;" onclick="backToStep2()">← Atrás</button><button class="btn-next" id="btn3next" style="background: #2a5bd7; color: white; padding: 9px 22px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; opacity: 0.5; cursor: not-allowed;" disabled onclick="goStep(4)">Siguiente →</button></div>
+              </div>
+
+              <!-- PASO 4: RECOMPENSA -->
+              <div class="step-section" id="step4">
+                <div style="background: white; border: 1px solid #dde4f0; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px;">
+                  <div style="font-size: 13px; font-weight: 700; color: #1a2340; margin: 0 0 12px; border-bottom: 1px solid #eef; padding-bottom: 8px;">Configura la recompensa</div>
+                  
+                  <p style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #2a5bd7; margin: 0 0 8px;">Nivel del logro</p>
+                  <div id="badge-grid" style="display: block; margin-bottom: 12px;"></div>
+
+                  <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                    <div style="flex: 0 0 80px;">
+                      <label style="font-size: 11px; font-weight: 700; color: #556; margin-bottom: 4px; display: block;">Icono</label>
+                      <input type="text" id="badge-icon-input" placeholder="🏆" maxlength="8" style="width: 100%; border: 1.5px solid #dde4f0; border-radius: 6px; padding: 8px 6px; font-size: 20px; text-align: center; outline: none;" oninput="onCustomIconInput()">
+                    </div>
+                    <div style="flex: 1;">
+                      <label style="font-size: 11px; font-weight: 700; color: #556; margin-bottom: 4px; display: block;">Nombre del nivel <span style="font-weight: 400; color: #aab;">(opcional)</span></label>
+                      <input type="text" id="badge-label-input" placeholder="ej. Platino" maxlength="32" style="width: 100%; border: 1.5px solid #dde4f0; border-radius: 6px; padding: 8px 10px; font-size: 13px; outline: none;" oninput="onCustomLabelInput()">
+                    </div>
+                    <div style="flex: 0 0 110px;">
+                      <label style="font-size: 11px; font-weight: 700; color: #556; margin-bottom: 4px; display: block;">Puntos <span style="font-weight: 400; color: #aab;">(ó vacío)</span></label>
+                      <input type="number" id="badge-pts-input" placeholder="500" min="0" step="1" style="width: 100%; border: 1.5px solid #dde4f0; border-radius: 6px; padding: 8px 10px; font-size: 13px; outline: none;" oninput="onCustomPtsInput()">
+                    </div>
+                  </div>
+
+                  <div style="margin-bottom: 12px;">
+                    <label style="font-size: 11px; font-weight: 700; color: #556; margin-bottom: 4px; display: block;">Nombre del logro</label>
+                    <input type="text" id="name-input" placeholder="ej. Guerrero del Studio" style="width: 100%; border: 1.5px solid #dde4f0; border-radius: 6px; padding: 8px 10px; font-size: 13px; outline: none;" oninput="updatePreview(); checkStep4();">
+                  </div>
+
+                  <div style="margin-bottom: 12px;">
+                    <label style="font-size: 11px; font-weight: 700; color: #556; margin-bottom: 4px; display: block;">Mensaje al desbloquear <span style="font-weight: 400; color: #aab;">(opcional)</span></label>
+                    <textarea id="desc-input" placeholder="ej. ¡Has asistido a 50 clases! Tu dedicación es inspiradora." style="width: 100%; border: 1.5px solid #dde4f0; border-radius: 6px; padding: 8px 10px; font-size: 13px; outline: none; resize: vertical; min-height: 56px;" oninput="updatePreview()"></textarea>
+                  </div>
+
+                  <div id="difficulty-filter-panel" style="margin-bottom: 16px;"></div>
+
+                  <p style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #2a5bd7; margin: 0 0 8px;">Opciones</p>
+                  <div id="options-grid" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;"></div>
+
+                  <p style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #2a5bd7; margin: 0 0 8px;">Período de cumplimiento</p>
+                  <p style="font-size: 11px; color: #8a93aa; margin: -4px 0 10px;">Define en cuánto tiempo debe cumplirse el logro</p>
+                  <div id="period-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-bottom: 16px;"></div>
+
+                  <div id="period-custom-fields"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 8px;"><button class="btn-back" style="background: #f0f2f7; color: #556; padding: 9px 22px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none;" onclick="goStep(3)">← Atrás</button><button class="btn-next" id="btn4next" style="background: #2a5bd7; color: white; padding: 9px 22px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; opacity: 0.5; cursor: not-allowed;" disabled onclick="goStep(5)">Revisar →</button></div>
+              </div>
+
+              <!-- PASO 5: REVISAR -->
+              <div class="step-section" id="step5">
+                <div style="display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
+                  <button id="btn-flag-active" onclick="toggleStep5Flag('active')" style="font-size:12px; font-weight:700; padding:7px 16px; border-radius:20px; border:2px solid #22a66a; background:#e8faf2; color:#22a66a; cursor:pointer;">🟢 Activo</button>
+                </div>
+                <div style="background: white; border: 1px solid #dde4f0; border-radius: 10px; padding: 14px 16px; margin-bottom: 14px;">
+                  <div style="font-size: 13px; font-weight: 700; color: #1a2340; margin: 0 0 12px; border-bottom: 1px solid #eef; padding-bottom: 8px;">Resumen del logro</div>
+                  <div id="review-content"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 8px;"><button class="btn-back" style="background: #f0f2f7; color: #556; padding: 9px 22px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none;" onclick="goStep(4)">← Editar</button><button class="btn-save" style="background: #22a66a; color: white; padding: 9px 22px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none;" onclick="saveLogro()">{% if isEditMode is defined and isEditMode %}✓ Guardar Cambios{% else %}✓ Guardar Logro{% endif %}</button></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-4 col-md-5 wizard-preview-col" style="padding-left: 12px; padding-right: 24px;">
+            <div class="wizard-preview-card" style="background: white; border: 1px solid #dde4f0; border-radius: 10px; padding: 20px 16px; position: sticky; top: 10px; max-height: calc(100vh - 20px); overflow: auto;">
+              <div style="font-size: 13px; font-weight: 700; color: #1a2340; margin: 0 0 12px; padding-bottom: 8px; border-bottom: 1px solid #eef;">Vista previa</div>
+              <div id="preview-panel">
+                <div style="font-size: 12px; color: #aab; text-align: center; padding: 24px 0;">Selecciona opciones para ver la vista previa del logro</div>
+              </div>
+              <div style="margin-top: 20px; border-top: 1px solid #eef; padding-top: 14px;">
+                <div style="font-size: 11px; font-weight: 700; color: #8a93aa; margin-bottom: 8px;">PROGRESO DE CONSTRUCCIÓN</div>
+                <div id="progress-list" style="font-size: 11px; color: #8a93aa; line-height: 2;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {% if isEditMode is defined and isEditMode %}
+        {{ form_start(form, {'action': path('backend_achievement_edit', {'id': achievement.id}), 'method': 'POST', 'attr': {'id': 'achievementForm'}}) }}
+        {% else %}
+        {{ form_start(form, {'attr': {'id': 'achievementForm'}}) }}
+        {% endif %}
+          <!-- Hidden inputs para los datos del wizard -->
+          <input type="hidden" name="achievement[categoryKey]" id="hidden-cat" value="">
+          <input type="hidden" name="achievement[conditionKey]" id="hidden-cond" value="">
+          <input type="hidden" name="achievement[conditionContext]" id="hidden-condition-context" value="">
+          <input type="hidden" name="achievement[thresholdType]" id="hidden-threshold-type" value="">
+          <input type="hidden" name="achievement[targetValue]" id="hidden-threshold" value="">
+          <input type="hidden" name="achievement[comparisonOperator]" id="hidden-comparison-op" value="gte">
+          <input type="hidden" name="achievement[rewardType]" id="hidden-reward-type" value="badge">
+          <input type="hidden" name="achievement[badgeLevel]" id="hidden-badge" value="">
+          <input type="hidden" name="achievement[badgeIcon]" id="hidden-badge-icon" value="">
+          <input type="hidden" name="achievement[badgeLabel]" id="hidden-badge-label" value="">
+          <input type="hidden" name="achievement[badgeColor]" id="hidden-badge-color" value="">
+          <input type="hidden" name="achievement[rewardValue]" id="hidden-badge-pts" value="">
+          <input type="hidden" name="achievement[name]" id="hidden-name" value="">
+          <input type="hidden" name="achievement[description]" id="hidden-desc" value="">
+          <input type="hidden" name="achievement[periodType]" id="hidden-period" value="none">
+          <input type="hidden" name="achievement[periodDays]" id="hidden-period-days" value="">
+          <input type="hidden" name="achievement[periodDeadline]" id="hidden-period-deadline" value="">
+          <input type="hidden" name="achievement[periodWindowStart]" id="hidden-period-window-start" value="">
+          <input type="hidden" name="achievement[sortOrder]" id="hidden-sort-order" value="100">
+          <input type="hidden" name="achievement[difficulty]" id="hidden-difficulty" value="">
+          <!-- Booleanos: se deshabilitan cuando son false para que no se envîen (ausencia = false en CheckboxType) -->
+          <input type="hidden" name="achievement[notifyInApp]" id="hidden-opts-notif" value="1">
+          <input type="hidden" name="achievement[visibleProfile]" id="hidden-opts-visible" value="1">
+          <input type="hidden" name="achievement[notifySpecial]" id="hidden-opts-celebrar" value="1">
+          <input type="hidden" name="achievement[showProgress]" id="hidden-opts-progreso" value="1">
+          <input type="hidden" name="achievement[includeHistoricalData]" id="hidden-opts-retroactivo" value="1">
+          <input type="hidden" name="achievement[active]" id="hidden-active" value="{{ (isEditMode is defined and isEditMode and achievement.active is defined) ? (achievement.active ? '1' : '0') : '1' }}">
+          {% if form._token is defined %}
+            {{ form_widget(form._token) }}
+          {% endif %}
+        {{ form_end(form, {'render_rest': false}) }}
+
+<script>
+const categoryMeta = {
+  'asistencia': { emoji: '🏋️', label: 'Asistencia' },
+  'compras': { emoji: '💳', label: 'Compras' },
+  'antiguedad': { emoji: '📅', label: 'Antigüedad' },
+  'racha': { emoji: '🔥', label: 'Racha' },
+  'disciplina': { emoji: '⭐', label: 'Por Disciplina' },
+  'calificacion': { emoji: '🌟', label: 'Calificación' },
+  'instructor': { emoji: '🤵', label: 'Instructor' },
+  'comunidad': { emoji: '🤝', label: 'Comunidad' },
+  'habitos': { emoji: '⏰', label: 'Hábitos' }
+};
+
+const badgeLabels = {{ badgesData.labels|json_encode|raw }};
+const badgePts    = {{ badgesData.pts|json_encode|raw }};
+const badgeIcons  = {{ badgesData.icons|json_encode|raw }};
+
+const conditionsByCategory = {{ conditionsByCategory|json_encode|raw }};
+const activeDisciplines = {{ activeDisciplines|default([])|json_encode|raw }};
+const activeInstructors = {{ activeInstructors|default([])|json_encode|raw }};
+const activePackages    = {{ activePackages|default([])|json_encode|raw }};
+
+// Slots de hora fija: 06:00 – 21:
+const timeSlots = (function() {
+  const slots = [];
+  for (let h = 6; h <= 21; h++) {
+    const label = h < 12 ? `${h}:00 am` : h === 12 ? '12:00 pm' : `${h - 12}:00 pm`;
+    slots.push({ value: `${String(h).padStart(2,'0')}:00`, label });
+  }
+  return slots;
+})();
+const condLabels = {};
+Object.keys(conditionsByCategory).forEach(cat => {
+  (conditionsByCategory[cat] || []).forEach(cond => {
+    condLabels[cond.conditionKey] = cond.conditionLabel;
+  });
+});
+
+const conditionMeta = {
+  attended_classes: { icon: '🏋️' },
+  unique_days_attended: { icon: '🗓️' },
+  weekly_frequency: { icon: '📆' },
+  total_amount: { icon: '💰' },
+  total_transactions: { icon: '🧾' },
+  consecutive_paid_months: { icon: '💳' },
+  gift_cards_count: { icon: '🎁' },
+  specific_package_count: { icon: '📦' },
+  active_months: { icon: '📅' },
+  active_years: { icon: '🕰️' },
+  consolidated_client: { icon: '🧱' },
+  consecutive_days: { icon: '🔥' },
+  consecutive_weeks: { icon: '📈' },
+  no_show_free_days: { icon: '✅' },
+  discipline_classes: { icon: '🥋' },
+  multi_discipline_count: { icon: '🧩' },
+  discipline_mastery_days: { icon: '🎯' },
+  avg_rating: { icon: '🌟' },
+  five_star_count: { icon: '⭐' },
+  rating_votes_min: { icon: '🗳️' },
+  churn_risk_recovered: { icon: '🛡️' },
+  months_without_pause: { icon: '📌' },
+  top_instructor_classes: { icon: '🤝' },
+  unique_instructors_count: { icon: '👥' },
+  instructor_consistency: { icon: '🔁' },
+  months_without_pause: { icon: '📌' },
+  referrals_count: { icon: '🤝' },
+  challenges_completed: { icon: '🏁' },
+  social_shares_count: { icon: '📲' },
+  event_attendance_count: { icon: '🎪' },
+  friend_joint_classes: { icon: '👫' },
+  checkin_morning_count: { icon: '🌅' },
+  weekend_attendance: { icon: '📍' },
+  checkin_evening_count: { icon: '🌆' },
+  consecutive_same_time_slot: { icon: '⏰' }
+};
+
+function getConditionIcon(conditionKey) {
+  return (conditionMeta[conditionKey] && conditionMeta[conditionKey].icon)
+    || (state.cat && categoryMeta[state.cat] ? categoryMeta[state.cat].emoji : null)
+    || '🎯';
+}
+
+let state = {
+  cat: null,
+  cond: null,
+  disciplineIds: [],
+  disciplineAttendances: null,
+  disciplineAttendancesScope: 'total',
+  instructorIds: [],
+  timeSlotIds: [],
+  customTimeSlots: [],
+  packageIds: [],
+  packagePurchasesScope: 'total',
+  threshold: null,
+  badge: null,
+  customIcon: '',
+  customLabel: '',
+  customPts: '',
+  iconManual: false,
+  labelManual: false,
+  ptsManual: false,
+  name: '',
+  desc: '',
+  period: null,
+  periodDays: null,
+  periodWeeks: null,
+  weeklyMinWeeks: null,
+  periodDeadline: null,
+  periodWindowStart: null,
+  opts: { notif: true, visible: true, celebrar: true, progreso: false, retroactivo: false },
+  difficulty: null,
+  active: true
+};
+
+let currentStep = 1;
+
+function goStep(n) {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.getElementById('step' + currentStep).classList.remove('visible');
+  currentStep = n;
+  document.getElementById('step' + n).classList.add('visible');
+  updateStepBar();
+  if (n === 2) { renderConditions(); checkStep2(); }
+  if (n === 3) { renderThresholds(); checkStep3(); }
+  if (n === 4) {
+    if (state.cond !== 'challenges_completed') { renderDifficultyFilter(); }
+    else { const p = document.getElementById('difficulty-filter-panel'); if (p) p.innerHTML = ''; }
+    renderPeriods();
+    checkStep4();
+  }
+  if (n === 5) { buildReview(); renderStep5Flags(); }
+  updatePreview();
+  // Forzar recalculo del layout para que el scroll area no quede más grande que el contenido.
+  requestAnimationFrame(() => {
+    const rightCol = document.querySelector('.right_col');
+    if (rightCol) { rightCol.style.minHeight = 'auto'; }
+    window.dispatchEvent(new Event('resize'));
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  });
+}
+
+function updateStepBar() {
+  for (let i = 1; i <= 5; i++) {
+    const c = document.getElementById('sc' + i);
+    const l = document.getElementById('sl' + i);
+    c.style.borderColor = '#c8d0e0';
+    c.style.background = 'white';
+    c.style.color = '#aab';
+    l.style.color = '#9aa';
+    l.style.fontWeight = '400';
+    c.textContent = String(i);
+    
+    if (i < currentStep) {
+      c.style.borderColor = '#22a66a';
+      c.style.background = '#22a66a';
+      c.style.color = 'white';
+      l.style.color = '#22a66a';
+      c.textContent = '✓';
+      if (document.getElementById('line' + i)) {
+        document.getElementById('line' + i).style.background = '#22a66a';
+      }
+    } else if (i === currentStep) {
+      c.style.borderColor = '#2a5bd7';
+      c.style.background = '#2a5bd7';
+      c.style.color = 'white';
+      l.style.color = '#2a5bd7';
+      l.style.fontWeight = '700';
+    }
+  }
+}
+
+function selectCat(el) {
+  document.querySelectorAll('.cat-card').forEach(c => {
+    c.classList.remove('selected');
+    c.style.borderColor = '#dde4f0';
+    c.style.background = 'white';
+  });
+  el.classList.add('selected');
+  el.style.borderColor = '#2a5bd7';
+  el.style.background = '#eef2ff';
+  state.cat = el.dataset.cat;
+  state.cond = null;
+  state.disciplineIds = [];
+  state.instructorIds = [];
+  state.timeSlotIds = [];
+  state.customTimeSlots = [];
+  state.packageIds = [];
+  state.packagePurchasesScope = 'total';
+  state.threshold = null;
+  // Limpiar picker de disciplinas y botón siguiente al cambiar categoría
+  const dp = document.getElementById('discipline-picker-step2');
+  if (dp) dp.innerHTML = '';
+  const pp = document.getElementById('package-picker-step2');
+  if (pp) pp.innerHTML = '';
+  const btn2 = document.getElementById('btn2next');
+  if (btn2) btn2.style.display = 'none';
+  renderConditions();
+  updatePreview();
+  setTimeout(() => goStep(2), 300);
+}
+
+function renderConditions() {
+  const container = document.getElementById('cond-container');
+  const conds = conditionsByCategory[state.cat] || [];
+  let html = '';
+  
+  if (conds.length === 0) {
+    container.innerHTML = '<p style="color: #aab;">Sin condiciones disponibles</p>';
+    return;
+  }
+
+  conds.forEach(cond => {
+    const condIcon = getConditionIcon(cond.conditionKey);
+    html += `<div class="cond-chip" data-cond="${cond.conditionKey}" style="border: 2px solid #dde4f0; background: white; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; color: #444; cursor: pointer; transition: all 0.15s;" onclick="selectCond(this)"><span style="margin-right: 6px;">${condIcon}</span>${cond.conditionLabel}</div>`;
+  });
+  
+  container.innerHTML = `<p style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #2a5bd7; margin: 0 0 8px;">Tipo de ${state.cat}</p><div style="display: flex; flex-wrap: wrap; gap: 8px;">${html}</div>`;
+
+  // Restaurar selección visual si ya hay una condición seleccionada en state
+  if (state.cond) {
+    const chip = container.querySelector(`.cond-chip[data-cond="${state.cond}"]`);
+    if (chip) {
+      chip.classList.add('selected');
+      chip.style.borderColor = '#2a5bd7';
+      chip.style.background = '#eef2ff';
+      chip.style.color = '#1a2340';
+    }
+  }
+}
+
+function selectCond(el) {
+  document.querySelectorAll('.cond-chip').forEach(c => {
+    c.classList.remove('selected');
+    c.style.borderColor = '#dde4f0';
+    c.style.background = 'white';
+    c.style.color = '#444';
+  });
+  el.classList.add('selected');
+  el.style.borderColor = '#2a5bd7';
+  el.style.background = '#eef2ff';
+  el.style.color = '#1a2340';
+  state.cond = el.dataset.cond;
+  state.disciplineIds = [];
+  state.disciplineAttendances = null;
+  state.disciplineAttendancesScope = 'total';
+  state.instructorIds = [];
+  state.timeSlotIds = [];
+  state.customTimeSlots = [];
+  state.packageIds = [];
+  state.packagePurchasesScope = 'total';
+  state.threshold = null;
+  state.difficulty = null;
+  state.weeklyMinWeeks = null;
+  state.periodWeeks = null;
+  // Resetear período porque puede cambiar de opciones disponibles según condición
+  state.period = null;
+  state.periodDays = null;
+  state.periodDeadline = null;
+  state.periodWindowStart = null;
+
+  // Limpiar entrada personalizada de paso anterior
+  const customInput = document.getElementById('custom-threshold-input');
+  if (customInput) {
+    customInput.style.display = 'none';
+    const customValue = document.getElementById('custom-threshold-value');
+    if (customValue) customValue.value = '';
+  }
+
+  if (state.cat === 'disciplina' && state.cond !== 'multi_discipline_count') {
+    // Mostrar picker de disciplinas en el mismo paso 2 — NO auto-avanzar
+    renderDisciplineInStep2();
+    checkStep2();
+    updatePreview();
+  } else if (state.cat === 'compras' && state.cond === 'specific_package_count') {
+    // Mostrar picker de paquetes en el mismo paso 2 — NO auto-avanzar
+    renderPackageInStep2();
+    checkStep2();
+    updatePreview();
+  } else {
+    // multi_discipline_count y otras categorías: avanzar directo al paso 3
+    renderThresholds();
+    updatePreview();
+    setTimeout(() => goStep(3), 300);
+  }
+}
+
+function advanceFromStep2() {
+  renderThresholds();
+  goStep(3);
+}
+
+function backToStep2() {
+  goStep(2);
+  if (state.cat === 'disciplina') {
+    renderDisciplineInStep2();
+    checkStep2();
+  }
+  if (state.cat === 'compras' && state.cond === 'specific_package_count') {
+    renderPackageInStep2();
+    checkStep2();
+  }
+}
+
+function checkStep2() {
+  const btn = document.getElementById('btn2next');
+  if (!btn) return;
+  const isDisciplina = state.cat === 'disciplina';
+  const isPackage    = state.cat === 'compras' && state.cond === 'specific_package_count';
+  const isMultiCount = state.cond === 'multi_discipline_count';
+
+  // Para categorías que normalmente auto-avanzan (no disciplina-individual ni paquete específico),
+  // mostrar btn2next solo si hay condición seleccionada (permite navegar en modo edición)
+  if (!isDisciplina && !isPackage) {
+    if (state.cond) {
+      btn.style.display = 'inline-block';
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+    } else {
+      btn.style.display = 'none';
+    }
+    return;
+  }
+
+  btn.style.display = 'inline-block';
+  let ok = !!state.cond;
+  if (isDisciplina && !isMultiCount) ok = ok && state.disciplineIds.length > 0;
+  if (isPackage) ok = ok && state.packageIds.length > 0;
+  btn.disabled = !ok;
+  btn.style.opacity = ok ? '1' : '0.5';
+  btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+}
+
+const INDIVIDUAL_DISCIPLINE_ID = 0;
+
+function renderDisciplineInStep2() {
+  const container = document.getElementById('discipline-picker-step2');
+  if (!container) return;
+  // Para multi_discipline_count: el picker va en paso 3, no aquí
+  if (!isDisciplineConditionActive() || state.cond === 'multi_discipline_count') { container.innerHTML = ''; return; }
+
+  const isMulti = isMultiDisciplineCondition();
+  const scopeTitle = isMulti ? 'Disciplinas a considerar' : 'Disciplina a evaluar';
+  const scopeHint = isMulti
+    ? 'Selecciona una o más disciplinas. Puedes incluir clases individuales como opción especial.'
+    : 'Selecciona la disciplina sobre la que se evaluará esta condición.';
+
+  // Chip especial: Clases individuales
+  const indivSel = state.disciplineIds.includes(INDIVIDUAL_DISCIPLINE_ID);
+  const individualChip = `<div class="discipline-chip${indivSel ? ' selected' : ''}" data-discipline-id="${INDIVIDUAL_DISCIPLINE_ID}"
+    style="border: 2px solid ${indivSel ? '#7c3aed' : '#dde4f0'}; background: ${indivSel ? '#f3e8ff' : 'white'}; color: ${indivSel ? '#4c1d95' : '#444'}; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;"
+    onclick="toggleDisciplineScope(this)">🧘 Clases individuales</div>`;
+
+  // Chips de disciplinas activas
+  const disciplineChips = activeDisciplines.map(d => {
+    const sel = state.disciplineIds.includes(Number(d.id));
+    return `<div class="discipline-chip${sel ? ' selected' : ''}" data-discipline-id="${d.id}"
+      style="border: 2px solid ${sel ? '#2a5bd7' : '#dde4f0'}; background: ${sel ? '#eef2ff' : 'white'}; color: ${sel ? '#1a2340' : '#444'}; border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;"
+      onclick="toggleDisciplineScope(this)">🥋 ${d.name}</div>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div style="margin-top: 14px; padding: 12px; border: 1px solid #dde4f0; border-radius: 8px; background: #fbfcff;">
+      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #2a5bd7; margin-bottom: 4px;">${scopeTitle}</div>
+      <div style="font-size: 11px; color: #8a93aa; margin-bottom: 10px;">${scopeHint}</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">${individualChip}${disciplineChips}</div>
+    </div>`;
+}
+
+function isDisciplineConditionActive() {
+  return state.cat === 'disciplina' && !!state.cond;
+}
+
+function isMultiDisciplineCondition() {
+  return state.cond === 'multi_discipline_count';
+}
+
+function isPackageConditionActive() {
+  return state.cat === 'compras' && state.cond === 'specific_package_count';
+}
+
+function renderPackageInStep2() {
+  const container = document.getElementById('package-picker-step2');
+  if (!container) return;
+  if (!isPackageConditionActive()) { container.innerHTML = ''; return; }
+
+  function buildChips(pkgs) {
+    if (!pkgs.length) return '<span style="font-size:12px;color:#aaa;">Sin paquetes</span>';
+    return pkgs.map(pkg => {
+      const sel = state.packageIds.includes(Number(pkg.id));
+      return `<div class="package-chip${sel ? ' selected' : ''}" data-pkg-id="${pkg.id}"
+        style="border: 2px solid ${sel ? '#2a5bd7' : '#dde4f0'}; background: ${sel ? '#eef2ff' : 'white'}; color: ${sel ? '#1a2340' : '#444'}; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;"
+        onclick="togglePackageScope(this)">📦 ${pkg.name}</div>`;
+    }).join('');
+  }
+
+  const grupales    = activePackages.filter(p => p.type === 'g');
+  const individuales = activePackages.filter(p => p.type === 'i');
+
+  container.innerHTML = `
+    <div style="margin-top: 14px; padding: 12px; border: 1px solid #dde4f0; border-radius: 8px; background: #fbfcff;">
+      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #2a5bd7; margin-bottom: 4px;">Paquetes a considerar</div>
+      <div style="font-size: 11px; color: #8a93aa; margin-bottom: 12px;">Selecciona uno o más paquetes. El logro se cumplirá cuando el usuario haya comprado cualquiera de ellos el número de veces indicado.</div>
+      ${grupales.length ? `
+      <div style="font-size: 11px; font-weight: 700; color: #444; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+        <span style="background:#e8f0fe; color:#2a5bd7; border-radius: 4px; padding: 1px 7px; font-size: 10px; letter-spacing: .4px;">GRUPALES</span>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;">${buildChips(grupales)}</div>` : ''}
+      ${individuales.length ? `
+      <div style="font-size: 11px; font-weight: 700; color: #444; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+        <span style="background:#fef3e2; color:#b45309; border-radius: 4px; padding: 1px 7px; font-size: 10px; letter-spacing: .4px;">INDIVIDUALES</span>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">${buildChips(individuales)}</div>` : ''}
+      ${!grupales.length && !individuales.length ? '<span style="font-size:12px;color:#aaa;">No hay paquetes activos</span>' : ''}
+    </div>`;
+}
+
+function togglePackageScope(el) {
+  const pkgId = Number(el.dataset.pkgId);
+  if (state.packageIds.includes(pkgId)) {
+    state.packageIds = state.packageIds.filter(id => id !== pkgId);
+    el.style.borderColor = '#dde4f0';
+    el.style.background = 'white';
+    el.style.color = '#444';
+    el.classList.remove('selected');
+  } else {
+    state.packageIds = [...state.packageIds, pkgId];
+    el.style.borderColor = '#2a5bd7';
+    el.style.background = '#eef2ff';
+    el.style.color = '#1a2340';
+    el.classList.add('selected');
+  }
+  checkStep2();
+  updatePreview();
+}
+
+function getSelectedPackageNames() {
+  if (!state.packageIds.length) return [];
+  return activePackages
+    .filter(p => state.packageIds.includes(Number(p.id)))
+    .map(p => p.name);
+}
+
+function isInstructorScopeCondition() {
+  return state.cond === 'top_instructor_classes' || state.cond === 'instructor_consistency';
+}
+
+// Condiciones cuyo umbral ya define una duración de tiempo → período libre (sin-limite) o fecha de vencimiento
+function isTimeBoundCondition() {
+  if (!state.cond) return false;
+  const cond = (conditionsByCategory[state.cat] || []).find(c => c.conditionKey === state.cond);
+  const type = cond ? cond.thresholdType : null;
+  // thresholdType = months o days: el umbral es tiempo
+  if (type === 'months' || type === 'days') return true;
+  // conditionKeys con semántica de semanas aunque su thresholdType sea count
+  const weekBasedKeys = ['consecutive_weeks', 'instructor_consistency'];
+  return weekBasedKeys.includes(state.cond);
+}
+
+function isTimeSlotCondition() {
+  return state.cond === 'consecutive_same_time_slot';
+}
+
+function getSelectedTimeSlotLabels() {
+  const predefined = timeSlots
+    .filter(s => state.timeSlotIds.includes(s.value))
+    .map(s => s.label);
+  const custom = (state.customTimeSlots || [])
+    .filter(s => state.timeSlotIds.includes(s.value))
+    .map(s => `⏰ ${s.value}`);
+  return [...predefined, ...custom];
+}
+
+function getSelectedInstructorNames() {
+  if (!state.instructorIds.length) return [];
+  const selectedSet = new Set(state.instructorIds.map(id => String(id)));
+  return activeInstructors
+    .filter(i => selectedSet.has(String(i.id)))
+    .map(i => i.name);
+}
+
+function getSelectedDisciplineNames() {
+  if (!state.disciplineIds.length) return [];
+  const result = [];
+  if (state.disciplineIds.includes(INDIVIDUAL_DISCIPLINE_ID)) {
+    result.push('Clases individuales');
+  }
+  const selectedSet = new Set(state.disciplineIds.filter(id => id !== INDIVIDUAL_DISCIPLINE_ID).map(id => String(id)));
+  activeDisciplines
+    .filter(d => selectedSet.has(String(d.id)))
+    .forEach(d => result.push(d.name));
+  return result;
+}
+
+function setDisciplineChipVisual(el, enabled) {
+  if (enabled) {
+    el.classList.add('selected');
+    el.style.borderColor = '#2a5bd7';
+    el.style.background = '#eef2ff';
+    el.style.color = '#1a2340';
+  } else {
+    el.classList.remove('selected');
+    el.style.borderColor = '#dde4f0';
+    el.style.background = 'white';
+    el.style.color = '#444';
+  }
+}
+
+function toggleDisciplineScope(el) {
+  const raw = el.dataset.disciplineId;
+  if (raw === undefined || raw === '') return;
+  const disciplineId = parseInt(raw, 10);
+  if (isNaN(disciplineId)) return;
+
+  if (isMultiDisciplineCondition()) {
+    if (state.disciplineIds.includes(disciplineId)) {
+      state.disciplineIds = state.disciplineIds.filter(id => id !== disciplineId);
+    } else {
+      state.disciplineIds = [...state.disciplineIds, disciplineId];
+    }
+  } else {
+    state.disciplineIds = [disciplineId];
+  }
+
+  // Actualizar visual de todos los chips
+  document.querySelectorAll('.discipline-chip').forEach(chip => {
+    const chipRaw = chip.dataset.disciplineId;
+    if (chipRaw === undefined || chipRaw === '') return;
+    const chipId = parseInt(chipRaw, 10);
+    const sel = state.disciplineIds.includes(chipId);
+    const isIndiv = chipId === INDIVIDUAL_DISCIPLINE_ID;
+    if (sel) {
+      chip.classList.add('selected');
+      chip.style.borderColor = isIndiv ? '#7c3aed' : '#2a5bd7';
+      chip.style.background  = isIndiv ? '#f3e8ff' : '#eef2ff';
+      chip.style.color       = isIndiv ? '#4c1d95' : '#1a2340';
+    } else {
+      chip.classList.remove('selected');
+      chip.style.borderColor = '#dde4f0';
+      chip.style.background  = 'white';
+      chip.style.color       = '#444';
+    }
+  });
+
+  updatePreview();
+  checkStep2();
+  checkStep3();
+}
+
+function renderDisciplineScopeHtml() {
+  if (!isDisciplineConditionActive()) {
+    return '';
+  }
+
+  if (!activeDisciplines.length) {
+    return `<div style="margin-bottom: 12px; border: 1px dashed #d9deea; background: #f9fafd; border-radius: 8px; padding: 10px; font-size: 11px; color: #8a93aa;">No hay disciplinas activas disponibles para evaluar esta condición.</div>`;
+  }
+
+  const scopeTitle = isMultiDisciplineCondition() ? 'Disciplinas a considerar' : 'Disciplina a evaluar';
+  const scopeHint = isMultiDisciplineCondition()
+    ? 'Selecciona una o más disciplinas activas para aplicar esta condición.'
+    : 'Selecciona la disciplina activa sobre la que se evaluará la condición.';
+
+  const chips = activeDisciplines.map(d => {
+    const selected = state.disciplineIds.includes(Number(d.id));
+    return `<div class="discipline-chip${selected ? ' selected' : ''}" data-discipline-id="${d.id}" style="border: 2px solid ${selected ? '#2a5bd7' : '#dde4f0'}; background: ${selected ? '#eef2ff' : 'white'}; border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 600; color: ${selected ? '#1a2340' : '#444'}; cursor: pointer; transition: all 0.15s;" onclick="toggleDisciplineScope(this)">🥋 ${d.name}</div>`;
+  }).join('');
+
+  return `<div style="margin-bottom: 12px; padding: 10px; border: 1px solid #dde4f0; border-radius: 8px; background: #fbfcff;">
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #2a5bd7; margin-bottom: 4px;">${scopeTitle}</div>
+            <div style="font-size: 11px; color: #8a93aa; margin-bottom: 8px;">${scopeHint}</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">${chips}</div>
+          </div>`;
+}
+
+function renderThresholds() {
+  const container = document.getElementById('threshold-container');
+  const extraFields = document.getElementById('threshold-extra-fields');
+  if (extraFields) extraFields.innerHTML = '';
+  const cond = (conditionsByCategory[state.cat] || []).find(item => item.conditionKey === state.cond);
+  const vals = (cond && cond.thresholdOptions && cond.thresholdOptions.length)
+    ? cond.thresholdOptions
+    : [];
+
+  const unitByType = {
+    amount: 'MXN',
+    days: 'días',
+    months: 'meses',
+    rating: 'estrellas',
+    count: 'unidades'
+  };
+
+  const thresholdType = cond && cond.thresholdType ? cond.thresholdType : 'count';
+  const unitLabel = unitByType[thresholdType] || 'unidades';
+  const isWeeklyFrequency = cond && cond.conditionKey === 'weekly_frequency';
+  const isMultiCount = state.cond === 'multi_discipline_count';
+  const maxDisciplines = activeDisciplines.length + 1; // +1 por clases individuales
+  const isRatingType = thresholdType === 'rating';
+  const condIcon = cond ? getConditionIcon(cond.conditionKey) : '🎯';
+  const condName = cond ? cond.conditionLabel : 'Condición';
+
+  if (vals.length === 0) {
+    container.innerHTML = '<p style="color: #aab;">Sin umbrales configurados para esta condición.</p>';
+    return;
+  }
+
+  // Resumen read-only de disciplinas (solo para condiciones que eligen disciplina en paso 2)
+  let disciplineSummaryHtml = '';
+  if (isDisciplineConditionActive() && state.cond !== 'multi_discipline_count' && state.disciplineIds.length > 0) {
+    const names = getSelectedDisciplineNames();
+    disciplineSummaryHtml = `<div style="margin-bottom: 12px; padding: 8px 12px; background: #f3e8ff; border: 1px solid #c4b5fd; border-radius: 8px; font-size: 11px; color: #4c1d95;">
+      <span style="font-weight:700;">Disciplina${names.length > 1 ? 's' : ''} seleccionada${names.length > 1 ? 's' : ''}:</span> ${names.join(', ')}
+    </div>`;
+  }
+
+  let html = `<div style="display: inline-flex; align-items: center; gap: 8px; background: #f6f8ff; border: 1px solid #dde4f0; border-radius: 999px; padding: 5px 10px; margin-bottom: 10px; font-size: 11px; font-weight: 700; color: #2a5bd7;"><span>${condIcon}</span><span>${condName}</span></div>
+             ${disciplineSummaryHtml}
+             <p style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #2a5bd7; margin: 0 0 8px;">Valor objetivo</p>
+             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px;">`;
+  
+  vals.forEach(opt => {
+    const rawValue = opt.value;
+    let showLabel = opt.label || String(rawValue);
+    let cardUnitLabel = unitLabel;
+
+    if (isWeeklyFrequency) {
+      showLabel = showLabel
+        .replace(/\s*\/\s*semana/gi, '')
+        .replace(/\s+por\s+semana/gi, '')
+        .trim();
+      cardUnitLabel = 'por semanas';
+    }
+
+    // Para multi_discipline_count: deshabilitar tarjetas que superan el máximo disponible
+    const isDisabled = isMultiCount && Number(rawValue) > maxDisciplines;
+    if (isDisabled) {
+      html += `<div class="threshold-card" data-val="${rawValue}" data-disabled="true" title="No hay suficientes disciplinas activas" style="border: 2px solid #e5e7eb; background: #f9fafb; border-radius: 8px; padding: 10px 6px; text-align: center; cursor: not-allowed; opacity: 0.45; transition: all 0.15s;" onclick="selectThreshold(this)">
+                <div style="font-size: 15px; font-weight: 700; color: #9ca3af;">${showLabel}</div>
+                <div style="font-size: 10px; color: #9ca3af;">${cardUnitLabel}</div>
+              </div>`;
+    } else {
+      html += `<div class="threshold-card" data-val="${rawValue}" style="border: 2px solid #dde4f0; background: white; border-radius: 8px; padding: 10px 6px; text-align: center; cursor: pointer; transition: all 0.15s;" onclick="selectThreshold(this)">
+                <div style="font-size: 15px; font-weight: 700; color: #2a5bd7;">${showLabel}</div>
+                <div style="font-size: 10px; color: #8a93aa;">${cardUnitLabel}</div>
+              </div>`;
+    }
+  });
+
+  html += `<div class="threshold-card custom-threshold-trigger" data-val="custom" style="border: 2px solid #dde4f0; background: white; border-radius: 8px; padding: 10px 6px; text-align: center; cursor: pointer; transition: all 0.15s;" onclick="selectThreshold(this)">
+            <div style="font-size: 15px; font-weight: 700; color: #2a5bd7;">+</div>
+            <div style="font-size: 10px; color: #8a93aa;">Personalizado</div>
+          </div>`;
+
+  let inputMin, inputMax, inputStep, inputPlaceholder, inputUnit;
+  if (isMultiCount) {
+    inputMin = 1; inputMax = maxDisciplines; inputStep = 1;
+    inputPlaceholder = `1 – ${maxDisciplines}`; inputUnit = 'disciplinas';
+  } else if (isRatingType) {
+    inputMin = 1; inputMax = 5; inputStep = 0.1;
+    inputPlaceholder = 'ej. 4.7'; inputUnit = 'estrellas';
+  } else {
+    inputMin = 1; inputMax = 9999; inputStep = 1;
+    inputPlaceholder = 'ej. 35'; inputUnit = unitLabel;
+  }
+
+  html += `</div><div id="custom-threshold-input" style="display: none; margin-top: 14px; padding: 12px; background: #f9fafc; border: 1px solid #dde4f0; border-radius: 8px;">
+    <label style="font-size: 11px; font-weight: 700; color: #556; margin-bottom: 6px; display: block;">Ingresa el valor personalizado</label>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <input type="number" id="custom-threshold-value" placeholder="${inputPlaceholder}" min="${inputMin}" max="${inputMax}" step="${inputStep}" style="flex: 1; border: 1.5px solid #dde4f0; border-radius: 6px; padding: 8px 10px; font-size: 13px;" oninput="setCustomThreshold(this.value)">
+      <span style="align-self: center; font-size: 11px; color: #8a93aa; font-weight: 600;">${inputUnit}</span>
+    </div>
+    <div id="custom-threshold-error" style="display:none; font-size: 11px; color: #dc2626; margin-top: 4px;"></div>
+  </div>`;
+
+  // Para multi_discipline_count: agregar área donde aparecerá el picker de disciplinas al seleccionar umbral
+  if (state.cond === 'multi_discipline_count') {
+    html += `<div id="discipline-picker-step3"></div>`;
+  }
+
+  // Para top_instructor_classes: agregar área donde aparecerá el picker de instructores al seleccionar umbral
+  if (isInstructorScopeCondition()) {
+    html += `<div id="instructor-picker-step3"></div>`;
+  }
+
+  // Para consecutive_same_time_slot: picker de horarios
+  if (isTimeSlotCondition()) {
+    html += `<div id="timeslot-picker-step3"></div>`;
+  }
+
+  // Para challenges_completed: selector de dificultad a contabilizar
+  if (state.cond === 'challenges_completed') {
+    html += `<div id="challenge-diff-step3" style="margin-top: 16px;"></div>`;
+  }
+
+  // Para specific_package_count: selector de scope (en total vs en cada uno)
+  if (isPackageConditionActive()) {
+    html += `<div id="package-scope-step3"></div>`;
+  }
+
+  container.innerHTML = html;
+
+  // Restaurar selección visual del umbral si ya hay uno en state
+  if (state.threshold !== null && state.threshold !== undefined) {
+    const threshStr = String(state.threshold);
+    const card = container.querySelector(`.threshold-card[data-val="${threshStr}"]`);
+    if (card) {
+      card.classList.add('selected');
+      card.style.borderColor = '#2a5bd7';
+      card.style.background = '#eef2ff';
+    } else {
+      // Umbral personalizado: mostrar el input con el valor guardado
+      const customInput = document.getElementById('custom-threshold-input');
+      const customCard = container.querySelector('.threshold-card[data-val="custom"]');
+      if (customInput && customCard) {
+        customCard.classList.add('selected');
+        customCard.style.borderColor = '#2a5bd7';
+        customCard.style.background = '#eef2ff';
+        customInput.style.display = 'block';
+        const customValue = document.getElementById('custom-threshold-value');
+        if (customValue) customValue.value = threshStr;
+      }
+    }
+  }
+
+  // Si ya había un umbral seleccionado (vuelta atrás), re-renderizar el picker
+  if (state.cond === 'multi_discipline_count' && state.threshold) {
+    renderDisciplinePickerStep3(Number(state.threshold));
+  }
+
+  // Si vuelve atrás con instructores ya seleccionados, re-renderizar picker
+  if (isInstructorScopeCondition() && state.threshold) {
+    renderInstructorPickerStep3();
+  }
+
+  // Si vuelve atrás con time slots ya seleccionados, re-renderizar picker
+  if (isTimeSlotCondition() && state.threshold) {
+    renderTimeSlotPickerStep3();
+  }
+
+  // Si vuelve atrás con dificultad ya elegida en challenges_completed, restaurar panel
+  if (state.cond === 'challenges_completed' && state.threshold) {
+    renderDifficultyFilter('challenge-diff-step3');
+  }
+
+  // Si vuelve atrás en specific_package_count, restaurar selector de scope
+  if (isPackageConditionActive() && state.threshold) {
+    renderPackageScopeStep3();
+  }
+
+  // Si vuelve atrás con weekly_frequency ya configurado, restaurar input de semanas
+  if (state.cond === 'weekly_frequency' && state.threshold !== null) {
+    const extraFields = document.getElementById('threshold-extra-fields');
+    if (extraFields) {
+      extraFields.innerHTML = `<div style="margin-top:12px;padding:10px 12px;background:#f6f8ff;border:1px solid #dde4f0;border-radius:8px;">
+        <label style="font-size:11px;font-weight:700;color:#2a5bd7;margin-bottom:4px;display:block;">Semanas de evaluación</label>
+        <p style="font-size:10px;color:#8a93aa;margin:0 0 6px;">Mínimo de semanas que debe mantener este promedio semanal</p>
+        <input type="number" id="weekly-min-weeks-input" placeholder="ej. 4" min="1" max="52"
+          style="width:100%;border:1.5px solid #dde4f0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;"
+          oninput="setWeeklyMinWeeks(this.value)">
+      </div>`;
+      if (state.weeklyMinWeeks) {
+        const inp = document.getElementById('weekly-min-weeks-input');
+        if (inp) inp.value = state.weeklyMinWeeks;
+      }
+    }
+  }
+
+}
+
+function renderDifficultyFilter(panelId) {
+  panelId = panelId || 'difficulty-filter-panel';
+  const panel = document.getElementById(panelId);
+  if (!panel) return;
+
+  const isChallengeFilter = state.cond === 'challenges_completed';
+  const title  = isChallengeFilter ? 'Filtrar por dificultad de reto' : '¿Es este logro un reto? (opcional)';
+  const hint   = isChallengeFilter
+    ? 'Solo contará retos de la dificultad seleccionada. Sin selección = cuenta todos los retos.'
+    : 'Asigna dificultad para que este logro cuente como reto en la condición "Retos completados".';
+
+  const opts = [
+    { key: '__null__', label: isChallengeFilter ? 'Cualquiera' : 'No es reto', icon: '—' },
+    { key: 'easy',   label: 'Fácil',    icon: '🟢' },
+    { key: 'medium', label: 'Media',    icon: '🟡' },
+    { key: 'hard',   label: 'Difícil',  icon: '🟠' },
+    { key: 'expert', label: 'Experto',  icon: '🔴' },
+  ];
+
+  const chips = opts.map(o => {
+    const dataKey = o.key;
+    const isSel   = (state.difficulty === null && o.key === '__null__') || (state.difficulty === o.key);
+    return `<div class="difficulty-chip${isSel ? ' selected' : ''}" data-diff="${dataKey}"
+      style="border: 2px solid ${isSel ? '#2a5bd7' : '#dde4f0'}; background: ${isSel ? '#eef2ff' : 'white'};
+             color: ${isSel ? '#1a2340' : '#444'}; border-radius: 20px; padding: 6px 14px;
+             font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;"
+      onclick="selectDifficulty(this)">${o.icon} ${o.label}</div>`;
+  }).join('');
+
+  panel.innerHTML = `<div style="padding: 10px; border: 1px solid #dde4f0; border-radius: 8px; background: #fbfcff;">
+    <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #2a5bd7; margin-bottom: 4px;">${title}</div>
+    <div style="font-size: 11px; color: #8a93aa; margin-bottom: 10px;">${hint}</div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px;">${chips}</div>
+  </div>`;
+}
+
+function selectDifficulty(el) {
+  const raw = el.dataset.diff;
+  state.difficulty = (raw === '__null__') ? null : raw;
+  document.querySelectorAll('.difficulty-chip').forEach(c => {
+    const sel = c.dataset.diff === (state.difficulty === null ? '__null__' : state.difficulty);
+    c.classList.toggle('selected', sel);
+    c.style.borderColor = sel ? '#2a5bd7' : '#dde4f0';
+    c.style.background  = sel ? '#eef2ff' : 'white';
+    c.style.color       = sel ? '#1a2340' : '#444';
+  });
+  updatePreview();
+}
+
+function selectThreshold(el) {
+  document.querySelectorAll('.threshold-card').forEach(c => {
+    c.classList.remove('selected');
+    c.style.borderColor = '#dde4f0';
+    c.style.background = 'white';
+  });
+  el.classList.add('selected');
+  el.style.borderColor = '#2a5bd7';
+  el.style.background = '#eef2ff';
+  
+  if (el.dataset.val === 'custom') {
+    // Mostrar input personalizado
+    const customInput = document.getElementById('custom-threshold-input');
+    if (customInput) {
+      customInput.style.display = 'block';
+      document.getElementById('custom-threshold-value').focus();
+    }
+    checkStep3();
+    // No avanzar automáticamente, esperar que el usuario ingrese valor
+    return;
+  }
+  
+  // Opción genérica seleccionada
+  state.threshold = el.dataset.val;
+  
+  // Ocultar input personalizado si estaba visible
+  const customInput = document.getElementById('custom-threshold-input');
+  if (customInput) {
+    customInput.style.display = 'none';
+    document.getElementById('custom-threshold-value').value = '';
+  }
+
+  // Para multi_discipline_count: validar límite y mostrar picker de disciplinas
+  if (state.cond === 'multi_discipline_count') {
+    const maxAvail = activeDisciplines.length + 1;
+    if (el.dataset.disabled === 'true' || Number(state.threshold) > maxAvail) {
+      // Revertir selección visual
+      el.classList.remove('selected');
+      el.style.borderColor = '#e5e7eb';
+      el.style.background = '#f9fafb';
+      state.threshold = null;
+      const errEl = document.getElementById('custom-threshold-error');
+      if (errEl) {
+        errEl.textContent = `Solo hay ${maxAvail} opción${maxAvail !== 1 ? 'es' : ''} disponible${maxAvail !== 1 ? 's' : ''} (${activeDisciplines.length} disciplina${activeDisciplines.length !== 1 ? 's' : ''} + clases individuales).`;
+        errEl.style.display = 'block';
+      }
+      updatePreview();
+      checkStep3();
+      return;
+    }
+    state.disciplineIds = []; // resetear disciplinas al cambiar umbral
+    state.disciplineAttendances = null;
+    renderDisciplinePickerStep3(Number(state.threshold));
+    updatePreview();
+    checkStep3();
+    return;
+  }
+
+  // Para top_instructor_classes: mostrar picker de instructores, no auto-avanzar
+  if (isInstructorScopeCondition()) {
+    state.instructorIds = []; // resetear instructores al cambiar umbral
+    renderInstructorPickerStep3();
+    updatePreview();
+    checkStep3();
+    return;
+  }
+
+  // Para consecutive_same_time_slot: mostrar picker de horarios, no auto-avanzar
+  if (isTimeSlotCondition()) {
+    state.timeSlotIds = []; // resetear slots al cambiar umbral
+    state.customTimeSlots = [];
+    renderTimeSlotPickerStep3();
+    updatePreview();
+    checkStep3();
+    return;
+  }
+
+  // Para weekly_frequency: mostrar input de semanas mínimas, no auto-avanzar
+  if (state.cond === 'weekly_frequency') {
+    state.weeklyMinWeeks = null;
+    state.periodWeeks = null;
+    state.period = null;
+    const extraFields = document.getElementById('threshold-extra-fields');
+    if (extraFields) {
+      extraFields.innerHTML = `<div style="margin-top:12px;padding:10px 12px;background:#f6f8ff;border:1px solid #dde4f0;border-radius:8px;">
+        <label style="font-size:11px;font-weight:700;color:#2a5bd7;margin-bottom:4px;display:block;">Semanas de evaluación</label>
+        <p style="font-size:10px;color:#8a93aa;margin:0 0 6px;">Mínimo de semanas que debe mantener este promedio semanal</p>
+        <input type="number" id="weekly-min-weeks-input" placeholder="ej. 4" min="1" max="52"
+          style="width:100%;border:1.5px solid #dde4f0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;"
+          oninput="setWeeklyMinWeeks(this.value)">
+      </div>`;
+    }
+    updatePreview();
+    checkStep3();
+    return;
+  }
+
+  // Para challenges_completed: mostrar selector de dificultad en paso 3, no auto-avanzar
+  if (state.cond === 'challenges_completed') {
+    renderDifficultyFilter('challenge-diff-step3');
+    updatePreview();
+    checkStep3();
+    return;
+  }
+
+  // Para specific_package_count: mostrar selector de scope, no auto-avanzar
+  if (isPackageConditionActive()) {
+    renderPackageScopeStep3();
+    updatePreview();
+    checkStep3();
+    return;
+  }
+
+  updatePreview();
+  checkStep3();
+  setTimeout(() => goStep(4), 300);
+}
+
+function setCustomThreshold(value) {
+  const numValue = parseFloat(value);
+  const errorEl = document.getElementById('custom-threshold-error');
+
+  const showError = (msg) => {
+    state.threshold = null;
+    if (errorEl) { errorEl.textContent = msg; errorEl.style.display = 'block'; }
+    updatePreview(); checkStep3();
+  };
+
+  if (!value || isNaN(numValue)) {
+    state.threshold = null;
+    if (errorEl) errorEl.style.display = 'none';
+    updatePreview();
+    checkStep3();
+    return;
+  }
+
+  // Para multi_discipline_count: limitar al total de opciones disponibles
+  if (state.cond === 'multi_discipline_count') {
+    const maxAllowed = activeDisciplines.length + 1; // +1 individual
+    if (!Number.isInteger(numValue))   return showError('El valor debe ser un número entero.');
+    if (numValue < 1)                  return showError('El valor mínimo es 1.');
+    if (numValue > maxAllowed)         return showError(`El valor máximo es ${maxAllowed}.`);
+    // Resetear disciplinas seleccionadas al cambiar el valor personalizado
+    if (state.threshold !== numValue) {
+      state.disciplineIds = [];
+      state.disciplineAttendances = null;
+    }
+    if (errorEl) errorEl.style.display = 'none';
+    state.threshold = numValue;
+    renderDisciplinePickerStep3(numValue);
+    updatePreview();
+    checkStep3();
+    return;
+  }
+
+  // Para tipo rating (avg_rating): limitar a 1.0 – 5.0
+  const condData = (conditionsByCategory[state.cat] || []).find(c => c.conditionKey === state.cond);
+  if (condData && condData.thresholdType === 'rating') {
+    if (numValue < 1) return showError('El valor mínimo es 1.0 estrellas.');
+    if (numValue > 5) return showError('El valor máximo es 5.0 estrellas.');
+    if (errorEl) errorEl.style.display = 'none';
+    state.threshold = numValue;
+    updatePreview();
+    checkStep3();
+    return;
+  }
+
+  // Caso genérico: debe ser entero positivo >= 1
+  if (!Number.isInteger(numValue)) return showError('El valor debe ser un número entero.');
+  if (numValue < 1)                return showError('El valor mínimo es 1.');
+
+  if (errorEl) errorEl.style.display = 'none';
+  state.threshold = numValue;
+  updatePreview();
+  checkStep3();
+
+  // Para top_instructor_classes: mostrar/actualizar picker de instructores
+  if (isInstructorScopeCondition()) {
+    if (!document.getElementById('instructor-picker-step3')) {
+      // El contenedor aún no existe, añadirlo después del custom-threshold-input
+      const threshContainer = document.getElementById('threshold-container');
+      if (threshContainer) {
+        const div = document.createElement('div');
+        div.id = 'instructor-picker-step3';
+        threshContainer.appendChild(div);
+      }
+    }
+    renderInstructorPickerStep3();
+  }
+
+  // Para consecutive_same_time_slot: mostrar/actualizar picker de horarios
+  if (isTimeSlotCondition()) {
+    if (!document.getElementById('timeslot-picker-step3')) {
+      const threshContainer = document.getElementById('threshold-container');
+      if (threshContainer) {
+        const div = document.createElement('div');
+        div.id = 'timeslot-picker-step3';
+        threshContainer.appendChild(div);
+      }
+    }
+    renderTimeSlotPickerStep3();
+  }
+
+  // Para specific_package_count: actualizar selector de scope
+  if (isPackageConditionActive()) {
+    if (!document.getElementById('package-scope-step3')) {
+      const threshContainer = document.getElementById('threshold-container');
+      if (threshContainer) {
+        const div = document.createElement('div');
+        div.id = 'package-scope-step3';
+        threshContainer.appendChild(div);
+      }
+    }
+    renderPackageScopeStep3();
+  }
+}
+
+function checkStep3() {
+  const btn = document.getElementById('btn3next');
+
+  let disciplineOk;
+  if (state.cond === 'multi_discipline_count') {
+    // Requiere exactamente N disciplinas donde N = umbral seleccionado + asistencias definidas
+    disciplineOk = state.threshold !== null &&
+                   state.disciplineIds.length === Number(state.threshold) &&
+                   state.disciplineAttendances !== null;
+  } else if (isInstructorScopeCondition()) {
+    // Requiere al menos 1 instructor seleccionado
+    disciplineOk = state.instructorIds.length > 0;
+  } else if (isTimeSlotCondition()) {
+    // Requiere al menos 1 horario seleccionado
+    disciplineOk = state.timeSlotIds.length > 0;
+  } else {
+    const requiresDiscipline = isDisciplineConditionActive();
+    disciplineOk = !requiresDiscipline || state.disciplineIds.length > 0;
+  }
+
+  const weeklyOk = state.cond !== 'weekly_frequency' || !!state.weeklyMinWeeks;
+
+  if (btn) {
+    if (state.threshold !== null && state.threshold !== undefined && disciplineOk && weeklyOk) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+    } else {
+      btn.disabled = true;
+      btn.style.opacity = '0.5';
+      btn.style.cursor = 'not-allowed';
+    }
+  }
+}
+
+function renderDisciplinePickerStep3(n) {
+  const container = document.getElementById('discipline-picker-step3');
+  if (!container) return;
+
+  const indivSel = state.disciplineIds.includes(INDIVIDUAL_DISCIPLINE_ID);
+  const individualChip = `<div class="discipline-chip${indivSel ? ' selected' : ''}" data-discipline-id="${INDIVIDUAL_DISCIPLINE_ID}"
+    style="border: 2px solid ${indivSel ? '#7c3aed' : '#dde4f0'}; background: ${indivSel ? '#f3e8ff' : 'white'}; color: ${indivSel ? '#4c1d95' : '#444'}; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;"
+    onclick="toggleDisciplineStep3(this)">🧘 Clases individuales</div>`;
+
+  const disciplineChips = activeDisciplines.map(d => {
+    const sel = state.disciplineIds.includes(Number(d.id));
+    return `<div class="discipline-chip${sel ? ' selected' : ''}" data-discipline-id="${d.id}"
+      style="border: 2px solid ${sel ? '#2a5bd7' : '#dde4f0'}; background: ${sel ? '#eef2ff' : 'white'}; color: ${sel ? '#1a2340' : '#444'}; border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;"
+      onclick="toggleDisciplineStep3(this)">🥋 ${d.name}</div>`;
+  }).join('');
+
+  const selCount = state.disciplineIds.length;
+  const counterColor = selCount === n ? '#16a34a' : '#f59e0b';
+
+  const attVal = state.disciplineAttendances !== null ? state.disciplineAttendances : '';
+  const scopeTotal = state.disciplineAttendancesScope === 'total';
+  const scopeEach  = state.disciplineAttendancesScope === 'each';
+
+  container.innerHTML = `
+    <div style="margin-top: 14px; padding: 12px; border: 1px solid #c4b5fd; border-radius: 8px; background: #faf5ff;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 8px; flex-wrap: wrap;">
+        <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #7c3aed;">Selecciona exactamente ${n} disciplina${n !== 1 ? 's' : ''}</div>
+        <div id="discipline-step3-counter" style="font-size: 11px; font-weight: 700; color: ${counterColor}; white-space: nowrap;">${selCount}/${n} seleccionadas</div>
+      </div>
+      <div style="font-size: 11px; color: #8a93aa; margin-bottom: 10px;">Elige las disciplinas que el usuario debe combinar para obtener este logro.</div>
+      <div class="disc-chips-wrap">${individualChip}${disciplineChips}</div>
+    </div>
+    <div style="margin-top: 12px; padding: 12px; border: 1px solid #c4b5fd; border-radius: 8px; background: #fdf8ff;">
+      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #7c3aed; margin-bottom: 10px;">Asistencias requeridas</div>
+      <div class="disc-picker-row">
+        <div class="disc-picker-input-col">
+          <label style="font-size: 11px; color: #8a93aa; margin-bottom: 4px; display: block;">Cantidad de clases</label>
+          <div class="disc-input-inner" style="display: flex; gap: 6px; align-items: center;">
+            <input type="number" id="discipline-attendances-input" min="1" max="9999" step="1" placeholder="ej. 5" value="${attVal}" style="flex: 1; min-width: 0; border: 1.5px solid #c4b5fd; border-radius: 6px; padding: 7px 10px; font-size: 13px; outline: none;" oninput="onDisciplineAttendancesInput(this.value)">
+            <span style="font-size: 11px; color: #8a93aa; font-weight: 600; white-space: nowrap;">clases</span>
+          </div>
+        </div>
+        <div class="disc-picker-scope-col">
+          <label style="font-size: 11px; color: #8a93aa; margin-bottom: 4px; display: block;">¿Cómo se cuenta?</label>
+          <div class="disc-scope-cards-row">
+            <div class="disc-scope-card" data-scope="total" onclick="selectDisciplineAttendancesScope(this)" style="flex: 1; border: 2px solid ${scopeTotal ? '#7c3aed' : '#dde4f0'}; background: ${scopeTotal ? '#f3e8ff' : 'white'}; border-radius: 8px; padding: 8px 10px; cursor: pointer; text-align: center; transition: all 0.15s;">
+              <div class="disc-scope-icon" style="font-size: 20px; margin-bottom: 3px;">🔢</div>
+              <div style="font-size: 11px; font-weight: 700; color: ${scopeTotal ? '#4c1d95' : '#556'};">En total</div>
+              <div class="disc-scope-desc" style="font-size: 10px; color: #8a93aa; margin-top: 2px; line-height: 1.3;">Entre todas las disciplinas</div>
+            </div>
+            <div class="disc-scope-card" data-scope="each" onclick="selectDisciplineAttendancesScope(this)" style="flex: 1; border: 2px solid ${scopeEach ? '#7c3aed' : '#dde4f0'}; background: ${scopeEach ? '#f3e8ff' : 'white'}; border-radius: 8px; padding: 8px 10px; cursor: pointer; text-align: center; transition: all 0.15s;">
+              <div class="disc-scope-icon" style="font-size: 20px; margin-bottom: 3px;">🎯</div>
+              <div style="font-size: 11px; font-weight: 700; color: ${scopeEach ? '#4c1d95' : '#556'};">En cada una</div>
+              <div class="disc-scope-desc" style="font-size: 10px; color: #8a93aa; margin-top: 2px; line-height: 1.3;">Por disciplina elegida</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="discipline-attendances-error" style="display:none; font-size: 11px; color: #dc2626; margin-top: 6px;"></div>
+    </div>`;
+}
+
+function toggleDisciplineStep3(el) {
+  const raw = el.dataset.disciplineId;
+  if (raw === undefined) return;
+  const disciplineId = parseInt(raw, 10);
+  if (isNaN(disciplineId)) return;
+  const maxCount = Number(state.threshold);
+
+  if (state.disciplineIds.includes(disciplineId)) {
+    state.disciplineIds = state.disciplineIds.filter(id => id !== disciplineId);
+  } else {
+    if (state.disciplineIds.length >= maxCount) return; // ya al límite
+    state.disciplineIds = [...state.disciplineIds, disciplineId];
+  }
+
+  // Actualizar visual chips en step 3
+  document.querySelectorAll('#discipline-picker-step3 .discipline-chip').forEach(chip => {
+    const chipId = parseInt(chip.dataset.disciplineId, 10);
+    const sel = state.disciplineIds.includes(chipId);
+    const isIndiv = chipId === INDIVIDUAL_DISCIPLINE_ID;
+    if (sel) {
+      chip.classList.add('selected');
+      chip.style.borderColor = isIndiv ? '#7c3aed' : '#2a5bd7';
+      chip.style.background  = isIndiv ? '#f3e8ff' : '#eef2ff';
+      chip.style.color       = isIndiv ? '#4c1d95' : '#1a2340';
+    } else {
+      chip.classList.remove('selected');
+      chip.style.borderColor = '#dde4f0';
+      chip.style.background  = 'white';
+      chip.style.color       = '#444';
+    }
+  });
+
+  // Actualizar contador
+  const counter = document.getElementById('discipline-step3-counter');
+  if (counter) {
+    counter.textContent = `${state.disciplineIds.length}/${maxCount} seleccionadas`;
+    counter.style.color = state.disciplineIds.length === maxCount ? '#16a34a' : '#f59e0b';
+  }
+
+  updatePreview();
+  checkStep3();
+}
+
+function onDisciplineAttendancesInput(value) {
+  const num = parseInt(value, 10);
+  const isValid = !isNaN(num) && num >= 1 && String(num) === String(value).trim();
+  state.disciplineAttendances = isValid ? num : null;
+  const errEl = document.getElementById('discipline-attendances-error');
+  if (errEl) {
+    if (value !== '' && !isValid) {
+      errEl.textContent = 'Ingresa un número entero positivo (sin decimales).';
+      errEl.style.display = 'block';
+    } else {
+      errEl.style.display = 'none';
+    }
+  }
+  updatePreview();
+  checkStep3();
+}
+
+function selectDisciplineAttendancesScope(el) {
+  state.disciplineAttendancesScope = el.dataset.scope || 'total';
+  document.querySelectorAll('.disc-scope-card').forEach(card => {
+    const sel = card.dataset.scope === state.disciplineAttendancesScope;
+    card.style.borderColor = sel ? '#7c3aed' : '#dde4f0';
+    card.style.background  = sel ? '#f3e8ff' : 'white';
+    const label = card.querySelector('div:nth-child(2)');
+    if (label) label.style.color = sel ? '#4c1d95' : '#556';
+  });
+  updatePreview();
+}
+
+function renderPackageScopeStep3() {
+  const container = document.getElementById('package-scope-step3');
+  if (!container) return;
+  const scopeTotal = state.packagePurchasesScope === 'total';
+  const scopeEach  = state.packagePurchasesScope === 'each';
+  container.innerHTML = `
+    <div style="margin-top: 14px; padding: 12px; border: 1px solid #dde4f0; border-radius: 8px; background: #fbfcff;">
+      <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #2a5bd7; margin-bottom: 4px;">¿Cómo se cuenta?</div>
+      <div style="font-size: 11px; color: #8a93aa; margin-bottom: 10px;">Define si el número de compras aplica en total entre todos los paquetes seleccionados, o esa cantidad en cada uno de ellos.</div>
+      <div style="display: flex; gap: 10px;">
+        <div class="pkg-scope-card" data-scope="total" onclick="selectPackagePurchasesScope(this)" style="flex: 1; border: 2px solid ${scopeTotal ? '#2a5bd7' : '#dde4f0'}; background: ${scopeTotal ? '#eef2ff' : 'white'}; border-radius: 8px; padding: 10px; cursor: pointer; text-align: center; transition: all 0.15s;">
+          <div style="font-size: 20px; margin-bottom: 4px;">🔢</div>
+          <div style="font-size: 11px; font-weight: 700; color: ${scopeTotal ? '#1a2340' : '#556'};">En total</div>
+          <div style="font-size: 10px; color: #8a93aa; margin-top: 2px; line-height: 1.3;">Entre todos los paquetes</div>
+        </div>
+        <div class="pkg-scope-card" data-scope="each" onclick="selectPackagePurchasesScope(this)" style="flex: 1; border: 2px solid ${scopeEach ? '#2a5bd7' : '#dde4f0'}; background: ${scopeEach ? '#eef2ff' : 'white'}; border-radius: 8px; padding: 10px; cursor: pointer; text-align: center; transition: all 0.15s;">
+          <div style="font-size: 20px; margin-bottom: 4px;">🎯</div>
+          <div style="font-size: 11px; font-weight: 700; color: ${scopeEach ? '#1a2340' : '#556'};">En cada uno</div>
+          <div style="font-size: 10px; color: #8a93aa; margin-top: 2px; line-height: 1.3;">Esa cantidad por paquete</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function selectPackagePurchasesScope(el) {
+  state.packagePurchasesScope = el.dataset.scope || 'total';
+  document.querySelectorAll('.pkg-scope-card').forEach(card => {
+    const sel = card.dataset.scope === state.packagePurchasesScope;
+    card.style.borderColor = sel ? '#2a5bd7' : '#dde4f0';
+    card.style.background  = sel ? '#eef2ff' : 'white';
+    const label = card.querySelector('div:nth-child(2)');
+    if (label) label.style.color = sel ? '#1a2340' : '#556';
+  });
+  updatePreview();
+}
+
+function renderInstructorPickerStep3() {
+  const container = document.getElementById('instructor-picker-step3');
+  if (!container) return;
+
+  if (!activeInstructors.length) {
+    container.innerHTML = `<div style="margin-top: 14px; padding: 10px; border: 1px dashed #d9deea; background: #f9fafd; border-radius: 8px; font-size: 11px; color: #8a93aa;">No hay instructores activos disponibles.</div>`;
+    return;
+  }
+
+  const chips = activeInstructors.map(inst => {
+    const sel = state.instructorIds.includes(Number(inst.id));
+    return `<div class="instructor-chip${sel ? ' selected' : ''}" data-instructor-id="${inst.id}"
+      style="border: 2px solid ${sel ? '#0e7490' : '#dde4f0'}; background: ${sel ? '#ecfeff' : 'white'}; color: ${sel ? '#164e63' : '#444'}; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;"
+      onclick="toggleInstructorStep3(this)">🤵 ${inst.name}</div>`;
+  }).join('');
+
+  const isSingle = state.cond === 'instructor_consistency';
+  const title = isSingle ? 'Instructor a evaluar' : 'Instructor(es) a evaluar';
+  const hint = isSingle
+    ? 'Selecciona el instructor con quien el cliente debe mantener la racha de semanas consecutivas.'
+    : 'Selecciona uno o más instructores. El logro contará las clases impartidas por cualquiera de ellos.';
+  const selCount = state.instructorIds.length;
+  const counterText = isSingle
+    ? (selCount === 1 ? '✓ Seleccionado' : 'Selecciona 1')
+    : `${selCount} seleccionado${selCount !== 1 ? 's' : ''}`;
+  const counterColor = (isSingle ? selCount === 1 : selCount > 0) ? '#16a34a' : '#f59e0b';
+  container.innerHTML = `
+    <div style="margin-top: 14px; padding: 12px; border: 1px solid #a5f3fc; border-radius: 8px; background: #f0fdff;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+        <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #0e7490;">${title}</div>
+        <div id="instructor-step3-counter" style="font-size: 11px; font-weight: 700; color: ${counterColor};">${counterText}</div>
+      </div>
+      <div style="font-size: 11px; color: #8a93aa; margin-bottom: 10px;">${hint}</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">${chips}</div>
+    </div>`;
+}
+
+function toggleInstructorStep3(el) {
+  const raw = el.dataset.instructorId;
+  if (raw === undefined) return;
+  const instructorId = parseInt(raw, 10);
+  if (isNaN(instructorId)) return;
+
+  const isSingle = state.cond === 'instructor_consistency';
+
+  if (isSingle) {
+    // Selección única: reemplazar siempre (deseleccionar si ya estaba)
+    state.instructorIds = state.instructorIds.includes(instructorId) ? [] : [instructorId];
+  } else {
+    if (state.instructorIds.includes(instructorId)) {
+      state.instructorIds = state.instructorIds.filter(id => id !== instructorId);
+    } else {
+      state.instructorIds = [...state.instructorIds, instructorId];
+    }
+  }
+
+  // Actualizar visual chips
+  document.querySelectorAll('#instructor-picker-step3 .instructor-chip').forEach(chip => {
+    const chipId = parseInt(chip.dataset.instructorId, 10);
+    const sel = state.instructorIds.includes(chipId);
+    if (sel) {
+      chip.classList.add('selected');
+      chip.style.borderColor = '#0e7490';
+      chip.style.background = '#ecfeff';
+      chip.style.color = '#164e63';
+    } else {
+      chip.classList.remove('selected');
+      chip.style.borderColor = '#dde4f0';
+      chip.style.background = 'white';
+      chip.style.color = '#444';
+    }
+  });
+
+  // Actualizar contador
+  const counter = document.getElementById('instructor-step3-counter');
+  if (counter) {
+    const count = state.instructorIds.length;
+    if (isSingle) {
+      counter.textContent = count === 1 ? '✓ Seleccionado' : 'Selecciona 1';
+      counter.style.color = count === 1 ? '#16a34a' : '#f59e0b';
+    } else {
+      counter.textContent = `${count} seleccionado${count !== 1 ? 's' : ''}`;
+      counter.style.color = count > 0 ? '#16a34a' : '#f59e0b';
+    }
+  }
+
+  updatePreview();
+  checkStep3();
+}
+
+function renderTimeSlotPickerStep3() {
+  const container = document.getElementById('timeslot-picker-step3');
+  if (!container) return;
+  if (!state.customTimeSlots) state.customTimeSlots = [];
+
+  const predefinedChips = timeSlots.map(slot => {
+    const sel = state.timeSlotIds.includes(slot.value);
+    return `<div class="timeslot-chip${sel ? ' selected' : ''}" data-slot="${slot.value}"
+      style="border: 2px solid ${sel ? '#0f766e' : '#dde4f0'}; background: ${sel ? '#f0fdfa' : 'white'}; color: ${sel ? '#134e4a' : '#444'}; border-radius: 20px; padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap;"
+      onclick="toggleTimeSlotStep3('${slot.value}')">⏰ ${slot.label}</div>`;
+  }).join('');
+
+  const customChips = state.customTimeSlots.map((slot, idx) => {
+    const sel = state.timeSlotIds.includes(slot.value);
+    return `<div style="display:inline-flex; align-items:center; border: 2px solid ${sel ? '#0f766e' : '#2a5bd7'}; background: ${sel ? '#f0fdfa' : '#f0f4ff'}; border-radius: 20px; overflow:hidden;">
+      <div class="timeslot-chip${sel ? ' selected' : ''}" data-slot="${slot.value}"
+        style="padding: 5px 6px 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; color: ${sel ? '#134e4a' : '#2a5bd7'};"
+        onclick="toggleTimeSlotStep3('${slot.value}')">⏰ ${slot.value}</div>
+      <button onclick="removeCustomTimeSlot(${idx})" style="background:none; border:none; border-left:1px solid ${sel ? '#99f6e4' : '#c7d2fe'}; padding: 5px 8px; cursor:pointer; color:#e05c2a; font-size:11px; line-height:1;" title="Eliminar">✕</button>
+    </div>`;
+  }).join('');
+
+  const selCount = state.timeSlotIds.length;
+  const hhOptions = Array.from({length:12}, (_,i) => `<option value="${String(i+1).padStart(2,'0')}">${String(i+1).padStart(2,'0')}</option>`).join('');
+  const mmOptions = Array.from({length:60}, (_,i) => `<option value="${String(i).padStart(2,'0')}">${String(i).padStart(2,'0')}</option>`).join('');
+
+  container.innerHTML = `
+    <div style="margin-top: 14px; padding: 12px; border: 1px solid #99f6e4; border-radius: 8px; background: #f0fdfa;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+        <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #0f766e;">Horario(s) a evaluar</div>
+        <div style="font-size: 11px; font-weight: 700; color: ${selCount > 0 ? '#16a34a' : '#f59e0b'};">${selCount} seleccionado${selCount !== 1 ? 's' : ''}</div>
+      </div>
+      <div style="font-size: 11px; color: #8a93aa; margin-bottom: 10px;">Selecciona el o los horarios en los que el cliente debe asistir consecutivamente.</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px;">${predefinedChips}</div>
+      ${state.customTimeSlots.length > 0 ? `
+        <div style="border-top: 1px solid #c6f0ea; padding-top: 8px; margin-top: 8px;">
+          <div style="font-size: 10px; font-weight: 600; color: #0f766e; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Personalizados</div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px;">${customChips}</div>
+        </div>` : ''}
+      <div style="border-top: 1px solid #c6f0ea; padding-top: 8px; margin-top: 8px;">
+        <button onclick="showAddCustomSlotForm()" id="btn-add-custom-slot" style="background:#eef2ff; color:#2a5bd7; border:1.5px dashed #2a5bd7; border-radius:16px; padding:5px 14px; font-size:11px; font-weight:700; cursor:pointer;">+ Horario personalizado</button>
+        <div id="custom-slot-form" style="display:none; margin-top:8px; align-items:flex-end; gap:8px; background:white; border:1.5px solid #2a5bd7; border-radius:8px; padding:8px 12px; flex-wrap:wrap;">
+          <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+            <span style="font-size:10px; color:#8a93aa; font-weight:600;">HH</span>
+            <select id="custom-slot-hh" style="font-size:13px; font-weight:700; border:1px solid #dde4f0; border-radius:4px; padding:2px 4px; color:#1a2340; background:white;">${hhOptions}</select>
+          </div>
+          <span style="font-size:18px; font-weight:700; color:#556; padding-bottom:4px;">:</span>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+            <span style="font-size:10px; color:#8a93aa; font-weight:600;">MM</span>
+            <select id="custom-slot-mm" style="font-size:13px; font-weight:700; border:1px solid #dde4f0; border-radius:4px; padding:2px 4px; color:#1a2340; background:white;">${mmOptions}</select>
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+            <span style="font-size:10px; color:#8a93aa; font-weight:600;">AM/PM</span>
+            <select id="custom-slot-ampm" style="font-size:13px; font-weight:700; border:1px solid #dde4f0; border-radius:4px; padding:4px 6px; color:#1a2340; background:white;">
+              <option value="am">AM</option>
+              <option value="pm">PM</option>
+            </select>
+          </div>
+          <div style="display:flex; gap:4px; padding-bottom:2px;">
+            <button onclick="confirmAddCustomSlot()" style="background:#2a5bd7; color:white; border:none; border-radius:6px; padding:6px 12px; font-size:11px; font-weight:700; cursor:pointer;">✓ Agregar</button>
+            <button onclick="cancelAddCustomSlot()" style="background:#f0f2f7; color:#556; border:1px solid #dde4f0; border-radius:6px; padding:6px 8px; font-size:11px; cursor:pointer;">✕</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function toggleTimeSlotStep3(slotValue) {
+  if (!slotValue) return;
+  if (state.timeSlotIds.includes(slotValue)) {
+    state.timeSlotIds = state.timeSlotIds.filter(s => s !== slotValue);
+  } else {
+    state.timeSlotIds = [...state.timeSlotIds, slotValue];
+  }
+  renderTimeSlotPickerStep3();
+  updatePreview();
+  checkStep3();
+}
+
+function showAddCustomSlotForm() {
+  const btn = document.getElementById('btn-add-custom-slot');
+  const form = document.getElementById('custom-slot-form');
+  if (btn) btn.style.display = 'none';
+  if (form) form.style.display = 'flex';
+}
+
+function cancelAddCustomSlot() {
+  const btn = document.getElementById('btn-add-custom-slot');
+  const form = document.getElementById('custom-slot-form');
+  if (btn) btn.style.display = '';
+  if (form) form.style.display = 'none';
+}
+
+function confirmAddCustomSlot() {
+  const hh12 = parseInt(document.getElementById('custom-slot-hh').value, 10);
+  const mm = document.getElementById('custom-slot-mm').value;
+  const ampm = document.getElementById('custom-slot-ampm').value;
+  // Convertir de 12h a 24h
+  let hh24;
+  if (ampm === 'am') {
+    hh24 = hh12 === 12 ? 0 : hh12;
+  } else {
+    hh24 = hh12 === 12 ? 12 : hh12 + 12;
+  }
+  const value = `${String(hh24).padStart(2,'0')}:${mm}`;
+  if (!state.customTimeSlots) state.customTimeSlots = [];
+  // Si ya existe en predefinidos, solo seleccionarlo
+  if (timeSlots.some(s => s.value === value)) {
+    if (!state.timeSlotIds.includes(value)) state.timeSlotIds = [...state.timeSlotIds, value];
+    renderTimeSlotPickerStep3();
+    updatePreview();
+    checkStep3();
+    return;
+  }
+  // Si ya existe en personalizados, solo seleccionarlo
+  if (state.customTimeSlots.some(s => s.value === value)) {
+    if (!state.timeSlotIds.includes(value)) state.timeSlotIds = [...state.timeSlotIds, value];
+    renderTimeSlotPickerStep3();
+    updatePreview();
+    checkStep3();
+    return;
+  }
+  // Nuevo slot personalizado: agregar y auto-seleccionar
+  state.customTimeSlots = [...state.customTimeSlots, { value }];
+  state.timeSlotIds = [...state.timeSlotIds, value];
+  renderTimeSlotPickerStep3();
+  updatePreview();
+  checkStep3();
+}
+
+function removeCustomTimeSlot(idx) {
+  if (!state.customTimeSlots) return;
+  const slot = state.customTimeSlots[idx];
+  if (slot) {
+    state.timeSlotIds = state.timeSlotIds.filter(s => s !== slot.value);
+    state.customTimeSlots = state.customTimeSlots.filter((_, i) => i !== idx);
+  }
+  renderTimeSlotPickerStep3();
+  updatePreview();
+  checkStep3();
+}
+
+function renderBadges() {
+  const grid = document.getElementById('badge-grid');
+  const groups = {{ badgesData.groups|json_encode|raw }};
+
+  let html = '';
+  groups.forEach((group, gi) => {
+    const selectedInGroup = group.badges.some(b => b.key === state.badge);
+    const open = gi === 0 || selectedInGroup;
+    const groupId = 'bgroup-' + gi;
+
+    html += `
+      <div style="width:100%; margin-bottom:3px;">
+        <div onclick="toggleBadgeGroup(${gi})" style="display:flex; align-items:center; gap:8px; padding:6px 10px; background:#f5f7fc; border:1px solid #e0e6f0; border-radius:${open ? '8px 8px 0 0' : '8px'}; cursor:pointer; user-select:none;" id="bheader-${gi}">
+          <span style="font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#556; flex:1;">${group.label}</span>
+          <span style="font-size:10px; color:#aab;">${group.badges.length}</span>
+          <span id="arrow-${gi}" style="font-size:10px; color:#8a93aa; display:inline-block; transform:${open ? 'rotate(180deg)' : 'rotate(0deg)'}; transition:transform 0.2s;">▼</span>
+        </div>
+        <div id="${groupId}" style="display:${open ? 'flex' : 'none'}; flex-wrap:wrap; gap:7px; padding:8px; border:1px solid #e0e6f0; border-top:none; border-radius:0 0 8px 8px; background:#fafbfe;">
+    `;
+
+    group.badges.forEach(b => {
+      const isSelected = state.badge === b.key;
+      const selStyle = isSelected
+        ? `border-color:${b.color}; background:${b.color}; color:white;`
+        : 'border-color:#dde4f0; background:white; color:inherit;';
+      const ptsColor = isSelected ? 'rgba(255,255,255,0.75)' : '#8a93aa';
+      html += `<div class="badge-card${isSelected ? ' selected' : ''}" data-badge="${b.key}" data-group="${gi}" style="${selStyle} border:2px solid; border-radius:9px; padding:8px 10px; text-align:center; min-width:66px; max-width:80px; cursor:pointer; transition:all 0.15s; --badge-color:${b.color};" onclick="selectBadge(this)">
+        <div style="font-size:18px; line-height:1;">${b.icon}</div>
+        <div style="font-size:9px; font-weight:700; margin-top:3px; line-height:1.2;">${b.name}</div>
+        ${b.pts > 0 ? `<div style="font-size:8px; color:${ptsColor};">${b.pts} pts</div>` : ''}
+      </div>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  grid.innerHTML = html;
+}
+
+function toggleBadgeGroup(gi) {
+  const body   = document.getElementById('bgroup-'  + gi);
+  const arrow  = document.getElementById('arrow-'   + gi);
+  const header = document.getElementById('bheader-' + gi);
+  const isOpen = body.style.display !== 'none';
+  body.style.display        = isOpen ? 'none'  : 'flex';
+  arrow.style.transform     = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+  header.style.borderRadius = isOpen ? '8px'   : '8px 8px 0 0';
+}
+
+function selectBadge(el) {
+  document.querySelectorAll('.badge-card').forEach(c => {
+    c.classList.remove('selected');
+    c.style.borderColor = '#dde4f0';
+    c.style.background = 'white';
+    c.querySelectorAll('div').forEach(d => d.style.color = '');
+  });
+  el.classList.add('selected');
+  const color = el.style.getPropertyValue('--badge-color');
+  el.style.borderColor = color;
+  el.style.background = color;
+  el.querySelectorAll('div').forEach(d => d.style.color = 'white');
+  state.badge = el.dataset.badge;
+
+  // Expandir el grupo del badge seleccionado si está colapsado
+  const groupIdx = el.dataset.group;
+  if (groupIdx !== undefined) {
+    const body = document.getElementById('bgroup-' + groupIdx);
+    if (body && body.style.display === 'none') {
+      toggleBadgeGroup(parseInt(groupIdx));
+    }
+  }
+
+  // Solo rellenar con defaults si el usuario NO ha editado manualmente
+  if (!state.iconManual) {
+    state.customIcon = badgeIcons[state.badge] || '';
+    const iconInput = document.getElementById('badge-icon-input');
+    if (iconInput) iconInput.value = state.customIcon;
+  }
+  if (!state.labelManual) {
+    // Nombre del nivel sin emoji
+    const rawLabel = (badgeLabels[state.badge] || '').replace(/^\S+\s/, '');
+    state.customLabel = rawLabel;
+    const labelInput = document.getElementById('badge-label-input');
+    if (labelInput) labelInput.value = rawLabel;
+  }
+  if (!state.ptsManual) {
+    state.customPts = badgePts[state.badge] !== undefined ? String(badgePts[state.badge]) : '';
+    const ptsInput = document.getElementById('badge-pts-input');
+    if (ptsInput) ptsInput.value = state.customPts;
+  }
+
+  updatePreview();
+  checkStep4();
+}
+
+function onCustomIconInput() {
+  const val = (document.getElementById('badge-icon-input')?.value || '').trim();
+  state.customIcon = val;
+  state.iconManual = val !== '';
+  updatePreview();
+}
+
+function onCustomLabelInput() {
+  const val = (document.getElementById('badge-label-input')?.value || '').trim();
+  state.customLabel = val;
+  state.labelManual = val !== '';
+  updatePreview();
+}
+
+function onCustomPtsInput() {
+  const val = (document.getElementById('badge-pts-input')?.value || '').trim();
+  state.customPts = val;
+  state.ptsManual = val !== '';
+  updatePreview();
+}
+
+function renderOptions() {
+  const grid = document.getElementById('options-grid');
+  const options = [
+    { key: 'notif', icon: '🔔', label: 'Notificación in-app', selected: state.opts.notif },
+    { key: 'visible', icon: '👁', label: 'Visible en perfil', selected: state.opts.visible },
+    { key: 'celebrar', icon: '✨', label: 'Notificación especial', selected: state.opts.celebrar },
+    { key: 'progreso', icon: '📊', label: 'Mostrar progreso', selected: state.opts.progreso },
+    { key: 'retroactivo', icon: '📅', label: 'Contar desde creación', selected: state.opts.retroactivo }
+  ];
+  
+  let html = '';
+  options.forEach(opt => {
+    html += `<div class="opt-chip${opt.selected ? ' selected' : ''}" data-opt="${opt.key}" style="border: 2px solid #dde4f0; background: white; border-radius: 20px; padding: 6px 14px; font-size: 12px; font-weight: 600; color: #444; cursor: pointer; transition: all 0.15s;" onclick="toggleOpt(this)">${opt.icon} ${opt.label}</div>`;
+  });
+  
+  grid.innerHTML = html;
+}
+
+function setOptChipVisual(el, enabled) {
+  if (enabled) {
+    el.classList.add('selected');
+    el.style.borderColor = '#2a5bd7';
+    el.style.background = '#2a5bd7';
+    el.style.color = 'white';
+  } else {
+    el.classList.remove('selected');
+    el.style.borderColor = '#dde4f0';
+    el.style.background = 'white';
+    el.style.color = '#444';
+  }
+}
+
+function toggleOpt(el) {
+  const key = el.dataset.opt;
+  state.opts[key] = !state.opts[key];
+  setOptChipVisual(el, state.opts[key]);
+  updatePreview();
+}
+
+function renderPeriods() {
+  const grid = document.getElementById('period-grid');
+
+  // Para weekly_frequency: el período de evaluación es la ventana de semanas del paso 3.
+  // Se muestra como resumen fijo para evitar que el grid del paso 4 sobreescriba ese valor.
+  if (state.cond === 'weekly_frequency') {
+    const weeks = state.weeklyMinWeeks || state.periodWeeks;
+    const customFields = document.getElementById('period-custom-fields');
+    if (customFields) customFields.innerHTML = '';
+    grid.innerHTML = weeks
+      ? `<div style="padding:10px 14px;background:#f0f4ff;border:1px solid #c7d4f7;border-radius:8px;font-size:12px;color:#1a2340;">
+           <span style="font-size:14px;">&#x23F1;</span>
+           Ventana deslizante: <strong>${weeks} semana${weeks !== 1 ? 's' : ''}</strong>
+           <span style="color:#8a93aa;"> — configurada en el paso anterior</span>
+         </div>`
+      : `<div style="padding:10px 14px;background:#fff8f0;border:1px solid #fed7aa;border-radius:8px;font-size:12px;color:#92400e;">
+           ⚠️ Vuelve al paso anterior y completa las semanas de evaluación.
+         </div>`;
+    return;
+  }
+
+  const timeBound = isTimeBoundCondition();
+
+  const allPeriods = [
+    { key: 'sin-limite',   label: 'Sin límite',       desc: 'Sin vencimiento' },
+    { key: '1-dia',        label: '1 día',            desc: '24 horas' },
+    { key: '7-dias',       label: '1 semana',         desc: '7 días' },
+    { key: '30-dias',      label: '1 mes',            desc: '30 días' },
+    { key: 'custom-dias',    label: 'N días',           desc: 'Personalizado' },
+    { key: 'custom-semanas', label: 'N semanas',        desc: 'Ventana deslizante' },
+    { key: 'fecha-limite',   label: 'Antes de fecha',   desc: 'Fecha fija' },
+    { key: 'ventana-fija', label: 'Ventana fija',     desc: 'Inicio – Cierre' }
+  ];
+
+  // Para condiciones con tiempo inherente solo aplican sin-limite, fecha-limite y ventana-fija
+  const periods = timeBound
+    ? allPeriods.filter(p => ['sin-limite', 'fecha-limite', 'ventana-fija'].includes(p.key))
+    : allPeriods;
+
+  // Si el período guardado ya no está disponible, resetear
+  const availableKeys = periods.map(p => p.key);
+  if (state.period && !availableKeys.includes(state.period)) {
+    state.period = null;
+    state.periodDays = null;
+    state.periodDeadline = null;
+    state.periodWindowStart = null;
+    document.getElementById('period-custom-fields').innerHTML = '';
+  }
+
+  let info = '';
+  if (timeBound) {
+    info = `<div style="margin-bottom: 10px; padding: 8px 12px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; font-size: 11px; color: #92400e;">⚠️ Esta condición ya define su propio período de tiempo. Solo puedes establecer si el logro <strong>no vence</strong> o si debe completarse <strong>antes de una fecha límite</strong>.</div>`;
+  }
+
+  let html = info;
+  periods.forEach(p => {
+    const isSelected = state.period === p.key;
+    html += `<div class="period-card" data-period="${p.key}" style="border: 2px solid ${isSelected ? '#2a5bd7' : '#dde4f0'}; background: ${isSelected ? '#eef2ff' : 'white'}; border-radius: 10px; padding: 12px 10px; text-align: center; cursor: pointer; transition: all 0.15s;" onclick="selectPeriod(this)">
+              <div style="font-size: 13px; font-weight: 700; color: #1a2340;">${p.label}</div>
+              <div style="font-size: 10px; color: #8a93aa; margin-top: 3px;">${p.desc}</div>
+            </div>`;
+  });
+
+  grid.innerHTML = html;
+}
+
+function selectPeriod(el) {
+  document.querySelectorAll('.period-card').forEach(c => {
+    c.classList.remove('selected');
+    c.style.borderColor = '#dde4f0';
+    c.style.background = 'white';
+  });
+  el.classList.add('selected');
+  el.style.borderColor = '#2a5bd7';
+  el.style.background = '#eef2ff';
+  state.period = el.dataset.period;
+  
+  const customFields = document.getElementById('period-custom-fields');
+  let customHtml = '';
+  
+  if (state.period === 'custom-dias') {
+    customHtml = `<div style="margin-bottom: 12px;">
+                    <label style="font-size: 11px; font-weight: 700; color: #556; margin-bottom: 4px; display: block;">Cantidad de días</label>
+                    <input type="text" id="period-days-input" placeholder="ej. 15" style="width: 100%; border: 1.5px solid #dde4f0; border-radius: 6px; padding: 8px 10px; font-size: 13px;" oninput="setPeriodDays(this.value)">
+                  </div>`;
+  } else if (state.period === 'custom-semanas') {
+    customHtml = `<div style="margin-bottom: 12px;">
+                    <label style="font-size: 11px; font-weight: 700; color: #556; margin-bottom: 4px; display: block;">Semanas de evaluación</label>
+                    <input type="text" id="period-weeks-input" placeholder="ej. 4" style="width: 100%; border: 1.5px solid #dde4f0; border-radius: 6px; padding: 8px 10px; font-size: 13px;" oninput="setPeriodWeeks(this.value)">
+                    <div style="font-size: 10px; color: #8a93aa; margin-top: 4px;">Ventana deslizante: se evalúan las últimas N semanas desde hoy</div>
+                  </div>`;
+  } else if (state.period === 'fecha-limite') {
+    customHtml = `<div style="margin-bottom: 12px;">
+                    <label style="font-size: 11px; font-weight: 700; color: #556; margin-bottom: 4px; display: block;">Fecha límite</label>
+                    <input type="date" id="period-deadline-input" style="width: 100%; border: 1.5px solid #dde4f0; border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto; outline: none;" oninput="setPeriodDeadline(this.value)">
+                  </div>`;
+  } else if (state.period === 'ventana-fija') {
+    customHtml = `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div>
+                      <label style="font-size: 11px; font-weight: 700; color: #556; margin-bottom: 4px; display: block;">Fecha de inicio</label>
+                      <input type="date" id="period-window-start-input" style="width: 100%; border: 1.5px solid #dde4f0; border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto; outline: none;" oninput="setPeriodWindowStart(this.value)">
+                    </div>
+                    <div>
+                      <label style="font-size: 11px; font-weight: 700; color: #556; margin-bottom: 4px; display: block;">Fecha de cierre</label>
+                      <input type="date" id="period-deadline-input" style="width: 100%; border: 1.5px solid #dde4f0; border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto; outline: none;" oninput="setPeriodDeadline(this.value)">
+                    </div>
+                  </div>`;
+  }
+  
+  customFields.innerHTML = customHtml;
+  updatePreview();
+  checkStep4();
+}
+
+function setPeriodDays(val) {
+  state.periodDays = /^\d+$/.test(val) ? parseInt(val, 10) : null;
+  updatePreview();
+  checkStep4();
+}
+
+function setPeriodWeeks(val) {
+  state.periodWeeks = /^\d+$/.test(val) && parseInt(val, 10) > 0 ? parseInt(val, 10) : null;
+  updatePreview();
+  checkStep4();
+}
+
+function setWeeklyMinWeeks(val) {
+  state.weeklyMinWeeks = /^\d+$/.test(val) && parseInt(val, 10) > 0 ? parseInt(val, 10) : null;
+  state.periodWeeks    = state.weeklyMinWeeks;
+  state.period         = state.weeklyMinWeeks ? 'custom-semanas' : null;
+  updatePreview();
+  checkStep3();
+}
+
+function setPeriodDeadline(val) {
+  state.periodDeadline = (val || '').trim() || null;
+  updatePreview();
+  checkStep4();
+}
+
+function setPeriodWindowStart(val) {
+  state.periodWindowStart = (val || '').trim() || null;
+  updatePreview();
+  checkStep4();
+}
+
+function getActiveOptionLabels() {
+  const defs = [
+    { key: 'notif', icon: '🔔', label: 'Notificación in-app' },
+    { key: 'visible', icon: '👁', label: 'Visible en perfil' },
+    { key: 'celebrar', icon: '🎉', label: 'Toast llamativo' },
+    { key: 'progreso', icon: '📊', label: 'Mostrar progreso' },
+    { key: 'retroactivo', icon: '📅', label: 'Contar desde creación' }
+  ];
+
+  return defs.filter(d => !!state.opts[d.key]);
+}
+
+function checkStep4() {
+  const name = (document.getElementById('name-input')?.value || '').trim();
+  const periodOk = !!state.period
+    && (state.period !== 'custom-dias'    || !!state.periodDays)
+    && (state.period !== 'custom-semanas' || !!state.periodWeeks)
+    && (state.period !== 'fecha-limite'   || !!state.periodDeadline)
+    && (state.period !== 'ventana-fija'   || (!!state.periodWindowStart && !!state.periodDeadline));
+  const hasBtn4 = document.getElementById('btn4next');
+  if (hasBtn4) {
+    if (state.badge && name && periodOk) {
+      hasBtn4.disabled = false;
+      hasBtn4.style.opacity = '1';
+      hasBtn4.style.cursor = 'pointer';
+    } else {
+      hasBtn4.disabled = true;
+      hasBtn4.style.opacity = '0.5';
+      hasBtn4.style.cursor = 'not-allowed';
+    }
+  }
+}
+
+function updatePreview() {
+  state.name = (document.getElementById('name-input')?.value || '').trim();
+  state.desc = (document.getElementById('desc-input')?.value || '').trim();
+  
+  const panel = document.getElementById('preview-panel');
+  if (!state.cat) {
+    panel.innerHTML = '<div style="font-size: 12px; color: #aab; text-align: center; padding: 24px 0;">Selecciona opciones</div>';
+    updateProgressList();
+    return;
+  }
+  
+  const badgeIcon = (state.customIcon || '').trim() || badgeIcons[state.badge] || '🏆';
+  const effectivePts = state.ptsManual ? (parseInt(state.customPts, 10) || 0) : (badgePts[state.badge] ?? 0);
+  const condIcon = state.cond ? getConditionIcon(state.cond) : '🎯';
+  const activeOptions = getActiveOptionLabels();
+  const name = state.name || '(sin nombre)';
+  const desc = state.desc || 'Descripción del logro';
+  
+  let html = `<div style="background: linear-gradient(135deg, #eef2ff 0, #f4f7ff 100%); border: 1.5px solid #c0d0f8; border-radius: 12px; padding: 16px; margin-bottom: 12px;">
+              <div style="font-size: 36px; text-align: center; margin-bottom: 8px;">${badgeIcon}</div>
+              <div style="font-size: 14px; font-weight: 700; color: #1a2340; text-align: center; margin-bottom: 4px;">${name}</div>
+              <div style="font-size: 11px; color: #556; text-align: center; line-height: 1.4;">${desc}</div>`;
+  
+  if (state.badge) {
+    html += `<div style="text-align: center; margin-top: 8px;"><span style="display: inline-block; background: #2a5bd7; color: white; border-radius: 12px; padding: 2px 10px; font-size: 10px; font-weight: 700;">${effectivePts} pts</span></div>`;
+  }
+  
+  html += `</div><div>`;
+  if (state.cond) html += `<div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;"><span style="color: #8a93aa;">Condición</span><span style="font-weight: 700;">${condIcon} ${condLabels[state.cond] || state.cond}</span></div>`;
+  if (isDisciplineConditionActive()) {
+    const scopeNames = getSelectedDisciplineNames();
+    html += `<div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;"><span style="color: #8a93aa;">Disciplina${isMultiDisciplineCondition() ? 's' : ''}</span><span style="font-weight: 700;">${scopeNames.length ? scopeNames.join(', ') : '—'}</span></div>`;
+    if (state.cond === 'multi_discipline_count' && state.disciplineAttendances !== null) {
+      const scopeLabel = state.disciplineAttendancesScope === 'each' ? 'por disciplina' : 'en total';
+      html += `<div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;"><span style="color: #8a93aa;">Clases req.</span><span style="font-weight: 700;">${state.disciplineAttendances} clase${state.disciplineAttendances !== 1 ? 's' : ''} <span style="font-weight: 400; color: #8a93aa;">(${scopeLabel})</span></span></div>`;
+    }
+  }
+  if (isInstructorScopeCondition()) {
+    const instrNames = getSelectedInstructorNames();
+    html += `<div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;"><span style="color: #8a93aa;">Instructor${state.instructorIds.length !== 1 ? 'es' : ''}</span><span style="font-weight: 700;">${instrNames.length ? instrNames.join(', ') : '—'}</span></div>`;
+  }
+  if (isTimeSlotCondition()) {
+    const slotLabels = getSelectedTimeSlotLabels();
+    html += `<div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;"><span style="color: #8a93aa;">Horario${state.timeSlotIds.length !== 1 ? 's' : ''}</span><span style="font-weight: 700;">${slotLabels.length ? slotLabels.join(', ') : '—'}</span></div>`;
+  }
+  if (isPackageConditionActive()) {
+    const pkgNames = getSelectedPackageNames();
+    const pkgScopeLabel = state.packagePurchasesScope === 'each' ? 'por paquete' : 'en total';
+    html += `<div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;"><span style="color: #8a93aa;">Paquete${state.packageIds.length !== 1 ? 's' : ''}</span><span style="font-weight: 700; max-width: 60%; text-align: right;">${pkgNames.length ? pkgNames.join(', ') : '<span style=\'color:#e54\'>Sin seleccionar</span>'}${state.threshold ? ' <span style="font-weight:400;color:#8a93aa;font-size:10px;">(${pkgScopeLabel})</span>' : ''}</span></div>`;
+  }
+  if (state.threshold) html += `<div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;"><span style="color: #8a93aa;">Umbral</span><span style="font-weight: 700;">${state.threshold}</span></div>`;
+  if (state.period) {
+    let periodLabel = state.period;
+    if (state.period === 'custom-dias' && state.periodDays) {
+      periodLabel = state.periodDays + ' días';
+    } else if (state.period === 'custom-semanas' && state.periodWeeks) {
+      periodLabel = state.periodWeeks + (state.periodWeeks === 1 ? ' semana' : ' semanas');
+    } else if (state.period === 'fecha-limite' && state.periodDeadline) {
+      periodLabel = 'Antes de ' + state.periodDeadline;
+    } else if (state.period === 'ventana-fija') {
+      periodLabel = (state.periodWindowStart || '—') + ' → ' + (state.periodDeadline || '—');
+    }
+    html += `<div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px;"><span style="color: #8a93aa;">Período</span><span style="font-weight: 700;">${periodLabel}</span></div>`;
+  }
+  if (state.opts.celebrar) { const toastMsg = (state.desc || '').trim(); html += `<div style="font-size: 10px; color: #2d3b66; margin: 8px 0 0; padding: 6px 8px; border: 1px solid #b8cbff; border-radius: 8px; background: #eef4ff;"><strong style="font-size: 10px; color: #2a5bd7;">Toast:</strong> ¡Logro desbloqueado! ${state.name || '(nombre)'}${toastMsg ? ' · <em>' + toastMsg + '</em>' : ''}</div>`; }
+  if (state.opts.progreso) html += `<div style="margin-top: 8px;"><div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 4px;"><span style="font-size: 10px; color: #6b7280; font-weight:600; letter-spacing:.3px;">TU PROGRESO</span><span style="font-size: 10px; color: #2a5bd7; font-weight:700;">35 / 100</span></div><div style="height: 7px; border-radius: 999px; background: #e8edfc; overflow:hidden;"><div style="width: 35%; height: 7px; border-radius: 999px; background: linear-gradient(90deg,#4a7de8,#2a5bd7);"></div></div><div style="font-size: 10px; color: #9ca3af; margin-top: 4px;">35% completado</div></div>`;
+  html += `<div style="margin-top: 8px;"><div style="font-size: 10px; font-weight: 700; color: #8a93aa; margin-bottom: 4px;">Opciones activas</div><div style="display: flex; flex-wrap: wrap; gap: 6px;">${activeOptions.length ? activeOptions.map(o => `<span style=\"font-size: 10px; border: 1px solid #d5deef; background: #f7f9ff; color: #2d3b66; border-radius: 999px; padding: 2px 8px;\">${o.icon} ${o.label}</span>`).join('') : '<span style=\"font-size: 10px; color: #aab;\">—</span>'}</div></div>`;
+  html += `</div>`;
+  
+  panel.innerHTML = html;
+  updateProgressList();
+}
+
+function updateProgressList() {
+  const items = [
+    { key: state.cat, label: `Categoría: ${state.cat ? categoryMeta[state.cat].label : '—'}` },
+    { key: state.cond, label: `Condición: ${state.cond ? condLabels[state.cond] : '—'}` },
+    ...(isPackageConditionActive() ? [{ key: state.packageIds.length ? 'ok' : '', label: `Paquetes: ${state.packageIds.length ? getSelectedPackageNames().join(', ') : '—'}` }] : []),
+    { key: state.threshold, label: `Umbral: ${state.threshold ? state.threshold : '—'}` },
+    { key: state.badge, label: `Nivel: ${state.badge ? badgeLabels[state.badge] : '—'}` },
+    { key: state.period, label: `Período: ${state.period ? state.period : '—'}` },
+    { key: state.name, label: `Nombre: ${state.name ? state.name : '—'}` }
+  ];
+  
+  document.getElementById('progress-list').innerHTML = items.map(i => 
+    `<div style="${i.key ? 'color: #22a66a;' : ''}">${i.key ? '✓' : '○'} ${i.label}</div>`
+  ).join('');
+}
+
+function buildReview() {
+  const finalName = state.name || '(Sin nombre)';
+  const finalDesc = state.desc || 'Descripción del logro';
+  const icon = (state.customIcon || '').trim() || badgeIcons[state.badge] || '🏆';
+  const effectivePts = state.ptsManual ? (parseInt(state.customPts, 10) || 0) : (badgePts[state.badge] ?? 0);
+  const condIcon = state.cond ? getConditionIcon(state.cond) : '🎯';
+  const activeOptions = getActiveOptionLabels();
+  const scopeNames = getSelectedDisciplineNames();
+  const diffLabels = { easy: '🟢 Fácil', medium: '🟡 Media', hard: '🟠 Difícil', expert: '🔴 Experto' };
+  
+  let html = `<div style="display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 20px;">
+              <div style="font-size: 48px; line-height: 1;">${icon}</div>
+              <div style="flex: 1; min-width: 200px;">
+                <div style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">${finalName}</div>
+                <div style="font-size: 12px; color: #556; margin-bottom: 8px;">${finalDesc}</div>
+              </div>
+            </div>
+            <table style="width: 100%; margin-top: 16px; font-size: 12px; border-collapse: collapse;">
+              <tr style="border-bottom: 1px solid #eef;">
+                <td style="padding: 6px 0; color: #8a93aa;">Categoría</td>
+                <td style="padding: 6px 0; font-weight: 700;">${state.cat ? categoryMeta[state.cat].label : '—'}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #eef;">
+                <td style="padding: 6px 0; color: #8a93aa;">Condición</td>
+                <td style="padding: 6px 0; font-weight: 700;">${state.cond ? (condIcon + ' ' + condLabels[state.cond]) : '—'}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #eef;">
+                <td style="padding: 6px 0; color: #8a93aa;">Umbral</td>
+                <td style="padding: 6px 0; font-weight: 700;">${state.threshold || '—'}</td>
+              </tr>
+              ${isDisciplineConditionActive() ? `<tr style="border-bottom: 1px solid #eef;"><td style="padding: 6px 0; color: #8a93aa;">Disciplina${isMultiDisciplineCondition() ? 's' : ''}</td><td style="padding: 6px 0; font-weight: 700;">${scopeNames.length ? scopeNames.join(', ') : '—'}</td></tr>` : ''}
+              ${state.cond === 'multi_discipline_count' && state.disciplineAttendances !== null ? `<tr style="border-bottom: 1px solid #eef;"><td style="padding: 6px 0; color: #8a93aa;">Clases req.</td><td style="padding: 6px 0; font-weight: 700;">${state.disciplineAttendances} clase${state.disciplineAttendances !== 1 ? 's' : ''} <span style="font-weight: 400; color: #8a93aa;">(${state.disciplineAttendancesScope === 'each' ? 'por disciplina' : 'en total'})</span></td></tr>` : ''}
+              ${isInstructorScopeCondition() ? `<tr style="border-bottom: 1px solid #eef;"><td style="padding: 6px 0; color: #8a93aa;">Instructor${state.instructorIds.length !== 1 ? 'es' : ''}</td><td style="padding: 6px 0; font-weight: 700;">${getSelectedInstructorNames().join(', ') || '—'}</td></tr>` : ''}
+              ${isTimeSlotCondition() ? `<tr style="border-bottom: 1px solid #eef;"><td style="padding: 6px 0; color: #8a93aa;">Horario${state.timeSlotIds.length !== 1 ? 's' : ''}</td><td style="padding: 6px 0; font-weight: 700;">${getSelectedTimeSlotLabels().join(', ') || '—'}</td></tr>` : ''}
+              ${isPackageConditionActive() ? `<tr style="border-bottom: 1px solid #eef;"><td style="padding: 6px 0; color: #8a93aa;">Paquete${state.packageIds.length !== 1 ? 's' : ''}</td><td style="padding: 6px 0; font-weight: 700;">${getSelectedPackageNames().join(', ') || '—'} <span style="font-weight: 400; color: #8a93aa;">(${state.packagePurchasesScope === 'each' ? 'por paquete' : 'en total'})</span></td></tr>` : ''}
+              <tr style="border-bottom: 1px solid #eef;">
+                <td style="padding: 6px 0; color: #8a93aa;">Período</td>
+                <td style="padding: 6px 0; font-weight: 700;">${(() => {
+                  if (!state.period) return '—';
+                  if (state.period === 'custom-dias' && state.periodDays) return state.periodDays + ' días';
+                  if (state.period === 'custom-semanas' && state.periodWeeks) return state.periodWeeks + (state.periodWeeks === 1 ? ' semana' : ' semanas');
+                  if (state.period === 'fecha-limite' && state.periodDeadline) return 'Antes de ' + state.periodDeadline;
+                  return state.period;
+                })()}</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #eef;">
+                <td style="padding: 6px 0; color: #8a93aa;">Nivel / Puntos</td>
+                <td style="padding: 6px 0; font-weight: 700;">${(state.customIcon||badgeIcons[state.badge]||'')} ${state.customLabel || (badgeLabels[state.badge]||'').replace(/^\S+\s/,'') || '—'} &mdash; ${effectivePts} pts</td>
+              </tr>
+              <tr style="border-bottom: 1px solid #eef;">
+                <td style="padding: 6px 0; color: #8a93aa;">Opciones activas</td>
+                <td style="padding: 6px 0; font-weight: 700;">${activeOptions.length ? activeOptions.map(o => o.icon + ' ' + o.label).join(' · ') : '—'}</td>
+              </tr>
+              ${state.difficulty ? `<tr style="border-bottom: 1px solid #eef;"><td style="padding: 6px 0; color: #8a93aa;">${state.cond === 'challenges_completed' ? 'Filtro dificultad' : 'Reto — Dificultad'}</td><td style="padding: 6px 0; font-weight: 700;">${diffLabels[state.difficulty] || state.difficulty}</td></tr>` : ''}
+              <tr>
+                <td style="padding: 6px 0; color: #8a93aa;">Estado</td>
+                <td style="padding: 6px 0; font-weight: 700;">${state.active ? '🟢 Activo' : '⚫ Inactivo'}</td>
+              </tr>
+            </table>`;
+  
+  document.getElementById('review-content').innerHTML = html;
+}
+
+function renderStep5Flags() {
+  const btnA = document.getElementById('btn-flag-active');
+  if (btnA) {
+    btnA.textContent = state.active ? '🟢 Activo' : '⚫ Inactivo';
+    btnA.style.background = state.active ? '#e8faf2' : '#f5f5f5';
+    btnA.style.color = state.active ? '#22a66a' : '#888';
+    btnA.style.borderColor = state.active ? '#22a66a' : '#ccc';
+  }
+}
+
+function toggleStep5Flag(key) {
+  if (key === 'active') {
+    state.active = !state.active;
+  }
+  renderStep5Flags();
+  buildReview();
+}
+
+function saveLogro() {
+  // --- Badge level: string key directamente desde state.badge ---
+  document.getElementById('hidden-badge').value = state.badge || '';
+  const effectiveIcon = (state.customIcon || '').trim() || badgeIcons[state.badge] || '';
+  document.getElementById('hidden-badge-icon').value = effectiveIcon;
+  const effectiveLabel = (state.customLabel || '').trim() || (badgeLabels[state.badge] || '').replace(/^\S+\s/, '') || '';
+  document.getElementById('hidden-badge-label').value = effectiveLabel;
+  const effectivePts = state.ptsManual ? (parseInt(state.customPts, 10) || 0) : (badgePts[state.badge] ?? 0);
+  document.getElementById('hidden-badge-pts').value = String(effectivePts);
+  document.getElementById('hidden-badge-color').value = '';
+
+  // --- Categoría y condición ---
+  document.getElementById('hidden-cat').value = state.cat;
+  document.getElementById('hidden-cond').value = state.cond;
+
+  // --- thresholdType desde catálogo ---
+  const condData = (conditionsByCategory[state.cat] || []).find(c => c.conditionKey === state.cond);
+  document.getElementById('hidden-threshold-type').value = condData ? condData.thresholdType : 'count';
+  document.getElementById('hidden-threshold').value = state.threshold;
+
+  // --- Contexto (disciplinas / instructores / horarios / paquetes) ---
+  const contextPayload = isDisciplineConditionActive() && state.disciplineIds.length
+    ? {
+        disciplineIds: state.disciplineIds,
+        includeIndividual: state.disciplineIds.includes(INDIVIDUAL_DISCIPLINE_ID),
+        ...(state.cond === 'multi_discipline_count' && state.disciplineAttendances !== null
+          ? { attendancesRequired: state.disciplineAttendances, attendancesScope: state.disciplineAttendancesScope }
+          : {})
+      }
+    : isInstructorScopeCondition() && state.instructorIds.length
+      ? { instructorIds: state.instructorIds }
+      : isTimeSlotCondition() && state.timeSlotIds.length
+        ? { timeSlotIds: state.timeSlotIds }
+        : isPackageConditionActive() && state.packageIds.length
+          ? { packageIds: state.packageIds, packagePurchasesScope: state.packagePurchasesScope }
+          : null;
+  document.getElementById('hidden-condition-context').value = contextPayload ? JSON.stringify(contextPayload) : '';
+
+  // --- Nombre y descripción ---
+  document.getElementById('hidden-name').value = state.name;
+  document.getElementById('hidden-desc').value = state.desc;
+  // --- Dificultad (reto) ---
+  document.getElementById('hidden-difficulty').value = state.difficulty || '';
+
+  // --- Período: mapear claves del wizard a valores de la entidad ---
+  let periodType = 'none', periodDays = '', periodDeadline = '';
+  if (state.period === '1-dia')              { periodType = 'days'; periodDays = '1'; }
+  else if (state.period === '7-dias')        { periodType = 'days'; periodDays = '7'; }
+  else if (state.period === '30-dias')       { periodType = 'days'; periodDays = '30'; }
+  else if (state.period === 'custom-dias')   { periodType = 'days'; periodDays = String(state.periodDays || ''); }
+  else if (state.period === 'custom-semanas') { periodType = 'days'; periodDays = String((state.periodWeeks || 0) * 7); }
+  else if (state.period === 'fecha-limite') {
+    periodType = 'deadline';
+    if (state.periodDeadline) {
+      // HTML5 date input entrega YYYY-MM-DD; el form espera dd/MM/yyyy
+      const [y, m, d] = state.periodDeadline.split('-');
+      periodDeadline = `${d}/${m}/${y}`;
+    }
+  } else if (state.period === 'ventana-fija') {
+    periodType = 'window';
+    if (state.periodDeadline) {
+      const [y, m, d] = state.periodDeadline.split('-');
+      periodDeadline = `${d}/${m}/${y}`;
+    }
+  }
+  let periodWindowStart = '';
+  if (state.period === 'ventana-fija' && state.periodWindowStart) {
+    const [y, m, d] = state.periodWindowStart.split('-');
+    periodWindowStart = `${d}/${m}/${y}`;
+  }
+  // 'sin-limite' y null → 'none' (ya inicializado arriba)
+  document.getElementById('hidden-period').value = periodType;
+  document.getElementById('hidden-period-days').value = periodDays;
+  document.getElementById('hidden-period-deadline').value = periodDeadline;
+  document.getElementById('hidden-period-window-start').value = periodWindowStart;
+
+  // --- Booleanos: deshabilitar el input cuando es false (ausencia = false en CheckboxType) ---
+  document.getElementById('hidden-opts-notif').disabled   = !state.opts.notif;
+  document.getElementById('hidden-opts-visible').disabled = !state.opts.visible;
+  document.getElementById('hidden-opts-celebrar').disabled = !state.opts.celebrar;
+  document.getElementById('hidden-opts-progreso').disabled = !state.opts.progreso;
+  document.getElementById('hidden-opts-retroactivo').disabled = !state.opts.retroactivo;
+  // Active: se envía siempre como valor 1 o 0
+  document.getElementById('hidden-active').value = state.active ? '1' : '0';
+
+  // Submitear el formulario
+  document.getElementById('achievementForm').submit();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Attach category card click handlers
+  document.querySelectorAll('.cat-card').forEach(card => {
+    card.addEventListener('mouseenter', function() {
+      if (!this.classList.contains('selected')) {
+        this.style.borderColor = '#7fa4f5';
+        this.style.background = '#f4f7ff';
+      }
+    });
+    card.addEventListener('mouseleave', function() {
+      if (!this.classList.contains('selected')) {
+        this.style.borderColor = '#dde4f0';
+        this.style.background = 'white';
+      }
+    });
+    card.addEventListener('click', function() { selectCat(this); });
+  });
+
+  // Hover effects for other cards
+  document.addEventListener('mouseenter', function(e) {
+    const cl = e.target?.classList;
+    if (cl && (cl.contains('threshold-card') || cl.contains('cond-chip') || cl.contains('period-card')) && !cl.contains('selected')) {
+      e.target.style.borderColor = '#7fa4f5';
+      e.target.style.background = '#f4f7ff';
+    }
+  }, true);
+
+  document.addEventListener('mouseleave', function(e) {
+    const cl = e.target?.classList;
+    if (cl && (cl.contains('threshold-card') || cl.contains('cond-chip') || cl.contains('period-card')) && !cl.contains('selected')) {
+      e.target.style.borderColor = '#dde4f0';
+      e.target.style.background = 'white';
+    }
+  }, true);
+
+  renderBadges();
+  renderOptions();
+  document.querySelectorAll('.opt-chip').forEach(el => {
+    const key = el.dataset.opt;
+    setOptChipVisual(el, !!state.opts[key]);
+  });
+  renderPeriods();
+  updatePreview();
+
+{% if isEditMode is defined and isEditMode %}
+  // ── MODO EDICIÓN: pre-cargar estado del logro existente ──────────────────
+  (function initEditMode() {
+    const init = {{ preloadData|json_encode|raw }};
+
+    // Aplicar estado al objeto state
+    state.cat           = init.cat;
+    state.cond          = init.cond;
+    state.threshold     = init.threshold;
+    state.badge         = init.badge;
+    // Icono, nombre y puntos: solo marcar como "manual" si difieren del default del nivel
+    // (saveLogro siempre guarda el valor efectivo, incluyendo defaults, así que no se puede
+    // asumir que todo valor guardado fue editado manualmente por el usuario)
+    const _defaultIcon  = badgeIcons[init.badge] || '';
+    const _defaultLabel = (badgeLabels[init.badge] || '').replace(/^\S+\s/, '');
+    const _defaultPts   = badgePts[init.badge] ?? 0;
+
+    if (init.customIcon && init.customIcon !== _defaultIcon) {
+      state.customIcon = init.customIcon;
+      state.iconManual = true;
+      const iconInput = document.getElementById('badge-icon-input');
+      if (iconInput) iconInput.value = init.customIcon;
+    }
+    if (init.customLabel && init.customLabel !== _defaultLabel) {
+      state.customLabel = init.customLabel;
+      state.labelManual = true;
+      const labelInput = document.getElementById('badge-label-input');
+      if (labelInput) labelInput.value = init.customLabel;
+    }
+    if (init.customPts !== '' && Number(init.customPts) !== _defaultPts) {
+      state.customPts = String(init.customPts);
+      state.ptsManual = true;
+      const ptsInput = document.getElementById('badge-pts-input');
+      if (ptsInput) ptsInput.value = init.customPts;
+    }
+    state.name          = init.name || '';
+    state.desc          = init.desc || '';
+    state.period          = init.period;
+    state.periodDays      = init.period === 'custom-semanas' ? null : init.periodDays;
+    state.periodWeeks     = init.period === 'custom-semanas' ? init.periodDays : null;
+    state.weeklyMinWeeks  = (init.period === 'custom-semanas' && init.cond === 'weekly_frequency') ? init.periodDays : null;
+    state.periodDeadline  = init.periodDeadline;
+    state.periodWindowStart = init.periodWindowStart || null;
+    state.disciplineIds = init.disciplineIds || [];
+    state.disciplineAttendances = init.disciplineAttendances ?? null;
+    state.disciplineAttendancesScope = init.disciplineAttendancesScope || 'total';
+    state.instructorIds = init.instructorIds || [];
+    state.timeSlotIds   = init.timeSlotIds || [];
+    // Reconstruir customTimeSlots: valores guardados que no son horarios predefinidos
+    const _predefinedSlotValues = new Set(timeSlots.map(s => s.value));
+    state.customTimeSlots = (init.timeSlotIds || [])
+      .filter(v => !_predefinedSlotValues.has(v))
+      .map(v => ({ value: v }));
+    state.packageIds    = init.packageIds || [];
+    state.packagePurchasesScope = init.packagePurchasesScope || 'total';
+    state.difficulty    = init.difficulty || null;
+    state.active        = init.active !== undefined ? !!init.active : true;
+    state.opts = Object.assign(state.opts, init.opts || {});
+
+    // Seleccionar visualmente la tarjeta de categoría (ya está en el DOM)
+    const catCard = document.querySelector(`.cat-card[data-cat="${init.cat}"]`);
+    if (catCard) {
+      catCard.classList.add('selected');
+      catCard.style.borderColor = '#2a5bd7';
+      catCard.style.background = '#eef2ff';
+    }
+
+    // Renderizar condiciones para la categoría y seleccionar la correcta
+    renderConditions();
+    const condChip = document.querySelector(`.cond-chip[data-cond="${init.cond}"]`);
+    if (condChip) {
+      condChip.classList.add('selected');
+      condChip.style.borderColor = '#2a5bd7';
+      condChip.style.background = '#eef2ff';
+      condChip.style.color = '#1a2340';
+    }
+
+    // Si es disciplina (no multi) renderizar el picker de disciplinas en paso 2
+    if (init.cat === 'disciplina' && init.cond && init.cond !== 'multi_discipline_count') {
+      renderDisciplineInStep2();
+    }
+    // Si es paquete específico renderizar el picker de paquetes en paso 2
+    if (init.cat === 'compras' && init.cond === 'specific_package_count') {
+      renderPackageInStep2();
+    }
+
+    // Renderizar umbrales (incluye pickers de disciplinas/instructores/horarios si aplica)
+    renderThresholds();
+
+    // Seleccionar visualmente la tarjeta de umbral
+    const threshCard = document.querySelector(`.threshold-card[data-val="${init.threshold}"]`);
+    if (threshCard) {
+      threshCard.classList.add('selected');
+      threshCard.style.borderColor = '#2a5bd7';
+      threshCard.style.background = '#eef2ff';
+    }
+
+    // Restaurar campo de semanas mínimas para weekly_frequency
+    if (init.cond === 'weekly_frequency' && state.weeklyMinWeeks) {
+      const extraFields = document.getElementById('threshold-extra-fields');
+      if (extraFields) {
+        extraFields.innerHTML = `<div style="margin-top:12px;padding:10px 12px;background:#f6f8ff;border:1px solid #dde4f0;border-radius:8px;">
+          <label style="font-size:11px;font-weight:700;color:#2a5bd7;margin-bottom:4px;display:block;">Semanas de evaluación</label>
+          <p style="font-size:10px;color:#8a93aa;margin:0 0 6px;">Mínimo de semanas que debe mantener este promedio semanal</p>
+          <input type="number" id="weekly-min-weeks-input" placeholder="ej. 4" min="1" max="52"
+            style="width:100%;border:1.5px solid #dde4f0;border-radius:6px;padding:8px 10px;font-size:13px;outline:none;"
+            oninput="setWeeklyMinWeeks(this.value)">
+        </div>`;
+        const inp = document.getElementById('weekly-min-weeks-input');
+        if (inp) inp.value = state.weeklyMinWeeks;
+      }
+    }
+
+    // Rellenar nombre y descripción
+    const nameInput = document.getElementById('name-input');
+    const descInput = document.getElementById('desc-input');
+    if (nameInput) nameInput.value = init.name || '';
+    if (descInput) descInput.value = init.desc || '';
+
+    // Seleccionar visualmente el badge (renderBadges ya fue llamado arriba)
+    const badgeCard = document.querySelector(`.badge-card[data-badge="${init.badge}"]`);
+    if (badgeCard) selectBadge(badgeCard);
+
+    // Aplicar visual de opciones (renderOptions ya fue llamado arriba)
+    document.querySelectorAll('.opt-chip').forEach(el => {
+      const key = el.dataset.opt;
+      setOptChipVisual(el, !!state.opts[key]);
+    });
+
+    // Renderizar períodos con estado pre-cargado (renderPeriods usa state.period para el selected)
+    renderPeriods();
+
+    // Si hay campos personalizados de período, rellenarlos
+    _restoreCustomPeriodFields();
+
+    // Habilitar botones de "Siguiente" para cada paso (en modo edición el estado ya está completo)
+    checkStep2();
+    checkStep3();
+    // checkStep4 ya es llamado por selectBadge arriba
+
+    // Ir directamente a la revisión (paso 5)
+    goStep(5);
+  })();
+
+  // Sobreescribir goStep para restaurar campos personalizados de período al volver al paso 4
+  const _origGoStep = goStep;
+  goStep = function(n) {
+    _origGoStep(n);
+    if (n === 4) _restoreCustomPeriodFields();
+  };
+
+  function _restoreCustomPeriodFields() {
+    if (!state.period) return;
+    const customFields = document.getElementById('period-custom-fields');
+    if (!customFields) return;
+
+    if (state.period === 'custom-dias' && state.periodDays) {
+      if (!document.getElementById('period-days-input')) {
+        customFields.innerHTML = `<div style="margin-bottom:12px;"><label style="font-size:11px;font-weight:700;color:#556;margin-bottom:4px;display:block;">Cantidad de días</label><input type="text" id="period-days-input" placeholder="ej. 15" style="width:100%;border:1.5px solid #dde4f0;border-radius:6px;padding:8px 10px;font-size:13px;" oninput="setPeriodDays(this.value)"></div>`;
+      }
+      const inp = document.getElementById('period-days-input');
+      if (inp) inp.value = state.periodDays;
+    } else if (state.period === 'custom-semanas' && state.periodWeeks) {
+      if (!document.getElementById('period-weeks-input')) {
+        customFields.innerHTML = `<div style="margin-bottom:12px;"><label style="font-size:11px;font-weight:700;color:#556;margin-bottom:4px;display:block;">Semanas de evaluación</label><input type="text" id="period-weeks-input" placeholder="ej. 4" style="width:100%;border:1.5px solid #dde4f0;border-radius:6px;padding:8px 10px;font-size:13px;" oninput="setPeriodWeeks(this.value)"><div style="font-size:10px;color:#8a93aa;margin-top:4px;">Ventana deslizante: se evalúan las últimas N semanas desde hoy</div></div>`;
+      }
+      const inp = document.getElementById('period-weeks-input');
+      if (inp) inp.value = state.periodWeeks;
+    } else if (state.period === 'fecha-limite' && state.periodDeadline) {
+      if (!document.getElementById('period-deadline-input')) {
+        customFields.innerHTML = `<div style="margin-bottom:12px;"><label style="font-size:11px;font-weight:700;color:#556;margin-bottom:4px;display:block;">Fecha límite</label><input type="date" id="period-deadline-input" style="width:100%;border:1.5px solid #dde4f0;border-radius:6px;padding:8px 10px;font-size:13px;" oninput="setPeriodDeadline(this.value)"></div>`;
+      }
+      const inp = document.getElementById('period-deadline-input');
+      if (inp) inp.value = state.periodDeadline; // YYYY-MM-DD
+    } else if (state.period === 'ventana-fija') {
+      if (!document.getElementById('period-window-start-input')) {
+        customFields.innerHTML = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+          <div>
+            <label style="font-size:11px;font-weight:700;color:#556;margin-bottom:4px;display:block;">Fecha de inicio</label>
+            <input type="date" id="period-window-start-input" style="width:100%;border:1.5px solid #dde4f0;border-radius:6px;padding:8px 10px;font-size:13px;" oninput="setPeriodWindowStart(this.value)">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:#556;margin-bottom:4px;display:block;">Fecha de cierre</label>
+            <input type="date" id="period-deadline-input" style="width:100%;border:1.5px solid #dde4f0;border-radius:6px;padding:8px 10px;font-size:13px;" oninput="setPeriodDeadline(this.value)">
+          </div>
+        </div>`;
+      }
+      const startInp = document.getElementById('period-window-start-input');
+      if (startInp && state.periodWindowStart) startInp.value = state.periodWindowStart; // YYYY-MM-DD
+      const endInp = document.getElementById('period-deadline-input');
+      if (endInp && state.periodDeadline) endInp.value = state.periodDeadline; // YYYY-MM-DD
+    }
+  }
+{% endif %}
+});
+</script>
+
+<style>
+  .step-section {
+    display: none;
+  }
+  
+  .step-section.visible {
+    display: block;
+  }
+  
+  .cat-card.selected,
+  .cond-chip.selected,
+  .threshold-card.selected,
+  .period-card.selected {
+    border-color: #2a5bd7 !important;
+    background: #eef2ff !important;
+    box-shadow: 0 0 0 3px rgba(42, 91, 215, 0.12) !important;
+  }
+  
+  .opt-chip.selected {
+    border-color: #2a5bd7 !important;
+    background: #2a5bd7 !important;
+    color: white !important;
+  }
+
+  /* --- Discipline picker responsive layout --- */
+  .disc-picker-row {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .disc-picker-input-col {
+    flex: 0 0 140px;
+    min-width: 0;
+  }
+  .disc-picker-scope-col {
+    flex: 1;
+    min-width: 0;
+  }
+  .disc-scope-cards-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  @media (max-width: 540px) {
+    .disc-picker-row {
+      flex-direction: column;
+      gap: 10px;
+    }
+    .disc-picker-input-col {
+      flex: none;
+      width: 100%;
+    }
+    .disc-picker-input-col .disc-input-inner {
+      max-width: 200px;
+    }
+    .disc-picker-scope-col {
+      width: 100%;
+    }
+    .disc-scope-cards-row {
+      gap: 6px;
+    }
+    .disc-scope-card {
+      padding: 8px 6px !important;
+    }
+    .disc-scope-card .disc-scope-icon {
+      font-size: 16px !important;
+    }
+    .disc-scope-card .disc-scope-desc {
+      display: none;
+    }
+  }
+
+  /* Discipline chips: wrap nicely on all sizes */
+  .disc-chips-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  @media (max-width: 991px) {
+    .wizard-layout-row {
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+    }
+
+    .wizard-main-col,
+    .wizard-preview-col {
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+    }
+
+    .wizard-main-card {
+      padding: 16px 14px !important;
+    }
+
+    .wizard-preview-card {
+      position: static !important;
+      max-height: none !important;
+      margin-top: 0 !important;
+      padding: 16px 14px !important;
+    }
+  }
+
+  @media (max-width: 540px) {
+    .wizard-main-col,
+    .wizard-preview-col {
+      padding-left: 8px !important;
+      padding-right: 8px !important;
+    }
+
+    .wizard-main-card {
+      padding: 14px 12px !important;
+    }
+
+    .wizard-preview-card {
+      padding: 14px 12px !important;
+    }
+  }
+</style>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}

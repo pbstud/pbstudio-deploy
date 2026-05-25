@@ -1,5 +1,9 @@
 <section class="box-form">
-    {% if error %}
+    {% if retry_after %}
+        <div class="error" id="authThrottleNotice">
+            <p>Demasiados intentos fallidos. Por favor espera <strong id="authThrottleCountdown">30</strong> segundo(s) antes de volver a intentarlo.</p>
+        </div>
+    {% elseif error %}
         <div class="error">
             <p>{{ error.messageKey|trans(error.messageData, 'security') }}</p>
         </div>
@@ -15,7 +19,7 @@
                     <input type="email" class="form-control" id="username" name="username" value="{{ last_username }}" placeholder="Correo" required>
                     <input type="password" class="form-control" id="password" name="password" placeholder="Contraseña" required>
 
-                    <button type="submit" class="btn-submit">Entrar</button>
+                    <button type="submit" class="btn-submit" id="authSubmitBtn"{% if retry_after %} disabled{% endif %}>Entrar</button>
 
                     <div class="remember-me">
                         <label>
@@ -38,3 +42,26 @@
         </div>
     </div>
 </section>
+
+{% if retry_after %}
+<script type="text/javascript">
+(function () {
+    var retryAt = {{ retry_after }} * 1000;
+    var countdownEl = document.getElementById('authThrottleCountdown');
+    var submitBtn   = document.getElementById('authSubmitBtn');
+
+    function tick() {
+        var remaining = Math.ceil((retryAt - Date.now()) / 1000);
+        if (remaining <= 0) {
+            var notice = document.getElementById('authThrottleNotice');
+            if (notice) { notice.style.display = 'none'; }
+            if (submitBtn) { submitBtn.disabled = false; }
+            return;
+        }
+        if (countdownEl) { countdownEl.textContent = remaining; }
+        setTimeout(tick, 500);
+    }
+    tick();
+})();
+</script>
+{% endif %}

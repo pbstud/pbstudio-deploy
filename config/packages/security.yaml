@@ -42,7 +42,7 @@ security:
 
             login_throttling:
                 max_attempts: 5
-                interval: '15 minutes'
+                interval: '30 seconds'
 
             logout:
                 path: backend_logout
@@ -70,7 +70,7 @@ security:
 
             login_throttling:
                 max_attempts: 5
-                interval: '15 minutes'
+                interval: '30 seconds'
 
             logout:
                 path: /logout

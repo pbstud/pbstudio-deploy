@@ -30,7 +30,7 @@ class SeedDashboardStep1SessionsCommand extends Command
         [5, 9, 'g', 2, 2, ['07:00:00', '08:00:00', '09:00:00', '10:00:00', '18:00:00', '19:00:00']],
     ];
 
-    private const INSTRUCTOR_IDS = [1, 2, 5, 7, 9, 10, 11, 12, 13, 15, 30, 37];
+    private const INSTRUCTOR_IDS = [2, 5, 10, 13, 37];
 
     public function __construct(private readonly Connection $connection)
     {

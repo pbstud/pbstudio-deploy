@@ -48,7 +48,13 @@ class DashboardController extends AbstractController
         }
 
         if ($this->isGranted(RouteAccessVoter::ALLOWED_ROUTE_ACCESS, 'backend_user_show')) {
-            $data['fitpass'] = $this->statsService->getBlock7Fitpass();
+            $data['fitpass']   = $this->statsService->getBlock7Fitpass();
+            $data['wellhub']   = $this->statsService->getBlock7Wellhub();
+            $data['totalpass'] = $this->statsService->getBlock7TotalPass();
+
+            $nuFilters = $this->getDashboardNuFilters($request);
+            $data['nuRetention']        = $this->statsService->getNewUserRetentionBlock($nuFilters['from'], $nuFilters['to']);
+            $data['nuRetentionFilters'] = $nuFilters;
         }
 
         $rankingPermissions = [
@@ -56,13 +62,15 @@ class DashboardController extends AbstractController
             'schedules' => $this->isGranted(RouteAccessVoter::ALLOWED_ROUTE_ACCESS, 'backend_session'),
             'packages' => $this->isGranted(RouteAccessVoter::ALLOWED_ROUTE_ACCESS, 'backend_transaction'),
             'clients' => $this->isGranted(RouteAccessVoter::ALLOWED_ROUTE_ACCESS, 'backend_transaction'),
+            'attendance' => $this->isGranted(RouteAccessVoter::ALLOWED_ROUTE_ACCESS, 'backend_session'),
             'ratingsDetail' => $this->isGranted(RouteAccessVoter::ALLOWED_ROUTE_ACCESS, 'backend_stats_ratings'),
         ];
         $rankingPermissions['showRanking'] =
             $rankingPermissions['weekdays']
             || $rankingPermissions['schedules']
             || $rankingPermissions['packages']
-            || $rankingPermissions['clients'];
+            || $rankingPermissions['clients']
+            || $rankingPermissions['attendance'];
 
         if ($rankingPermissions['showRanking']) {
             $data['rankingPermissions'] = $rankingPermissions;
@@ -95,9 +103,39 @@ class DashboardController extends AbstractController
                     $data['ratingFilters']['to']
                 );
             }
+
+            if ($rankingPermissions['attendance']) {
+                $data['ratingsTopAttendance'] = $this->statsService->getBlock8TopAttendanceBySucursal(
+                    $data['ratingFilters']['from'],
+                    $data['ratingFilters']['to']
+                );
+            }
         }
 
         return $this->render('backend/dashboard/index.html.twig', $data);
+    }
+
+    private function getDashboardNuFilters(Request $request): array
+    {
+        $defaultDateStart = CarbonImmutable::today()->startOfMonth();
+        $defaultDateEnd   = CarbonImmutable::today();
+
+        $dateStartRaw = trim((string) $request->query->get('nu_date_start', ''));
+        $dateEndRaw   = trim((string) $request->query->get('nu_date_end', ''));
+
+        $dateStart = $this->parseDashboardRatingDate($dateStartRaw, $defaultDateStart);
+        $dateEnd   = $this->parseDashboardRatingDate($dateEndRaw, $defaultDateEnd);
+
+        if ($dateStart > $dateEnd) {
+            [$dateStart, $dateEnd] = [$dateEnd, $dateStart];
+        }
+
+        return [
+            'nu_date_start' => $dateStart->format('d/m/Y'),
+            'nu_date_end'   => $dateEnd->format('d/m/Y'),
+            'from'          => $dateStart,
+            'to'            => $dateEnd,
+        ];
     }
 
     private function getDashboardRatingFilters(Request $request): array

@@ -262,7 +262,25 @@
                                         <small class="help">Usuario base para el bloque Fitpass por sucursal (entero positivo)</small>
                                     </label>
                                     <div class="col-md-6 col-sm-6 col-xs-12">
-                                        <input type="text" id="sessions_fitpass_user_id" name="sessions[fitpass_user_id]" value="{{ sessions.fitpass_user_id | default('') }}" placeholder="Ej. 361" class="form-control" inputmode="numeric" pattern="[0-9]*" maxlength="10">
+                                        <input type="number" id="sessions_fitpass_user_id" name="sessions[fitpass_user_id]" value="{{ sessions.fitpass_user_id | default('') }}" placeholder="Ej. 361" class="form-control" min="1" step="1">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label col-md-6 col-sm-6 col-xs-12" for="sessions_wellhub_user_id">
+                                        ID de usuario WellHub:<br />
+                                        <small class="help">Usuario base para el bloque WellHub por sucursal (entero positivo)</small>
+                                    </label>
+                                    <div class="col-md-6 col-sm-6 col-xs-12">
+                                        <input type="number" id="sessions_wellhub_user_id" name="sessions[wellhub_user_id]" value="{{ sessions.wellhub_user_id | default('') }}" placeholder="Ej. 14381" class="form-control" min="1" step="1">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="control-label col-md-6 col-sm-6 col-xs-12" for="sessions_totalpass_user_id">
+                                        ID de usuario TotalPass:<br />
+                                        <small class="help">Usuario base para el bloque TotalPass por sucursal (entero positivo)</small>
+                                    </label>
+                                    <div class="col-md-6 col-sm-6 col-xs-12">
+                                        <input type="number" id="sessions_totalpass_user_id" name="sessions[totalpass_user_id]" value="{{ sessions.totalpass_user_id | default('') }}" placeholder="Ej. 14604" class="form-control" min="1" step="1">
                                     </div>
                                 </div>
                             </fieldset>

@@ -1,0 +1,189 @@
+﻿{% extends 'backend/layout-ajax.html.twig' %}
+
+{% block content %}
+
+{# ── Filtros ── #}
+<div class="x_panel x_panel_filters">
+    <div class="x_content">
+        <form id="achievements-filter-form" method="get" action="{{ path('backend_user_achievements', {'id': user.id}) }}">
+            <div class="row">
+                <div class="col-md-3 col-sm-6 col-xs-12">
+                    <div class="form-group">
+                        <label for="filter_name">Nombre:</label>
+                        <input type="text"
+                               id="filter_name"
+                               name="filter_name"
+                               class="form-control"
+                               placeholder="Buscar por nombre&hellip;"
+                               value="{{ filters.name }}">
+                    </div>
+                </div>
+
+                <div class="col-md-3 col-sm-6 col-xs-12">
+                    <div class="form-group">
+                        <label for="filter_category">Categor&iacute;a:</label>
+                        <select id="filter_category" name="filter_category" class="form-control">
+                            <option value="">- Todas -</option>
+                            {% for catKey in availableCategories %}
+                                <option value="{{ catKey }}" {{ filters.category == catKey ? 'selected' }}>
+                                    {{ categoryChoices[catKey] ?? catKey }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="col-md-3 col-sm-6 col-xs-12">
+                    <div class="form-group">
+                        <label for="filter_badge_group">Grupo de insignia:</label>
+                        <select id="filter_badge_group" name="filter_badge_group" class="form-control">
+                            <option value="">- Todos -</option>
+                            {% for group in availableBadgeGroups %}
+                                <option value="{{ group }}" {{ filters.badge_group == group ? 'selected' }}>
+                                    {{ group }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="row">
+                <div class="col-md-3 col-sm-6 col-xs-12">
+                    <div class="form-group">
+                        <label for="filter_date_from">Fecha desde:</label>
+                        <div class="date-action-field">
+                            <input type="text"
+                                   id="filter_date_from"
+                                   name="filter_date_from"
+                                   class="form-control datepicker"
+                                   value="{{ filters.date_from }}">
+                            <span class="date-action-icon" aria-hidden="true">
+                                <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                            </span>
+                            <button type="button" class="btn btn-default date-action-clear"
+                                    onclick="document.getElementById('filter_date_from').value = '';"
+                                    title="Limpiar fecha" aria-label="Limpiar fecha">
+                                <i class="fa fa-times" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3 col-sm-6 col-xs-12">
+                    <div class="form-group">
+                        <label for="filter_date_to">Fecha hasta:</label>
+                        <div class="date-action-field">
+                            <input type="text"
+                                   id="filter_date_to"
+                                   name="filter_date_to"
+                                   class="form-control datepicker"
+                                   value="{{ filters.date_to }}">
+                            <span class="date-action-icon" aria-hidden="true">
+                                <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                            </span>
+                            <button type="button" class="btn btn-default date-action-clear"
+                                    onclick="document.getElementById('filter_date_to').value = '';"
+                                    title="Limpiar fecha" aria-label="Limpiar fecha">
+                                <i class="fa fa-times" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-sm-12 col-xs-12">
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <div class="text-right">
+                            <button type="submit" class="btn btn-dark">Buscar</button>
+                            <a href="{{ path('backend_user_achievements', {'id': user.id}) }}"
+                               class="btn btn-default js-ajax-load"
+                               data-target="#userTabContent">Limpiar</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if earned | length > 0 %}
+    <div class="table-responsive">
+        <table class="table table-striped table-hover" style="font-size: 13px;">
+            <thead>
+                <tr>
+                    <th style="width: 36px;"></th>
+                    <th>Logro</th>
+                    <th>Nivel</th>
+                    <th>Categor&iacute;a</th>
+                    <th class="text-center">&Uacute;ltima conquista</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in earned %}
+                    {% set ach   = achievementIndex[item.achievementId] ?? null %}
+                    {% set icon  = (ach and ach.badgeIcon)  ? ach.badgeIcon  : item.badgeLevel|replace({'_': ' '})|title %}
+                    {% set label = (ach and ach.badgeLabel) ? ach.badgeLabel : (badgeLevelChoices[item.badgeLevel] ?? item.badgeLevel|replace({'_': ' '})|title) %}
+                    {% set color = (ach and ach.badgeColor) ? ach.badgeColor : '#aaa' %}
+                    <tr>
+                        <td class="text-center" style="font-size: 20px; line-height: 1; vertical-align: middle;">{{ icon }}</td>
+                        <td style="vertical-align: middle;">
+                            {% if ach %}
+                                <a href="{{ path('backend_achievement_show', {'id': ach.id}) }}" class="link-edit">
+                                    {{ item.name }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">{{ item.name }}</span>
+                            {% endif %}
+                        </td>
+                        <td style="vertical-align: middle;">
+                            <span style="font-weight: 600; color: {{ color }};">{{ label }}</span>
+                        </td>
+                        <td style="vertical-align: middle;">
+                            {{ categoryChoices[item.categoryKey] ?? item.categoryKey }}
+                        </td>
+                        <td class="text-center" style="vertical-align: middle;">
+                            {{ item.earnedAt|date('d/m/Y H:i') }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {{ knp_pagination_render(earned) }}
+{% else %}
+    <p class="text-muted" style="padding: 20px 0;">No se encontraron logros con los filtros aplicados.</p>
+{% endif %}
+
+<script>
+    $('#filter_date_from, #filter_date_to').daterangepicker(datepickeroptions);
+
+    $('body').on('apply.daterangepicker', '#filter_date_from, #filter_date_to', function (ev, picker) {
+        $(this).val(picker.startDate.format('DD/MM/YYYY'));
+    });
+
+    $('.pagination a').on('click', function (e) {
+        e.preventDefault();
+        var url = $(this).prop('href');
+        if ('' === url) { return; }
+        $.loader.show('#userTabContent');
+        $('#userTabContent').load(url);
+    });
+
+    $('#achievements-filter-form').on('submit', function (e) {
+        e.preventDefault();
+        var url = $(this).prop('action') + '?' + $(this).serialize();
+        $.loader.show('#userTabContent');
+        $('#userTabContent').load(url);
+    });
+
+    $(document).on('click', '.js-ajax-load', function (e) {
+        e.preventDefault();
+        var target = $(this).data('target') || '#userTabContent';
+        var url    = $(this).prop('href');
+        $.loader.show(target);
+        $(target).load(url);
+    });
+</script>
+{% endblock %}

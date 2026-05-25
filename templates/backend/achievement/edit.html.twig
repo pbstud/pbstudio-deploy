@@ -1,0 +1,15 @@
+{% extends 'backend/default/edit.html.twig' %}
+
+{% block title %}Editar Logro{% endblock %}
+
+{% block form %}
+    {{ include('backend/achievement/_form.html.twig', {'button_label': 'btn.update'}) }}
+
+    <hr>
+    <div class="text-right">
+        <form method="post" action="{{ path('backend_achievement_delete', {'id': achievement.id}) }}" onsubmit="return confirm('Esta accion eliminara el logro. Deseas continuar?');" style="display:inline;">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete_achievement_' ~ achievement.id) }}">
+            <button type="submit" class="btn btn-danger" id="btn_delete_achievement">Eliminar logro</button>
+        </form>
+    </div>
+{% endblock %}

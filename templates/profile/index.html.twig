@@ -15,8 +15,8 @@
 
     {{ include('profile/_transactions.html.twig') }}
 
-    <div class="row">
-        <div class="content">
+    <div class="row profile-two-col-row">
+        <div class="content profile-col">
             <h2 id="perfil">Datos de usuario</h2>
             <div class="user-data-section">
                 <div class="data-group">
@@ -63,6 +63,116 @@
                 <a href="{{ path('profile_edit', {'_fragment': 'section-content'}) }}" class="btn-edit-profile">
                     Editar datos
                 </a>
+            </div>
+        </div>
+
+        <div class="content profile-col">
+            <h2 id="logros">Mis Logros</h2>
+            {% set tierEmoji = {
+                'bronze': '🥉', 'silver': '🥈', 'gold': '🥇',
+                'platinum': '💠', 'diamond': '💎', 'master': '👑', 'legend': '🏆',
+                'magic_spiral': '🌀',
+                'challenge_1': '🎯', 'challenge_2': '⚡', 'challenge_3': '🔥',
+                'challenge_4': '💪', 'challenge_5': '🛡️',
+                'season_spring': '🌸', 'season_summer': '☀️', 'season_fall': '🍂',
+                'season_winter': '❄️', 'season_xmas': '🎄', 'season_special': '✨'
+            } %}
+            {% set tierLabel = {
+                'bronze': 'Bronce', 'silver': 'Plata', 'gold': 'Oro',
+                'platinum': 'Platino', 'diamond': 'Diamante', 'master': 'Maestro', 'legend': 'Leyenda',
+                'magic_spiral': 'Espiral Mágica',
+                'challenge_1': 'Reto 1', 'challenge_2': 'Reto 2', 'challenge_3': 'Reto 3',
+                'challenge_4': 'Reto 4', 'challenge_5': 'Reto 5',
+                'season_spring': 'Primavera', 'season_summer': 'Verano', 'season_fall': 'Otoño',
+                'season_winter': 'Invierno', 'season_xmas': 'Navidad', 'season_special': 'Especial'
+            } %}
+            {% set tierColor = {
+                'bronze': '#8f5d43', 'silver': '#8f9db1', 'gold': '#c9a227',
+                'platinum': '#3f7f93', 'diamond': '#3f78c8', 'master': '#7a42b5', 'legend': '#bfa24e',
+                'magic_spiral': '#5e35b1',
+                'challenge_1': '#e05c2a', 'challenge_2': '#d4287e', 'challenge_3': '#1a7a6e',
+                'challenge_4': '#5b6e8c', 'challenge_5': '#2e3d6b',
+                'season_spring': '#4caf50', 'season_summer': '#f9a825', 'season_fall': '#bf6c1a',
+                'season_winter': '#5b9bd5', 'season_xmas': '#c0392b', 'season_special': '#8e44ad'
+            } %}
+            {% set catEmojis = {
+                'asistencia': '🏋️', 'compras': '💳', 'antiguedad': '📅', 'racha': '🔥',
+                'disciplina': '⭐', 'calificacion': '🌟', 'instructor': '🤵',
+                'comunidad': '🤝', 'habitos': '⏰'
+            } %}
+            {% set catLabels = {
+                'asistencia': 'Asistencia', 'compras': 'Compras', 'antiguedad': 'Antigüedad',
+                'racha': 'Racha', 'disciplina': 'Disciplina', 'calificacion': 'Calificación',
+                'instructor': 'Instructor', 'comunidad': 'Comunidad', 'habitos': 'Hábitos'
+            } %}
+            <div class="user-data-section">
+
+                {# --- Conquistados (abierto por defecto) --- #}
+                <details class="achievement-section" open>
+                    <summary class="achievement-section__header">
+                        <span>🏆 Conquistados{% if earnedAchievements|length > 0 %} <span class="achievement-section__count">{{ earnedAchievements|length }}</span>{% endif %}</span>
+                        <span class="achievement-section__chevron">&#8964;</span>
+                    </summary>
+                    {% if earnedAchievements|length > 0 %}
+                        <div class="achievement-grid">
+                            {% for item in earnedAchievements %}
+                                {% set ach = achievementIndex[item.achievementId] ?? null %}
+                                {% set customIcon  = ach and ach.badgeIcon  ? ach.badgeIcon  : null %}
+                                {% set customLabel = ach and ach.badgeLabel ? ach.badgeLabel : null %}
+                                {% set color = tierColor[item.badgeLevel] ?? '#aaa' %}
+                                <div class="achievement-badge" title="{{ customLabel ?? tierLabel[item.badgeLevel] ?? item.badgeLevel|replace({'_': ' '})|title }} · {{ item.earnedAt|date('d/m/Y') }}">
+                                    <span class="achievement-badge__card" style="border-color: {{ color }}; position: relative;">
+                                        <span class="achievement-badge__emoji">{{ customIcon ?? tierEmoji[item.badgeLevel] ?? '🏅' }}</span>
+                                        <span class="achievement-badge__tier" style="color: {{ color }};">{{ customLabel ?? tierLabel[item.badgeLevel] ?? item.badgeLevel|replace({'_': ' '})|title }}</span>
+                                    </span>
+                                    <span class="achievement-badge__name">{{ item.name }}</span>
+                                    <span class="achievement-badge__date">{{ item.earnedAt|date('d/m/Y') }}</span>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="data-field">
+                            <span class="data-icon">🎯</span>
+                            <div>
+                                <p style="color: #aaa; font-size: 0.88rem; margin: 0;">Aún no has conquistado ningún logro. ¡Sigue entrenando!</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                </details>
+
+                {# --- Por conquistar (cerrado por defecto) --- #}
+                {% if pendingAchievements|length > 0 %}
+                <details class="achievement-section">
+                    <summary class="achievement-section__header">
+                        <span>🔒 Por conquistar <span class="achievement-section__count">{{ pendingAchievements|length }}</span></span>
+                        <span class="achievement-section__chevron">&#8964;</span>
+                    </summary>
+                    <div class="achievement-grid achievement-grid--pending">
+                        {% for ach in pendingAchievements %}
+                            {% set showBar = ach.showProgress and ach.targetValue is not null and ach.targetValue > 0 %}
+                            {% if showBar %}
+                                {% set progressVal = user.getAchievementProgressValue(ach.id) %}
+                                {% set pct = min(100, max(0, ((progressVal / ach.targetValue) * 100)|round(0))) %}
+                            {% endif %}
+                            <div class="achievement-badge achievement-badge--pending" title="{{ catLabels[ach.categoryKey] ?? ach.categoryKey }}">
+                                <span class="achievement-badge__card" style="border-color: #ccc;">
+                                    {% if showBar %}
+                                        <span class="achievement-badge__fill" style="height: {{ pct }}%;"></span>
+                                    {% endif %}
+                                    <span class="achievement-badge__emoji">🔒</span>
+                                    {% if showBar %}
+                                        <span class="achievement-badge__progress-label">{{ pct }}%</span>
+                                    {% else %}
+                                        <span class="achievement-badge__tier" style="color: #bbb;">???</span>
+                                    {% endif %}
+                                </span>
+                                <span class="achievement-badge__name">{{ ach.name }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </details>
+                {% endif %}
+
             </div>
         </div>
     </div>

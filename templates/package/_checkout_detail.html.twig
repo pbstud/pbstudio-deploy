@@ -5,8 +5,9 @@
     <div id="checkout-detail-package">
         <div class="price">
             <a href="#">
-                {% if package.specialPriceActiveNow and package.discountInfo %}
-                    <i class="discount">{{ package.discountInfo }}</i>
+                {% if package.specialPriceActiveNow and package.amount > 0 %}
+                    {% set discountPct = ((package.amount - package.specialPrice) / package.amount * 100)|round %}
+                    <i class="discount">{% if package.discountInfo %}<span style="display:block;font-size:.9em;line-height:1.2;">{{ package.discountInfo }}</span>{% endif %}<span style="display:block;font-size:1.25em;font-weight:700;line-height:1.1;">{{ discountPct }}%</span></i>
                 {% endif %}
                 <div>
                     <p>

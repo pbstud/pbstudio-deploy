@@ -11,7 +11,17 @@
         </small>
     </h3>
 
-    <form id="frmCheckoutLogin" action="{{ path("app_login") }}" method="post" class="auth-modal-form">
+    {% if retry_after %}
+        <div class="auth-throttle-notice" id="authThrottleNotice">
+            <p>Demasiados intentos fallidos. Por favor espera <strong id="authThrottleCountdown">30</strong> segundo(s) antes de volver a intentarlo.</p>
+        </div>
+    {% elseif error %}
+        <div class="auth-modal-error">
+            <p>{{ error.messageKey|trans(error.messageData, 'security') }}</p>
+        </div>
+    {% endif %}
+
+    <form id="frmCheckoutLogin" action="{{ path("app_login") }}" method="post" class="auth-modal-form"{% if retry_after %} data-retry-after="{{ retry_after }}"{% endif %}>
         <input type="email" class="form-control" id="username" name="username" value="{{ last_username }}" placeholder="Correo" required>
         <input type="password" class="form-control" id="password" name="password" placeholder="Contraseña" required>
 
@@ -25,7 +35,7 @@
             </div>
         </div>
 
-        <button type="submit" class="btn-submit auth-modal-submit">Entrar</button>
+        <button type="submit" class="btn-submit auth-modal-submit"{% if retry_after %} disabled{% endif %} id="authSubmitBtn">Entrar</button>
 
         <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
         <input type="hidden" name="_modaltarget" value="{{ app.request.get('_modaltarget') ?: 1 }}">

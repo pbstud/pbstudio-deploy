@@ -1,0 +1,43 @@
+{{ form_start(form, {'attr': {'id': 'form-achievement'}}) }}
+    <div class="row">
+        {{ form_row(form.name, {'row_attr': {'class': 'col-md-6'}}) }}
+        {{ form_row(form.description, {'row_attr': {'class': 'col-md-6'}}) }}
+    </div>
+
+    <div class="row">
+        {{ form_row(form.categoryKey, {'row_attr': {'class': 'col-md-4'}}) }}
+        {{ form_row(form.conditionKey, {'row_attr': {'class': 'col-md-4'}}) }}
+        {{ form_row(form.thresholdType, {'row_attr': {'class': 'col-md-4'}}) }}
+    </div>
+
+    <div class="row">
+        {{ form_row(form.targetValue, {'row_attr': {'class': 'col-md-3'}}) }}
+        {{ form_row(form.comparisonOperator, {'row_attr': {'class': 'col-md-3'}}) }}
+        {{ form_row(form.rewardType, {'row_attr': {'class': 'col-md-3'}}) }}
+        {{ form_row(form.rewardValue, {'row_attr': {'class': 'col-md-3'}}) }}
+    </div>
+
+    <div class="row">
+        {{ form_row(form.badgeLevel, {'row_attr': {'class': 'col-md-3'}}) }}
+        {{ form_row(form.badgeColor, {'row_attr': {'class': 'col-md-3'}}) }}
+        {{ form_row(form.periodType, {'row_attr': {'class': 'col-md-3'}}) }}
+        {{ form_row(form.periodDays, {'row_attr': {'class': 'col-md-3'}}) }}
+    </div>
+
+    <div class="row">
+        {{ form_row(form.periodDeadline, {'row_attr': {'class': 'col-md-3'}}) }}
+        {{ form_row(form.periodWindowStart, {'row_attr': {'class': 'col-md-3'}}) }}
+        {{ form_row(form.sortOrder, {'row_attr': {'class': 'col-md-3'}}) }}
+        {{ form_row(form.visibleProfile, {'row_attr': {'class': 'col-md-2'}}) }}
+        {{ form_row(form.notifyInApp, {'row_attr': {'class': 'col-md-2'}}) }}
+    </div>
+
+    <div class="row">
+        {{ form_row(form.difficulty, {'row_attr': {'class': 'col-md-4'}}) }}
+        {{ form_row(form.active, {'row_attr': {'class': 'col-md-3'}}) }}
+    </div>
+
+    <div class="ln_solid"></div>
+
+    {{ include('backend/default/_btn_save.html.twig', {'button_label': button_label|default('btn.save')}) }}
+{{ form_end(form) }}

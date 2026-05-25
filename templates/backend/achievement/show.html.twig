@@ -1,0 +1,444 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% block title %}Detalles del Logro — {{ achievement.name }}{% endblock %}
+
+{% block content %}
+    {% set badgeIcon = {
+        'bronze':          '🥉',
+        'silver':          '🥈',
+        'gold':            '🥇',
+        'platinum':        '💠',
+        'diamond':         '💎',
+        'master':          '👑',
+        'legend':          '🏆',
+        'challenge_1':     '🎯',
+        'challenge_2':     '⚡',
+        'challenge_3':     '🔥',
+        'challenge_4':     '💪',
+        'challenge_5':     '🛡️',
+        'season_spring':   '🌸',
+        'season_summer':   '☀️',
+        'season_fall':     '🍂',
+        'season_winter':   '❄️',
+        'season_xmas':     '🎄',
+        'season_special':  '✨'
+    } %}
+    {% set badgePts = {
+        'bronze':         100,
+        'silver':         250,
+        'gold':           500,
+        'platinum':       1000,
+        'diamond':        2000,
+        'master':         5000,
+        'legend':         10000,
+        'challenge_1':    300,
+        'challenge_2':    600,
+        'challenge_3':    900,
+        'challenge_4':    1500,
+        'challenge_5':    3000,
+        'season_spring':  400,
+        'season_summer':  400,
+        'season_fall':    400,
+        'season_winter':  400,
+        'season_xmas':    800,
+        'season_special': 1200
+    } %}
+    {% set catColors = {
+        'asistencia':   '#2e86ab',
+        'compras':      '#e07b39',
+        'antiguedad':   '#6d4c7d',
+        'racha':        '#c0392b',
+        'disciplina':   '#27ae60',
+        'calificacion': '#d4a017',
+        'instructor':   '#1a7a6e',
+        'comunidad':    '#d63384',
+        'habitos':      '#5b6e8c'
+    } %}
+    {% set badgeColors = {
+        'bronze':         '#8f5d43',
+        'silver':         '#8f9db1',
+        'gold':           '#c9a227',
+        'platinum':       '#3f7f93',
+        'diamond':        '#3f78c8',
+        'master':         '#7a42b5',
+        'legend':         '#bfa24e',
+        'challenge_1':    '#e05c2a',
+        'challenge_2':    '#d4287e',
+        'challenge_3':    '#1a7a6e',
+        'challenge_4':    '#5b6e8c',
+        'challenge_5':    '#2e3d6b',
+        'season_spring':  '#4caf50',
+        'season_summer':  '#f9a825',
+        'season_fall':    '#bf6c1a',
+        'season_winter':  '#5b9bd5',
+        'season_xmas':    '#c0392b',
+        'season_special': '#8e44ad'
+    } %}
+
+    <div class="">
+        <div class="page-title">
+            <div class="title_left">
+                <h3>
+                    <a href="{{ path('backend_achievement') }}" class="btn btn-default btn-return-to">
+                        <i class="fa fa-arrow-left" aria-hidden="true"></i>
+                    </a>
+                    Logros
+                </h3>
+            </div>
+        </div>
+
+        <div class="clearfix"></div>
+
+    <div class="row">
+        {# ── Panel del logro ── #}
+        <div class="col-md-4 col-sm-12 col-xs-12">
+            <div class="x_panel">
+                <div class="x_title">
+                    <h2>Vista previa</h2>
+                    <div class="nav navbar-right panel_toolbox">
+                        <a href="{{ path('backend_achievement_edit', {'id': achievement.id}) }}" class="btn btn-primary btn-xs">
+                            <i class="fa fa-pencil" aria-hidden="true"></i> Editar
+                        </a>
+                    </div>
+                    <div class="clearfix"></div>
+                </div>
+                <div class="x_content">
+                    {# Tarjeta visual #}
+                    <div style="background: linear-gradient(135deg,#eef2ff 0%,#f4f7ff 100%); border:1.5px solid #c0d0f8; border-radius:12px; padding:16px; margin-bottom:16px;">
+                        <div style="font-size:40px; text-align:center; margin-bottom:8px;">
+                            {{ achievement.badgeIcon ?? badgeIcon[achievement.badgeLevel] ?? '🏆' }}
+                        </div>
+                        <div style="font-size:14px; font-weight:700; color:#1a2340; text-align:center; margin-bottom:4px;">
+                            {{ achievement.name }}
+                        </div>
+                        {% if achievement.description %}
+                            <div style="font-size:11px; color:#556; text-align:center; line-height:1.4;">
+                                {{ achievement.description }}
+                            </div>
+                        {% endif %}
+                        {% if achievement.rewardValue is not null or (achievement.badgeLevel and badgePts[achievement.badgeLevel] is defined) %}
+                            <div style="text-align:center; margin-top:8px;">
+                                <span style="display:inline-block; background:#2a5bd7; color:white; border-radius:12px; padding:2px 10px; font-size:10px; font-weight:700;">
+                                    {{ achievement.rewardValue ?? badgePts[achievement.badgeLevel] }} pts
+                                </span>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {# Datos completos — misma lógica de formateo que el listado #}
+                    <table class="table table-condensed" style="font-size:12px;">
+                        <tbody>
+                            <tr>
+                                <td class="text-muted" style="width:45%;">ID</td>
+                                <td><strong>{{ achievement.id }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Categoría</td>
+                                <td>
+                                    {% set catColor = catColors[achievement.categoryKey] ?? '#666' %}
+                                    <strong style="color:{{ catColor }};">
+                                        {{ categoryLabels[achievement.categoryKey] ?? achievement.categoryKey }}
+                                    </strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Condición</td>
+                                <td><strong>{{ conditionLabels[achievement.conditionKey] ?? achievement.conditionKey }}</strong></td>
+                            </tr>
+                            {% if achievement.difficulty %}
+                            <tr>
+                                <td class="text-muted">
+                                    {% if achievement.conditionKey == 'challenges_completed' %}
+                                        Filtro dificultad
+                                    {% else %}
+                                        Dificultad (reto)
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% set diffIcons = {'easy': '🟢', 'medium': '🟡', 'hard': '🟠', 'expert': '🔴'} %}
+                                    {% set diffLabels = {'easy': 'Fácil', 'medium': 'Media', 'hard': 'Difícil', 'expert': 'Experto'} %}
+                                    <strong>{{ diffIcons[achievement.difficulty] ?? '' }} {{ diffLabels[achievement.difficulty] ?? achievement.difficulty }}</strong>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% set ctx = achievement.conditionContext %}
+                            {% if ctx.packageIds is defined and ctx.packageIds|length > 0 %}
+                            <tr>
+                                <td class="text-muted">Paquetes</td>
+                                <td>
+                                    {% for pkgId in ctx.packageIds %}
+                                        <div>📦 {{ packageLabels[pkgId] ?? 'Paquete #' ~ pkgId }}</div>
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if ctx.disciplineIds is defined and ctx.disciplineIds|length > 0 %}
+                            <tr>
+                                <td class="text-muted">Disciplina{{ ctx.disciplineIds|length > 1 ? 's' : '' }}</td>
+                                <td>
+                                    {% for discId in ctx.disciplineIds %}
+                                        <div>{% if discId == 0 %}🧘 Clases individuales{% else %}🥋 {{ disciplineLabels[discId] ?? 'Disciplina #' ~ discId }}{% endif %}</div>
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if ctx.attendancesRequired is defined and ctx.attendancesRequired is not null %}
+                            <tr>
+                                <td class="text-muted">Asistencias requeridas</td>
+                                <td>
+                                    <strong>{{ ctx.attendancesRequired }}</strong> clase{{ ctx.attendancesRequired != 1 ? 's' : '' }}
+                                    {% if ctx.attendancesScope is defined and ctx.attendancesScope == 'each' %}
+                                        <span class="label label-default" style="margin-left: 6px;">por disciplina</span>
+                                    {% else %}
+                                        <span class="label label-default" style="margin-left: 6px;">en total entre todas</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if ctx.instructorIds is defined and ctx.instructorIds|length > 0 %}
+                            <tr>
+                                <td class="text-muted">Instructor{{ ctx.instructorIds|length > 1 ? 'es' : '' }}</td>
+                                <td>
+                                    {% for instrId in ctx.instructorIds %}
+                                        <div>👤 {{ instructorLabels[instrId] ?? 'Instructor #' ~ instrId }}</div>
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% if ctx.timeSlotIds is defined and ctx.timeSlotIds|length > 0 %}
+                            <tr>
+                                <td class="text-muted">Horario{{ ctx.timeSlotIds|length > 1 ? 's' : '' }}</td>
+                                <td>
+                                    {% for slot in ctx.timeSlotIds %}
+                                        <div>🕐 {{ slot }}</div>
+                                    {% endfor %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <td class="text-muted">Meta</td>
+                                <td>
+                                    {% set val = achievement.targetValue %}
+                                    {% set type = achievement.thresholdType %}
+                                    <strong>
+                                        {% if type == 'amount' %}
+                                            ${{ val|number_format(0, '.', ',') }}
+                                        {% elseif type == 'days' %}
+                                            {{ val|number_format(0) }} días
+                                        {% elseif type == 'months' %}
+                                            {% if val < 12 %}
+                                                {{ val|number_format(0) }} meses
+                                            {% elseif val == 12 %}
+                                                1 año
+                                            {% else %}
+                                                {{ (val / 12)|round(1) }} años
+                                            {% endif %}
+                                        {% elseif type == 'rating' %}
+                                            ≥ {{ val }} ★
+                                        {% else %}
+                                            {{ val|number_format(0) }}
+                                        {% endif %}
+                                    </strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Tipo umbral</td>
+                                <td><strong>{{ thresholdTypeLabels[achievement.thresholdType] ?? achievement.thresholdType }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Comparador</td>
+                                <td><strong>{{ comparisonLabels[achievement.comparisonOperator] ?? achievement.comparisonOperator }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Nivel</td>
+                                <td>
+                                    {% if achievement.badgeLevel %}
+                                        <strong style="color:{{ badgeColors[achievement.badgeLevel] ?? '#aaa' }};">
+                                            {{ achievement.badgeIcon ?? badgeIcon[achievement.badgeLevel] ?? '' }} {{ achievement.badgeLabel ?? badgeLevelLabels[achievement.badgeLevel] ?? achievement.badgeLevel|replace({'_': ' '})|title }}
+                                        </strong>
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Recompensa</td>
+                                <td>
+                                    {% if achievement.rewardValue is not null %}
+                                        <strong style="color:{{ badgeColors[achievement.badgeLevel] ?? '#aaa' }};">
+                                            {{ achievement.rewardValue }} pts
+                                        </strong>
+                                    {% elseif achievement.badgeLevel and badgePts[achievement.badgeLevel] is defined %}
+                                        <strong style="color:{{ badgeColors[achievement.badgeLevel] ?? '#aaa' }};">
+                                            {{ badgePts[achievement.badgeLevel] }} pts
+                                        </strong>
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Período</td>
+                                <td>
+                                    {% if not achievement.periodType or achievement.periodType == 'none' %}
+                                        <span class="text-muted">Sin límite</span>
+                                    {% elseif achievement.periodType == 'days' %}
+                                        <strong>{{ achievement.periodDays }} días</strong>
+                                    {% elseif achievement.periodType == 'deadline' and achievement.periodDeadline %}
+                                        <strong>Antes del {{ achievement.periodDeadline|date('d/m/Y') }}</strong>
+                                    {% elseif achievement.periodType == 'window' %}
+                                        <strong>
+                                            {%- if achievement.periodWindowStart %}{{ achievement.periodWindowStart|date('d/m/Y') }}{% else %}&mdash;{% endif %}
+                                            &rarr;
+                                            {%- if achievement.periodDeadline %}{{ achievement.periodDeadline|date('d/m/Y') }}{% else %}&mdash;{% endif %}
+                                        </strong>
+                                    {% else %}
+                                        <strong>{{ achievement.periodType }}</strong>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Mostrar progreso</td>
+                                <td>
+                                    {% if achievement.showProgress %}
+                                        <span class="label label-info">Sí</span>
+                                    {% else %}
+                                        <span class="label label-default">No</span>
+                                    {% endif %}
+                                </td>
+                            </tr>                            <tr>
+                                <td class="text-muted">Contar desde creaci&oacute;n</td>
+                                <td>
+                                    {% if achievement.includeHistoricalData %}
+                                        <span class="label label-warning">&#128197; S&iacute;</span>
+                                    {% else %}
+                                        <span class="label label-default">No</span>
+                                    {% endif %}
+                                </td>
+                            </tr>                            <tr>
+                                <td class="text-muted">Visible en perfil</td>
+                                <td>
+                                    {% if achievement.visibleProfile %}
+                                        <span class="label label-info">Sí</span>
+                                    {% else %}
+                                        <span class="label label-default">No</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Notif. in-app</td>
+                                <td>
+                                    {% if achievement.notifyInApp %}
+                                        <span class="label label-info">Sí</span>
+                                    {% else %}
+                                        <span class="label label-default">No</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Notif. especial</td>
+                                <td>
+                                    {% if achievement.notifySpecial %}
+                                        <span class="label label-warning">✨ Sí</span>
+                                    {% else %}
+                                        <span class="label label-default">No</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+
+                            <tr>
+                                <td class="text-muted">Activo</td>
+                                <td>
+                                    {% if achievement.active %}
+                                        <span class="label label-primary">Sí</span>
+                                    {% else %}
+                                        <span class="label label-danger">No</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Usuarios</td>
+                                <td><strong style="color:#2a5bd7;">{{ totalUsers }}</strong></td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Creado</td>
+                                <td>
+                                    {{ achievement.createdAt|date('d/m/Y H:i') }}
+                                    {% if achievement.createdBy %}
+                                        <div class="text-muted" style="font-size:10px;">por {{ achievement.createdBy }}</div>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Modificado</td>
+                                <td>
+                                    {% if achievement.updatedAt and achievement.updatedAt != achievement.createdAt %}
+                                        {{ achievement.updatedAt|date('d/m/Y H:i') }}
+                                        {% if achievement.updatedBy %}
+                                            <div class="text-muted" style="font-size:10px;">por {{ achievement.updatedBy }}</div>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        {# ── Listado de usuarios ── #}
+        <div class="col-md-8 col-sm-12 col-xs-12">
+            <div class="x_panel">
+                <div class="x_title">
+                    <h2>Usuarios que han ganado este logro <small>({{ totalUsers }})</small></h2>
+                    <div class="clearfix"></div>
+                </div>
+                <div class="x_content">
+                    {% if pagination.totalItemCount > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Nombre</th>
+                                        <th>Email</th>
+                                        <th>Fecha ganada</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in pagination %}
+                                        <tr>
+                                            <td>
+                                                <a href="{{ path('backend_user_show', {'id': user.id}) }}">
+                                                    {{ user.id }}
+                                                </a>
+                                            </td>
+                                            <td>{{ user.name }} {{ user.lastname }}</td>
+                                            <td>{{ user.email }}</td>
+                                            <td>
+                                                {% set earnedAt = earnedAtMap[user.id] ?? null %}
+                                                {% if earnedAt %}
+                                                    {{ earnedAt|date('d/m/Y') }}
+                                                {% else %}
+                                                    <span class="text-muted">—</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {# Paginación #}
+                        {{ knp_pagination_render(pagination) }}
+                    {% else %}
+                        {{ include('backend/default/partials/not_records.html.twig') }}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+{% endblock %}

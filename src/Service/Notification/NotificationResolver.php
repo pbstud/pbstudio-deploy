@@ -18,6 +18,46 @@ final readonly class NotificationResolver
     }
 
     /**
+     * Resuelve las targetUrl de un array de notificaciones en una sola pasada,
+     * precargando las reservaciones necesarias para evitar el problema N+1.
+     *
+     * @param Notification[] $notifications
+     * @return array<int, array{targetUrl: string, fallback: bool, message: string|null}> indexado por notification.id
+     */
+    public function resolveMany(array $notifications, User $user): array
+    {
+        // Recolectar todos los reservation_id de las notificaciones rating_pending
+        $reservationIds = [];
+        foreach ($notifications as $n) {
+            if ($n->getType() === 'rating_pending') {
+                $rid = $n->getPayload()['reservation_id'] ?? null;
+                if ($rid !== null) {
+                    $reservationIds[(int) $rid] = true;
+                }
+            }
+        }
+
+        // Una sola query para todas las reservaciones necesarias
+        $reservationMap = [];
+        if ($reservationIds) {
+            $reservations = $this->reservationRepository->findBy([
+                'id'   => array_keys($reservationIds),
+                'user' => $user,
+            ]);
+            foreach ($reservations as $r) {
+                $reservationMap[$r->getId()] = $r;
+            }
+        }
+
+        $result = [];
+        foreach ($notifications as $n) {
+            $result[$n->getId()] = $this->resolveWithMap($n, $reservationMap);
+        }
+
+        return $result;
+    }
+
+    /**
      * @return array{targetUrl: string, fallback: bool, message: string|null}
      */
     public function resolve(Notification $notification, User $user): array
@@ -40,6 +80,13 @@ final readonly class NotificationResolver
             'payment_confirmed'        => $this->fallbackTo(route: 'sessions_available'),
             'transaction_expired'      => $this->fallbackTo(route: 'transaction'),
             'transaction_expiring_soon' => $this->informational(),
+
+            // Logros
+            'achievement_unlocked',
+            'achievement_unlocked_special' => $this->fallbackTo(
+                route: 'profile',
+                routeParams: ['_fragment' => 'logros'],
+            ),
 
             // Cuenta
             'welcome'                  => $this->fallbackTo(
@@ -86,6 +133,77 @@ final readonly class NotificationResolver
             fallback: true,
             message: 'No se encontro la clase para calificar. Mostrando el historial de clases.',
         );
+    }
+
+    /**
+     * Versión interna de resolve() que usa un mapa precargado de reservaciones.
+     *
+     * @param array<int, object> $reservationMap
+     * @return array{targetUrl: string, fallback: bool, message: string|null}
+     */
+    private function resolveWithMap(Notification $notification, array $reservationMap): array
+    {
+        if ($notification->getType() !== 'rating_pending') {
+            // Para todos los tipos que no necesitan la BD, resolve() es puro
+            return $this->resolveType($notification);
+        }
+
+        $payload = $notification->getPayload();
+        $reservationId = (int) ($payload['reservation_id'] ?? 0);
+        $reservation = $reservationMap[$reservationId] ?? null;
+
+        if ($reservation !== null) {
+            return $this->fallbackTo(
+                route: 'session_used_rate',
+                routeParams: ['id' => $reservation->getId()],
+            );
+        }
+
+        return $this->fallbackTo(
+            route: 'sessions_used',
+            fallback: true,
+            message: 'No se encontro la clase para calificar. Mostrando el historial de clases.',
+        );
+    }
+
+    /**
+     * Resolución pura por tipo (sin acceso a BD).
+     *
+     * @return array{targetUrl: string, fallback: bool, message: string|null}
+     */
+    private function resolveType(Notification $notification): array
+    {
+        return match ($notification->getType()) {
+            'reservation_confirmed'    => $this->fallbackTo(route: 'reserved_sessions'),
+            'reservation_cancelled'    => $this->informational(),
+            'waiting_list_promoted'    => $this->fallbackTo(route: 'reserved_sessions'),
+            'waiting_list_confirmed'   => $this->fallbackTo(route: 'profile_waiting_list'),
+            'waiting_list_denied'      => $this->informational(),
+            'waiting_list_expired'     => $this->informational(),
+            'session_reminder'         => $this->fallbackTo(route: 'reserved_sessions'),
+            'session_updated'          => $this->fallbackTo(route: 'reserved_sessions'),
+            'payment_confirmed'        => $this->fallbackTo(route: 'sessions_available'),
+            'transaction_expired'      => $this->fallbackTo(route: 'transaction'),
+            'transaction_expiring_soon' => $this->informational(),
+            'achievement_unlocked',
+            'achievement_unlocked_special' => $this->fallbackTo(
+                route: 'profile',
+                routeParams: ['_fragment' => 'logros'],
+            ),
+            'welcome' => $this->fallbackTo(
+                route: 'page',
+                routeParams: ['slug' => 'quienes-somos'],
+            ),
+            'password_changed' => $this->fallbackTo(
+                route: 'profile',
+                routeParams: ['_fragment' => 'perfil'],
+            ),
+            default => $this->fallbackTo(
+                route: 'profile',
+                fallback: true,
+                message: 'No se pudo abrir el destino de la notificacion. Mostramos tu cuenta general.',
+            ),
+        };
     }
 
     /**

@@ -36,15 +36,19 @@ class NotificationController extends AbstractController
 
         $items = $this->notificationRepository->findByUser($user, $page, $limit);
 
+        // Resuelve todas las targetUrl en una sola pasada (evita N+1 en rating_pending)
+        $resolvedUrls = $this->resolver->resolveMany($items, $user);
+
         $data = array_map(fn ($n) => [
             'id'        => $n->getId(),
             'type'      => $n->getType(),
             'title'     => $n->getTitle(),
             'body'      => $n->getBody(),
             'priority'  => $n->getPriority(),
+            'payload'   => $n->getPayload(),
             'readAt'    => $n->getReadAt()?->format(\DateTimeInterface::ATOM),
             'createdAt' => $n->getCreatedAt()->format(\DateTimeInterface::ATOM),
-            'targetUrl' => $this->resolver->resolve($n, $user)['targetUrl'],
+            'targetUrl' => $resolvedUrls[$n->getId()]['targetUrl'] ?? null,
         ], $items);
 
         return $this->json(['data' => $data, 'page' => $page, 'limit' => $limit]);
@@ -73,7 +77,7 @@ class NotificationController extends AbstractController
 
             $lastCount = -1;
             $iterations = 0;
-            $maxIterations = 360; // 1 hora máx (360 * 10s)
+            $maxIterations = 18000; // 1 hora máx (18000 * 200ms)
 
             while ($iterations < $maxIterations) {
                 $iterations++;
@@ -100,7 +104,7 @@ class NotificationController extends AbstractController
                 }
 
                 flush();
-                sleep(10);
+                usleep(200_000); // 200 ms
             }
         });
 

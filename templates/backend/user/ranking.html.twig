@@ -1,0 +1,201 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% block title %}Ranking de Usuarios{% endblock %}
+
+{% block section %}
+<div class="row">
+    <div class="col-xs-12">
+        <div class="x_panel">
+            <div class="x_title">
+                <h2><i class="fa fa-bar-chart" aria-hidden="true"></i> Filtros</h2>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+                <form method="get" action="{{ path('backend_user_ranking') }}">
+                    <div class="row">
+                        <div class="col-md-4 col-sm-4 col-xs-12">
+                            <div class="form-group">
+                                <label for="rank_date_start">Fecha inicio:</label>
+                                <div class="date-action-field">
+                                    <input type="text"
+                                           id="rank_date_start"
+                                           name="rank_date_start"
+                                           class="form-control datepicker"
+                                           value="{{ rank_date_start }}"
+                                           autocomplete="off"
+                                           placeholder="dd/mm/aa" />
+                                    <span class="date-action-icon" aria-hidden="true">
+                                        <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                                    </span>
+                                    <button type="button" class="btn btn-default date-action-clear" style="right: -5px;" onclick="document.getElementById('rank_date_start').value = '';" title="Limpiar fecha" aria-label="Limpiar fecha">
+                                        <i class="fa fa-times" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4 col-xs-12">
+                            <div class="form-group">
+                                <label for="rank_date_end">Fecha de término:</label>
+                                <div class="date-action-field">
+                                    <input type="text"
+                                           id="rank_date_end"
+                                           name="rank_date_end"
+                                           class="form-control datepicker"
+                                           value="{{ rank_date_end }}"
+                                           autocomplete="off"
+                                           placeholder="dd/mm/aa" />
+                                    <span class="date-action-icon" aria-hidden="true">
+                                        <span class="glyphicon glyphicon-calendar" aria-hidden="true"></span>
+                                    </span>
+                                    <button type="button" class="btn btn-default date-action-clear" style="right: -5px;" onclick="document.getElementById('rank_date_end').value = '';" title="Limpiar fecha" aria-label="Limpiar fecha">
+                                        <i class="fa fa-times" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 col-sm-4 col-xs-12">
+                            <div class="form-group">
+                                <label for="rank_limit">Mostrar top:</label>
+                                <input type="number"
+                                       id="rank_limit"
+                                       name="rank_limit"
+                                       class="form-control"
+                                       value="{{ rank_limit }}"
+                                       min="1"
+                                       placeholder="Sin límite (todos)" />
+                            </div>
+                            <div class="text-right">
+                                <button type="submit" class="btn btn-primary">Recalcular</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    {# --- Top Compradores --- #}
+    <div class="col-md-6 col-xs-12">
+        <div class="x_panel">
+            <div class="x_title">
+                <h2><i class="fa fa-dollar" aria-hidden="true"></i> Top Compradores</h2>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+                {% if spendingPagination.totalItemCount > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover table-condensed">
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width:40px;">#</th>
+                                    <th>Usuario</th>
+                                    <th>Sucursal</th>
+                                    <th class="text-right">Total gastado</th>
+                                    <th class="text-right">Compras</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% set offset = (spendingPagination.currentPageNumber - 1) * spendingPagination.itemNumberPerPage %}
+                                {% for client in spendingPagination %}
+                                    {% set pos = offset + loop.index %}
+                                    <tr>
+                                        <td class="text-center">
+                                            {% if pos == 1 %}
+                                                <span style="color:#f0a500; font-weight:700;">1</span>
+                                            {% elseif pos == 2 %}
+                                                <span style="color:#aaa; font-weight:700;">2</span>
+                                            {% elseif pos == 3 %}
+                                                <span style="color:#cd7f32; font-weight:700;">3</span>
+                                            {% else %}
+                                                {{ pos }}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if client.userId is not null and is_allowed_route('backend_user_show') %}
+                                                <a href="{{ path('backend_user_show', {id: client.userId}) }}">{{ client.name }}</a>
+                                            {% else %}
+                                                {{ client.name }}
+                                            {% endif %}
+                                            {% if client.email %}<br><small class="text-muted">{{ client.email }}</small>{% endif %}
+                                        </td>
+                                        <td><small>{{ client.branchOfficeName }}</small></td>
+                                        <td class="text-right"><strong>${{ client.totalSpent|number_format(2, '.', ',') }}</strong></td>
+                                        <td class="text-right">{{ client.purchases }}</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center">
+                        {{ knp_pagination_render(spendingPagination) }}
+                    </div>
+                {% else %}
+                    {{ include('backend/default/partials/not_records.html.twig') }}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {# --- Top Asistencias --- #}
+    <div class="col-md-6 col-xs-12">
+        <div class="x_panel">
+            <div class="x_title">
+                <h2><i class="fa fa-check-square-o" aria-hidden="true"></i> Top Asistencias</h2>
+                <div class="clearfix"></div>
+            </div>
+            <div class="x_content">
+                {% if attendancePagination.totalItemCount > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover table-condensed">
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width:40px;">#</th>
+                                    <th>Usuario</th>
+                                    <th>Sucursal</th>
+                                    <th class="text-right">Asistencias</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% set offset = (attendancePagination.currentPageNumber - 1) * attendancePagination.itemNumberPerPage %}
+                                {% for user in attendancePagination %}
+                                    {% set pos = offset + loop.index %}
+                                    <tr>
+                                        <td class="text-center">
+                                            {% if pos == 1 %}
+                                                <span style="color:#f0a500; font-weight:700;">1</span>
+                                            {% elseif pos == 2 %}
+                                                <span style="color:#aaa; font-weight:700;">2</span>
+                                            {% elseif pos == 3 %}
+                                                <span style="color:#cd7f32; font-weight:700;">3</span>
+                                            {% else %}
+                                                {{ pos }}
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if is_allowed_route('backend_user_show') %}
+                                                <a href="{{ path('backend_user_show', {id: user.userId}) }}">{{ user.name }}</a>
+                                            {% else %}
+                                                {{ user.name }}
+                                            {% endif %}
+                                            {% if user.email %}<br><small class="text-muted">{{ user.email }}</small>{% endif %}
+                                        </td>
+                                        <td><small>{{ user.branchOfficeName }}</small></td>
+                                        <td class="text-right"><strong>{{ user.attendanceCount }}</strong></td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center">
+                        {{ knp_pagination_render(attendancePagination) }}
+                    </div>
+                {% else %}
+                    {{ include('backend/default/partials/not_records.html.twig') }}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

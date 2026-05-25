@@ -564,8 +564,8 @@ class ReservationRepository extends ServiceEntityRepository
 
         $qb
             ->select('b.id as branchOfficeId')
-            ->addSelect('SUM(CASE WHEN r.isAvailable = true THEN 1 ELSE 0 END) as reserved')
-            ->addSelect('SUM(CASE WHEN r.isAvailable = true AND r.attended = true THEN 1 ELSE 0 END) as attended')
+            ->addSelect('SUM(CASE WHEN r.isAvailable = true AND s.status = :statusClosed THEN 1 ELSE 0 END) as reserved')
+            ->addSelect('SUM(CASE WHEN r.isAvailable = true AND s.status = :statusClosed AND r.attended = true THEN 1 ELSE 0 END) as attended')
             ->addSelect('SUM(CASE WHEN r.isAvailable = true AND s.status = :statusClosed AND (r.attended = false OR r.attended IS NULL) THEN 1 ELSE 0 END) as notAttended')
             ->join('r.session', 's')
             ->join('s.branchOffice', 'b')
@@ -1197,5 +1197,629 @@ class ReservationRepository extends ServiceEntityRepository
             ->orderBy('r.placeNumber', 'ASC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Returns the total number of sessions actually attended by the user (attended = true).
+     * Used by the achievement evaluator for the `attended_classes` condition.
+     */
+    public function countAttendedByUser(
+        User $user,
+        ?\DateTimeImmutable $from = null,
+        ?\DateTimeInterface $until = null,
+    ): int {
+        $qb = $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->join('r.session', 's')
+            ->where('r.user = :user')
+            ->andWhere('r.attended = true')
+            ->setParameter('user', $user);
+
+        if ($from !== null) {
+            $qb->andWhere('s.dateStart >= :from')
+               ->setParameter('from', $from->format('Y-m-d H:i:s'));
+        }
+
+        if ($until !== null) {
+            $qb->andWhere('s.dateStart <= :until')
+               ->setParameter('until', $until->format('Y-m-d') . ' 23:59:59');
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Returns the count of attended classes for the given user filtered by one or more discipline IDs.
+     * Optionally restricted to group sessions only (includeIndividual = false).
+     * Used by AttendanceConditionResolver::resolveDisciplineClasses().
+     *
+     * @param int[] $disciplineIds
+     */
+    public function countAttendedByUserAndDisciplines(
+        User $user,
+        array $disciplineIds,
+        bool $includeIndividual = true,
+        ?\DateTimeImmutable $from = null,
+        ?\DateTimeInterface $until = null,
+    ): int {
+        $qb = $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->join('r.session', 's')
+            ->where('r.user = :user')
+            ->andWhere('r.attended = true')
+            ->andWhere('s.discipline IN (:disciplineIds)')
+            ->setParameter('user', $user)
+            ->setParameter('disciplineIds', $disciplineIds);
+
+        if (!$includeIndividual) {
+            $qb->andWhere('s.type = :groupType')
+               ->setParameter('groupType', 'g');
+        }
+
+        if ($from !== null) {
+            $qb->andWhere('s.dateStart >= :from')
+               ->setParameter('from', $from->format('Y-m-d H:i:s'));
+        }
+
+        if ($until !== null) {
+            $qb->andWhere('s.dateStart <= :until')
+               ->setParameter('until', $until->format('Y-m-d') . ' 23:59:59');
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Returns the attended-class count per discipline for the given user.
+     * Only group sessions (type = 'g') are counted; disciplines with zero attendance are omitted.
+     * Used by AttendanceConditionResolver::resolveMultiDisciplineCount().
+     *
+     * @param int[] $disciplineIds  Real discipline IDs (> 0). ID 0 (individual) is handled separately.
+     * @return array<int, int>      Map of [disciplineId => attendedCount].
+     */
+    public function findAttendedCountsPerDiscipline(
+        User $user,
+        array $disciplineIds,
+        ?\DateTimeImmutable $from = null,
+        ?\DateTimeInterface $until = null,
+    ): array {
+        $realIds = array_values(array_filter($disciplineIds, static fn (int $id) => $id > 0));
+        // $realIds = [] means "any discipline" mode — no IN filter applied, all group disciplines returned.
+
+        $qb = $this->createQueryBuilder('r')
+            ->select('IDENTITY(s.discipline) AS discId, COUNT(r.id) AS cnt')
+            ->join('r.session', 's')
+            ->where('r.user = :user')
+            ->andWhere('r.attended = true')
+            ->andWhere('s.type = :groupType')
+            ->andWhere('s.discipline IS NOT NULL')
+            ->groupBy('s.discipline')
+            ->setParameter('user', $user)
+            ->setParameter('groupType', 'g');
+
+        if ($realIds !== []) {
+            $qb->andWhere('s.discipline IN (:disciplineIds)')
+               ->setParameter('disciplineIds', $realIds);
+        }
+
+        if ($from !== null) {
+            $qb->andWhere('s.dateStart >= :from')
+               ->setParameter('from', $from->format('Y-m-d H:i:s'));
+        }
+
+        if ($until !== null) {
+            $qb->andWhere('s.dateStart <= :until')
+               ->setParameter('until', $until->format('Y-m-d') . ' 23:59:59');
+        }
+
+        $result = [];
+        foreach ($qb->getQuery()->getArrayResult() as $row) {
+            $result[(int) $row['discId']] = (int) $row['cnt'];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Returns the number of individual sessions (type = 'i') attended by the user.
+     * Used by AttendanceConditionResolver::resolveMultiDisciplineCount() when ID 0
+     * (INDIVIDUAL_DISCIPLINE_ID) is present in the achievement's disciplineIds context.
+     */
+    public function countIndividualSessionsAttended(
+        User $user,
+        ?\DateTimeImmutable $from = null,
+        ?\DateTimeInterface $until = null,
+    ): int {
+        $qb = $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->join('r.session', 's')
+            ->where('r.user = :user')
+            ->andWhere('r.attended = true')
+            ->andWhere('s.type = :type')
+            ->setParameter('user', $user)
+            ->setParameter('type', 'i');
+
+        if ($from !== null) {
+            $qb->andWhere('s.dateStart >= :from')
+               ->setParameter('from', $from->format('Y-m-d H:i:s'));
+        }
+
+        if ($until !== null) {
+            $qb->andWhere('s.dateStart <= :until')
+               ->setParameter('until', $until->format('Y-m-d') . ' 23:59:59');
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Returns the count of distinct instructors whose attended group sessions the user has taken.
+     * Sessions with a null instructor are excluded from the count.
+     *
+     * The period bounds are applied on session.dateStart, consistent with the other
+     * attendance-based achievement queries.
+     *
+     * Used by the achievement evaluator for the `unique_instructors_count` condition.
+     *
+     * @param \DateTimeImmutable|null $from  Count only sessions on or after this date.
+     * @param \DateTimeInterface|null $until Count only sessions on or before this date.
+     */
+    public function countDistinctInstructorsByUser(
+        User $user,
+        ?\DateTimeImmutable $from = null,
+        ?\DateTimeInterface $until = null,
+    ): int {
+        $qb = $this->createQueryBuilder('r')
+            ->select('COUNT(DISTINCT IDENTITY(s.instructor))')
+            ->join('r.session', 's')
+            ->where('r.user = :user')
+            ->andWhere('r.attended = true')
+            ->andWhere('s.instructor IS NOT NULL')
+            ->setParameter('user', $user);
+
+        if ($from !== null) {
+            $qb->andWhere('s.dateStart >= :from')
+               ->setParameter('from', $from->format('Y-m-d H:i:s'));
+        }
+
+        if ($until !== null) {
+            $qb->andWhere('s.dateStart <= :until')
+               ->setParameter('until', $until->format('Y-m-d') . ' 23:59:59');
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Returns the count of attended reservations for sessions that start before 12:00 (morning).
+     *
+     * Uses s.timeStart directly (mapped as TIME column) rather than a TIME() SQL function,
+     * since the column already stores only the time component. The comparison
+     * `s.timeStart < :morningCutoff` is evaluated natively as a TIME comparison in MySQL.
+     *
+     * Period bounds are applied on s.dateStart (date component), consistent with other
+     * attendance-based achievement queries.
+     *
+     * Used by the achievement evaluator for the `checkin_morning_count` condition.
+     *
+     * @param \DateTimeImmutable|null $from  Count only sessions on or after this date.
+     * @param \DateTimeInterface|null $until Count only sessions on or before this date.
+     */
+    public function countMorningAttendanceByUser(
+        User $user,
+        ?\DateTimeImmutable $from = null,
+        ?\DateTimeInterface $until = null,
+    ): int {
+        $qb = $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->join('r.session', 's')
+            ->where('r.user = :user')
+            ->andWhere('r.attended = true')
+            ->andWhere('s.timeStart < :morningCutoff')
+            ->setParameter('user', $user)
+            ->setParameter('morningCutoff', new \DateTime('12:00:00'));
+
+        if ($from !== null) {
+            $qb->andWhere('s.dateStart >= :from')
+               ->setParameter('from', $from->format('Y-m-d'));
+        }
+
+        if ($until !== null) {
+            $qb->andWhere('s.dateStart <= :until')
+               ->setParameter('until', $until->format('Y-m-d') . ' 23:59:59');
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Returns the count of attended reservations for sessions held on a Saturday or Sunday.
+     *
+     * Uses DAYOFWEEK(s.dateStart) — registered as a custom DQL function via DoctrineExtensions.
+     * MySQL DAYOFWEEK() values: 1 = Sunday, 7 = Saturday. No time-of-day filter is applied;
+     * any session on those days qualifies regardless of its start hour.
+     *
+     * Period bounds are applied on s.dateStart (date component), consistent with other
+     * attendance-based achievement queries.
+     *
+     * Used by the achievement evaluator for the `weekend_attendance` condition.
+     *
+     * @param \DateTimeImmutable|null $from  Count only sessions on or after this date.
+     * @param \DateTimeInterface|null $until Count only sessions on or before this date.
+     */
+    public function countWeekendAttendanceByUser(
+        User $user,
+        ?\DateTimeImmutable $from = null,
+        ?\DateTimeInterface $until = null,
+    ): int {
+        $qb = $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->join('r.session', 's')
+            ->where('r.user = :user')
+            ->andWhere('r.attended = true')
+            ->andWhere('DAYOFWEEK(s.dateStart) IN (1, 7)')
+            ->setParameter('user', $user);
+
+        if ($from !== null) {
+            $qb->andWhere('s.dateStart >= :from')
+               ->setParameter('from', $from->format('Y-m-d'));
+        }
+
+        if ($until !== null) {
+            $qb->andWhere('s.dateStart <= :until')
+               ->setParameter('until', $until->format('Y-m-d') . ' 23:59:59');
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Returns the count of attended reservations for sessions that start at or after 12:00 (evening/vespertino).
+     *
+     * Uses s.timeStart directly (mapped as TIME column) rather than a TIME() SQL function,
+     * since the column already stores only the time component. The comparison
+     * `s.timeStart >= :eveningStart` is evaluated natively as a TIME comparison in MySQL.
+     *
+     * Period bounds are applied on s.dateStart (date component), consistent with other
+     * attendance-based achievement queries.
+     *
+     * Used by the achievement evaluator for the `checkin_evening_count` condition.
+     *
+     * @param \DateTimeImmutable|null $from  Count only sessions on or after this date.
+     * @param \DateTimeInterface|null $until Count only sessions on or before this date.
+     */
+    public function countEveningAttendanceByUser(
+        User $user,
+        ?\DateTimeImmutable $from = null,
+        ?\DateTimeInterface $until = null,
+    ): int {
+        $qb = $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->join('r.session', 's')
+            ->where('r.user = :user')
+            ->andWhere('r.attended = true')
+            ->andWhere('s.timeStart >= :eveningStart')
+            ->setParameter('user', $user)
+            ->setParameter('eveningStart', new \DateTime('12:00:00'));
+
+        if ($from !== null) {
+            $qb->andWhere('s.dateStart >= :from')
+               ->setParameter('from', $from->format('Y-m-d'));
+        }
+
+        if ($until !== null) {
+            $qb->andWhere('s.dateStart <= :until')
+               ->setParameter('until', $until->format('Y-m-d') . ' 23:59:59');
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Returns the count of attended reservations for sessions whose start time exactly matches
+     * one of the given time slots (e.g. ["08:00", "19:00"]).
+     *
+     * Each element in $timeSlots is an "HH:MM" string as stored by the achievement wizard in
+     * conditionContext["timeSlotIds"]. They are normalised to "HH:MM:00" before the query so
+     * MySQL can perform the native TIME column comparison inside the IN clause.
+     *
+     * Period bounds are applied on s.dateStart (date component), consistent with other
+     * attendance-based achievement queries.
+     *
+     * Used by the achievement evaluator for the `consecutive_same_time_slot` condition.
+     *
+     * @param string[]               $timeSlots "HH:MM" strings — must be non-empty (caller guards).
+     * @param \DateTimeImmutable|null $from      Count only sessions on or after this date.
+     * @param \DateTimeInterface|null $until     Count only sessions on or before this date.
+     */
+    public function countTimeSlotAttendanceByUser(
+        User $user,
+        array $timeSlots,
+        ?\DateTimeImmutable $from = null,
+        ?\DateTimeInterface $until = null,
+    ): int {
+        if ([] === $timeSlots) {
+            return 0;
+        }
+
+        // Normalise "HH:MM" → "HH:MM:00" for native MySQL TIME comparison.
+        $normalised = array_values(array_map(static fn (string $t) => $t . ':00', $timeSlots));
+
+        $qb = $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->join('r.session', 's')
+            ->where('r.user = :user')
+            ->andWhere('r.attended = true')
+            ->andWhere('s.timeStart IN (:timeSlots)')
+            ->setParameter('user', $user)
+            ->setParameter('timeSlots', $normalised);
+
+        if ($from !== null) {
+            $qb->andWhere('s.dateStart >= :from')
+               ->setParameter('from', $from->format('Y-m-d'));
+        }
+
+        if ($until !== null) {
+            $qb->andWhere('s.dateStart <= :until')
+               ->setParameter('until', $until->format('Y-m-d') . ' 23:59:59');
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Returns the number of sessions where the user had at least 2 attended reservations,
+     * i.e. sessions where the user brought a friend (booked more than one spot).
+     *
+     * Implemented as a two-step PHP query because DQL does not support COUNT(*) over a
+     * subquery in FROM. The inner query groups reservations by session and keeps only
+     * those with COUNT >= 2; the result set is small (bounded by the user's total
+     * attended sessions) so returning an array and calling count() in PHP is safe.
+     *
+     * The period bounds are applied on session.dateStart, consistent with other
+     * attendance-based achievement queries.
+     *
+     * Used by the achievement evaluator for the `friend_joint_classes` condition.
+     *
+     * @param \DateTimeImmutable|null $from  Count only sessions on or after this date.
+     * @param \DateTimeInterface|null $until Count only sessions on or before this date.
+     */
+    public function countSharedSessionsByUser(
+        User $user,
+        ?\DateTimeImmutable $from = null,
+        ?\DateTimeInterface $until = null,
+    ): int {
+        $qb = $this->createQueryBuilder('r')
+            ->select('IDENTITY(r.session)')
+            ->join('r.session', 's')
+            ->where('r.user = :user')
+            ->andWhere('r.attended = true')
+            ->groupBy('r.session')
+            ->having('COUNT(r.id) >= 2')
+            ->setParameter('user', $user);
+
+        if ($from !== null) {
+            $qb->andWhere('s.dateStart >= :from')
+               ->setParameter('from', $from->format('Y-m-d H:i:s'));
+        }
+
+        if ($until !== null) {
+            $qb->andWhere('s.dateStart <= :until')
+               ->setParameter('until', $until->format('Y-m-d') . ' 23:59:59');
+        }
+
+        return count($qb->getQuery()->getScalarResult());
+    }
+
+    /**
+     * Returns the number of reservations where the user has submitted at least one rating
+     * (ratingExercise, ratingInstructor, or ratingClassType is not null).
+     *
+     * The period bounds are applied on ratedAt (when the user submitted the rating), so that
+     * rolling-window and deadline achievements track activity within the configured window.
+     *
+     * Used by the achievement evaluator for the `rating_votes_min` condition.
+     *
+     * @param \DateTimeImmutable|null $from  Count only ratings submitted on or after this date.
+     * @param \DateTimeInterface|null $until Count only ratings submitted on or before this date.
+     */
+    public function countRatedByUser(
+        User $user,
+        ?\DateTimeImmutable $from = null,
+        ?\DateTimeInterface $until = null,
+    ): int {
+        $qb = $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->where('r.user = :user')
+            ->andWhere('r.ratingExercise IS NOT NULL OR r.ratingInstructor IS NOT NULL OR r.ratingClassType IS NOT NULL')
+            ->setParameter('user', $user);
+
+        if ($from !== null) {
+            $qb->andWhere('r.ratedAt >= :from')
+               ->setParameter('from', $from->format('Y-m-d H:i:s'));
+        }
+
+        if ($until !== null) {
+            $qb->andWhere('r.ratedAt <= :until')
+               ->setParameter('until', $until->format('Y-m-d') . ' 23:59:59');
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Returns the count of distinct calendar days on which the user attended at least one session.
+     * session.dateStart is a DATE column, so COUNT(DISTINCT s.dateStart) is sufficient — no DATE() cast needed.
+     * Used by the achievement evaluator for the `unique_days_attended` condition.
+     *
+     * @param \DateTimeImmutable|null $from  Count only days on or after this date (for rolling-window achievements).
+     * @param \DateTimeInterface|null $until Count only days on or before this date (for deadline achievements).
+     */
+    public function countUniqueDaysAttendedByUser(
+        User $user,
+        ?\DateTimeImmutable $from = null,
+        ?\DateTimeInterface $until = null,
+    ): int {
+        $qb = $this->createQueryBuilder('r')
+            ->select('COUNT(DISTINCT s.dateStart)')
+            ->join('r.session', 's')
+            ->where('r.user = :user')
+            ->andWhere('r.attended = true')
+            ->setParameter('user', $user);
+
+        if ($from !== null) {
+            $qb->andWhere('s.dateStart >= :from')
+               ->setParameter('from', $from->format('Y-m-d H:i:s'));
+        }
+
+        if ($until !== null) {
+            $qb->andWhere('s.dateStart <= :until')
+               ->setParameter('until', $until->format('Y-m-d') . ' 23:59:59');
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * Top usuarios por asistencias confirmadas (attended=true) en el rango, por sucursal pública activa.
+     * Retorna todas las filas ordenadas por sucursal ASC, attendanceCount DESC.
+     * El límite por sucursal se aplica en PHP (StatsService).
+     */
+    public function getTopAttendedUsersByPublicBranchOffice(?\DateTimeInterface $from = null, ?\DateTimeInterface $to = null): array
+    {
+        $qb = $this->createQueryBuilder('r')
+            ->select(
+                'b.id AS branchOfficeId',
+                'b.name AS branchOfficeName',
+                'u.id AS userId',
+                'u.name AS userName',
+                'u.lastname AS userLastname',
+                'u.email AS userEmail',
+                'COUNT(r.id) AS attendanceCount',
+            )
+            ->join('r.session', 's')
+            ->join('s.branchOffice', 'b')
+            ->join('r.user', 'u')
+            ->where('r.attended = :attended')
+            ->andWhere('b.public = :public')
+            ->andWhere('b.isActive = :isActive')
+            ->groupBy('b.id', 'b.name', 'u.id', 'u.name', 'u.lastname', 'u.email')
+            ->orderBy('b.name', 'ASC')
+            ->addOrderBy('attendanceCount', 'DESC')
+            ->setParameter('attended', true)
+            ->setParameter('public', true)
+            ->setParameter('isActive', true)
+        ;
+
+        if (null !== $from) {
+            $qb->andWhere('s.dateStart >= :from')
+               ->setParameter('from', \DateTimeImmutable::createFromInterface($from)->setTime(0, 0, 0));
+        }
+        if (null !== $to) {
+            $qb->andWhere('s.dateStart <= :to')
+               ->setParameter('to', \DateTimeImmutable::createFromInterface($to)->setTime(23, 59, 59));
+        }
+
+        return $qb->getQuery()->getArrayResult();
+    }
+
+    /**
+     * Returns all distinct calendar dates on which the user attended at least one session,
+     * ordered newest-first (most recent day first).
+     *
+     * Used by AttendanceConditionResolver to evaluate the `consecutive_days` streak.
+     * A single DB query loads the full date list; the caller then iterates day-by-day in PHP
+     * using O(1) set lookups — same strategy as findPaidTransactionsForConsecutiveMonths.
+     *
+     * @param \DateTimeImmutable      $windowEnd  Upper bound (inclusive). Typically end-of-day on the reference date.
+     * @param \DateTimeImmutable|null $lowerBound Lower bound (inclusive). When null, no lower filter is applied
+     *                                            and the caller derives it from the oldest date returned.
+     *
+     * @return string[]  Array of 'Y-m-d' strings, ordered newest-first.
+     */
+    /**
+     * Returns one row per distinct calendar day on which the user had at least one
+     * reservation on a CLOSED session, within the given window.
+     *
+     * Each row: ['day' => 'Y-m-d', 'hasNoShow' => 0|1]
+     *  - hasNoShow = 1 when any reservation that day was active (isAvailable=true)
+     *                  and not attended (attended=false) → the streak-breaker.
+     *  - hasNoShow = 0 when all active reservations that day were attended.
+     *
+     * Results are ordered ASC so the caller can walk chronologically.
+     * Used by AttendanceConditionResolver::resolveNoShowFreeDays().
+     */
+    public function findReservationDaysWithNoShowFlag(
+        User $user,
+        \DateTimeImmutable $windowEnd,
+        ?\DateTimeImmutable $lowerBound = null,
+    ): array {
+        $qb = $this->createQueryBuilder('r')
+            ->select(
+                's.dateStart AS day',
+                'MAX(CASE WHEN r.isAvailable = true AND r.attended = false THEN 1 ELSE 0 END) AS hasNoShow',
+            )
+            ->join('r.session', 's')
+            ->where('r.user = :user')
+            ->andWhere('s.status = :closed')
+            ->andWhere('s.dateStart <= :windowEnd')
+            ->groupBy('s.dateStart')
+            ->orderBy('s.dateStart', 'ASC')
+            ->setParameter('user', $user)
+            ->setParameter('closed', Session::STATUS_CLOSED)
+            ->setParameter('windowEnd', $windowEnd->format('Y-m-d H:i:s'));
+
+        if ($lowerBound !== null) {
+            $qb->andWhere('s.dateStart >= :lowerBound')
+               ->setParameter('lowerBound', $lowerBound->format('Y-m-d'));
+        }
+
+        $rows = $qb->getQuery()->getArrayResult();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $date      = $row['day'];
+            $result[] = [
+                'day'       => $date instanceof \DateTimeInterface
+                    ? $date->format('Y-m-d')
+                    : substr((string) $date, 0, 10),
+                'hasNoShow' => (int) $row['hasNoShow'],
+            ];
+        }
+
+        return $result;
+    }
+
+    public function findAttendedDaysInRange(
+        User $user,
+        \DateTimeImmutable $windowEnd,
+        ?\DateTimeImmutable $lowerBound = null,
+    ): array {
+        $qb = $this->createQueryBuilder('r')
+            ->select('DISTINCT s.dateStart AS attendedDay')
+            ->join('r.session', 's')
+            ->where('r.user = :user')
+            ->andWhere('r.attended = true')
+            ->andWhere('s.dateStart <= :windowEnd')
+            ->orderBy('s.dateStart', 'DESC')
+            ->setParameter('user', $user)
+            ->setParameter('windowEnd', $windowEnd->format('Y-m-d'));
+
+        if ($lowerBound !== null) {
+            $qb->andWhere('s.dateStart >= :lowerBound')
+               ->setParameter('lowerBound', $lowerBound->format('Y-m-d'));
+        }
+
+        $rows = $qb->getQuery()->getArrayResult();
+
+        $days = [];
+        foreach ($rows as $row) {
+            $date = $row['attendedDay'];
+            $days[] = $date instanceof \DateTimeInterface
+                ? $date->format('Y-m-d')
+                : substr((string) $date, 0, 10);
+        }
+
+        return $days;
     }
 }
