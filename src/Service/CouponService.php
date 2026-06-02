@@ -116,7 +116,7 @@ readonly class CouponService
      *
      * @throws \Exception
      */
-    public function apply(Transaction $transaction, string $code = null): void
+    public function apply(Transaction $transaction, ?string $code = null): void
     {
         if (empty($code)) {
             return;

@@ -731,6 +731,77 @@ class SessionRepository extends ServiceEntityRepository
         ;
     }
 
+    /**
+     * Retorna las próximas $limit sesiones ABIERTAS con lugares disponibles cuyo datetime >= $from.
+     * Busca hasta 14 días adelante. Solo incluye sesiones con remaining > 0.
+     *
+     * Cada elemento del array resultante tiene forma:
+     *   ['session' => Session, 'remaining' => int]
+     *
+     * @return array<int, array{session: Session, remaining: int}>
+     */
+    public function findNextUpcoming(int $limit = 3, ?\DateTimeInterface $from = null): array
+    {
+        $from ??= new \DateTime();
+        $today   = \DateTime::createFromInterface($from)->setTime(0, 0, 0);
+        $ceiling = (clone $today)->modify('+14 days');
+
+        $candidates = $this->createQueryBuilder('s')
+            ->addSelect('d', 'i', 'ip', 'er', 'br')
+            ->join('s.discipline', 'd')
+            ->join('s.instructor', 'i')
+            ->leftJoin('i.profile', 'ip')
+            ->join('s.exerciseRoom', 'er')
+            ->join('er.branchOffice', 'br')
+            ->where('s.status = :statusOpen')
+            ->andWhere('s.dateStart >= :today')
+            ->andWhere('s.dateStart <= :ceiling')
+            ->setParameter('statusOpen', Session::STATUS_OPEN)
+            ->setParameter('today', $today->format('Y-m-d'))
+            ->setParameter('ceiling', $ceiling->format('Y-m-d'))
+            ->orderBy('s.dateStart', 'ASC')
+            ->addOrderBy('s.timeStart', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $upcoming = array_values(array_filter($candidates, static function (Session $s) use ($from): bool {
+            try {
+                return $s->getDateTimeStart() >= $from;
+            } catch (\Throwable) {
+                return false;
+            }
+        }));
+
+        if ([] === $upcoming) {
+            return [];
+        }
+
+        $sessionIds = array_values(array_filter(
+            array_map(static fn (Session $s): ?int => $s->getId(), $upcoming),
+            static fn (?int $id): bool => null !== $id,
+        ));
+
+        $reservationTotals = $this->getActiveReservationTotalsBySessionIds($sessionIds);
+
+        $result = [];
+        foreach ($upcoming as $s) {
+            $id        = (int) $s->getId();
+            $capacity  = max(0, (int) $s->getAvailableCapacity());
+            $reserved  = (int) ($reservationTotals[$id] ?? 0);
+            $remaining = max(0, $capacity - $reserved);
+
+            if ($remaining > 0) {
+                $result[] = ['session' => $s, 'remaining' => $remaining];
+            }
+
+            if (count($result) === $limit) {
+                break;
+            }
+        }
+
+        return $result;
+    }
+
     public function getInstructorBranchOfficeMap(): array
     {
         $qb = $this->createQueryBuilder('s');

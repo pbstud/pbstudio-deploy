@@ -13,7 +13,7 @@
 
                 {{ render(controller('App\\Controller\\ProfileController::resume')) }}
 
-                <a href="{{ path('reservation_calendar') }}" class="btn reserve-class-toggle">Reservar clase</a>
+                <a href="{{ path('reservation_calendar', {'slug': config_first_branch_slug()}) }}" class="btn btn-go-calendar">Reservar clase</a>
                 <a id="section-content" class="hidden">{{ block('page_title') }}</a>
             </div>
         </div>

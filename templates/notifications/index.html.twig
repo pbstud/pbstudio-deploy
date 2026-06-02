@@ -3,19 +3,50 @@
 {% block page_title %}Mis notificaciones | {% endblock %}
 
 {% block content %}
-    <section class="profile">
-        <div class="row">
-            <div class="content">
-                <div class="sessions-used-header">
-                    <h2>Mis notificaciones</h2>
-                    <a href="{{ path('profile') }}" class="link">
-                        <i class="bi bi-person"></i>Regresar a mi perfil
-                    </a>
-                </div>
+    <section class="bg-sand min-h-[calc(100vh-4rem)] py-8 md:py-12">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6">
+            <div class="bg-white rounded-2xl border border-linen shadow-sm overflow-hidden">
+                <header class="px-5 sm:px-7 pt-6 pb-4 border-b border-linen">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h1 class="text-2xl sm:text-3xl font-bold text-charcoal">Centro de notificaciones</h1>
+                            <p class="text-sm text-muted mt-1">Registro histórico.</p>
+                        </div>
+                    </div>
+                </header>
 
                 {% if notifications is empty %}
-                    <p class="notifications-empty">No tienes notificaciones aún.</p>
+                    <div class="px-6 py-16 text-center">
+                        <div class="w-16 h-16 rounded-full bg-sand mx-auto mb-4 flex items-center justify-center text-muted">
+                            <i class="bi bi-bell-slash text-3xl"></i>
+                        </div>
+                        <p class="notifications-empty text-base">No tienes notificaciones aun.</p>
+                    </div>
                 {% else %}
+                    {%- set unread_filters = { unread: 0, reserva: 0, logro: 0, sistema: 0 } -%}
+                    {%- for n in notifications -%}
+                        {%- set ntype = (n.type|default('')|lower) -%}
+                        {%- set category = 'sistema' -%}
+                        {%- if ntype starts with 'achievement_' -%}
+                            {%- set category = 'logro' -%}
+                        {%- elseif ntype starts with 'reservation_'
+                            or ntype starts with 'waitlist_'
+                            or ntype starts with 'class_'
+                            or ntype starts with 'session_'
+                            or ntype starts with 'package_'
+                            or ntype starts with 'payment_'
+                            or ntype starts with 'checkout_'
+                            or ntype starts with 'rating_' -%}
+                            {%- set category = 'reserva' -%}
+                        {%- endif -%}
+                        {%- if n.readAt is null -%}
+                            {%- set unread_filters = unread_filters|merge({
+                                unread: unread_filters.unread + 1,
+                                (category): attribute(unread_filters, category) + 1
+                            }) -%}
+                        {%- endif -%}
+                    {%- endfor -%}
+
                     {%- set today = "now"|date("Y-m-d") -%}
                     {%- set yesterday = "-1 day"|date("Y-m-d") -%}
 
@@ -33,93 +64,131 @@
                         {%- endif -%}
                     {%- endfor -%}
 
-                    {# Barra de controles: contador izquierda, botones derecha — siempre visible #}
-                    <div class="notifications-controls-row">
-                        <div class="notifications-controls-row__left">
-                            <span class="notifications-toolbar__count" data-notif-toolbar-count></span>
+                    <div class="px-5 sm:px-7 pt-4">
+                        <div class="fullpage__tabs" data-page-tabs>
+                            <button type="button" class="fullpage__tab active" data-page-filter="all">Todas</button>
+                            <button type="button" class="fullpage__tab" data-page-filter="unread">Sin leer <span class="tab-count" data-page-count="unread">{{ unread_filters.unread }}</span></button>
+                            <button type="button" class="fullpage__tab" data-page-filter="reserva">Reservas <span class="tab-count" data-page-count="reserva">{{ unread_filters.reserva }}</span></button>
+                            <button type="button" class="fullpage__tab" data-page-filter="logro">Logros <span class="tab-count" data-page-count="logro">{{ unread_filters.logro }}</span></button>
+                            <button type="button" class="fullpage__tab" data-page-filter="sistema">Sistema <span class="tab-count" data-page-count="sistema">{{ unread_filters.sistema }}</span></button>
                         </div>
-                        <div class="notifications-controls-row__right">
-                            <div class="notifications-select-controls">
-                                <button type="button" class="notifications-select-btn" data-select-all>
-                                    <i class="bi bi-check2-square btn-icon"></i>
-                                    <span class="btn-label">Seleccionar todos</span>
-                                </button>
-                                <button type="button" class="notifications-select-btn" data-select-invert>
-                                    <i class="bi bi-arrow-down-up btn-icon"></i>
-                                    <span class="btn-label">Selección inversa</span>
-                                </button>
+
+                        <div class="notifications-controls-row">
+                            <div class="notifications-controls-row__left">
+                                <span class="notifications-toolbar__count" data-notif-toolbar-count></span>
                             </div>
-                            <div class="notifications-toolbar" data-notif-toolbar>
-                                <button type="button" class="notifications-toolbar__btn" data-bulk-read>
-                                    <i class="bi bi-eye btn-icon"></i>
-                                    <span class="btn-label">Marcar leídas</span>
-                                </button>
-                                <button type="button" class="notifications-toolbar__btn notifications-toolbar__btn--unread" data-bulk-unread>
-                                    <i class="bi bi-eye-slash btn-icon"></i>
-                                    <span class="btn-label">Marcar no leídas</span>
-                                </button>
-                                <button type="button" class="notifications-toolbar__btn notifications-toolbar__btn--danger" data-bulk-delete>
-                                    <i class="bi bi-trash btn-icon"></i>
-                                    <span class="btn-label">Eliminar</span>
-                                </button>
-                                <button type="button" class="notifications-toolbar__btn notifications-toolbar__btn--outline" data-bulk-cancel>
-                                    <i class="bi bi-x-circle btn-icon"></i>
-                                    <span class="btn-label">Cancelar</span>
-                                </button>
+                            <div class="notifications-controls-row__right">
+                                <div class="notifications-select-controls">
+                                    <button type="button" class="notifications-select-btn" data-select-all>
+                                        <i class="bi bi-check2-square btn-icon"></i>
+                                        <span class="btn-label">Seleccionar todos</span>
+                                    </button>
+                                    <button type="button" class="notifications-select-btn" data-select-invert>
+                                        <i class="bi bi-arrow-down-up btn-icon"></i>
+                                        <span class="btn-label">Seleccion inversa</span>
+                                    </button>
+                                </div>
+                                <div class="notifications-toolbar" data-notif-toolbar>
+                                    <button type="button" class="notifications-toolbar__btn" data-bulk-read>
+                                        <i class="bi bi-eye btn-icon"></i>
+                                        <span class="btn-label">Marcar leidas</span>
+                                    </button>
+                                    <button type="button" class="notifications-toolbar__btn notifications-toolbar__btn--unread" data-bulk-unread>
+                                        <i class="bi bi-eye-slash btn-icon"></i>
+                                        <span class="btn-label">Marcar no leidas</span>
+                                    </button>
+                                    <button type="button" class="notifications-toolbar__btn notifications-toolbar__btn--danger" data-bulk-delete>
+                                        <i class="bi bi-trash btn-icon"></i>
+                                        <span class="btn-label">Eliminar</span>
+                                    </button>
+                                    <button type="button" class="notifications-toolbar__btn notifications-toolbar__btn--outline" data-bulk-cancel>
+                                        <i class="bi bi-x-circle btn-icon"></i>
+                                        <span class="btn-label">Cancelar</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
+
+                        <ul class="notifications-page-list pb-4">
+                            <li class="pb-empty notifications-filter-empty" data-filter-empty hidden>
+                                <span class="pb-empty__icon"><i class="bi bi-bell-slash"></i></span>
+                                <span class="pb-empty__text">Sin notificaciones por ahora</span>
+                                <span class="pb-empty__sub">Prueba con otro filtro o vuelve a "Todas".</span>
+                            </li>
+                            {% for label, items in { 'Hoy': groups.hoy, 'Ayer': groups.ayer, 'Esta semana': groups.semana, 'Anteriores': groups.anteriores } %}
+                                {% if items is not empty %}
+                                    <li class="notifications-page-group-label" data-notif-group-label>{{ label }}</li>
+                                    {% for n in items %}
+                                        {%- set ntype = (n.type|default('')|lower) -%}
+                                        {%- set category = 'sistema' -%}
+                                        {%- if ntype starts with 'achievement_' -%}
+                                            {%- set category = 'logro' -%}
+                                        {%- elseif ntype starts with 'reservation_'
+                                            or ntype starts with 'waitlist_'
+                                            or ntype starts with 'class_'
+                                            or ntype starts with 'session_'
+                                            or ntype starts with 'package_'
+                                            or ntype starts with 'payment_'
+                                            or ntype starts with 'checkout_'
+                                            or ntype starts with 'rating_' -%}
+                                            {%- set category = 'reserva' -%}
+                                        {%- endif -%}
+
+                                        <li data-notif-li="{{ n.id }}" data-notif-item data-category="{{ category }}" class="py-0.5">
+                                            <div class="notifications-page-item__row">
+                                                <input
+                                                    type="checkbox"
+                                                    class="notifications-page-item__checkbox"
+                                                    data-notif-checkbox
+                                                    data-id="{{ n.id }}"
+                                                    aria-label="Seleccionar notificacion"
+                                                >
+                                                <button
+                                                    type="button"
+                                                    class="notifications-page-item{% if n.readAt is null %} is-unread{% else %} is-read{% endif %} is-priority-{{ n.priority }}"
+                                                    data-notification-page-item
+                                                    data-id="{{ n.id }}"
+                                                    data-category="{{ category }}"
+                                                    data-is-unread="{% if n.readAt is null %}1{% else %}0{% endif %}"
+                                                    data-mark-read-url="{{ mark_read_url|replace({'__ID__': n.id}) }}"
+                                                    data-target-url="{{ target_urls[n.id] ?? '' }}"
+                                                >
+                                                    <span class="notifications-page-item__header">
+                                                        <span class="notifications-page-item__title">{{ n.title }}</span>
+                                                        <span class="notifications-page-item__time" data-created-at="{{ n.createdAt|date('c') }}" data-absolute-time="{{ n.createdAt|date('d/m/Y H:i') }}">{{ n.createdAt|date('d/m/Y H:i') }}</span>
+                                                    </span>
+                                                    <span class="notifications-page-item__body">{{ n.body }}</span>
+                                                </button>
+                                            </div>
+                                        </li>
+                                    {% endfor %}
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
                     </div>
 
-                    <ul class="notifications-page-list">
-                        {% for label, items in { 'Hoy': groups.hoy, 'Ayer': groups.ayer, 'Esta semana': groups.semana, 'Anteriores': groups.anteriores } %}
-                            {% if items is not empty %}
-                                <li class="notifications-page-group-label">{{ label }}</li>
-                                {% for n in items %}
-                                    <li data-notif-li="{{ n.id }}">
-                                        <div class="notifications-page-item__row">
-                                            <input
-                                                type="checkbox"
-                                                class="notifications-page-item__checkbox"
-                                                data-notif-checkbox
-                                                data-id="{{ n.id }}"
-                                                aria-label="Seleccionar notificación"
-                                            >
-                                            <button
-                                                type="button"
-                                                class="notifications-page-item{% if n.readAt is null %} is-unread{% else %} is-read{% endif %} is-priority-{{ n.priority }}"
-                                                data-notification-page-item
-                                                data-id="{{ n.id }}"
-                                                data-is-unread="{% if n.readAt is null %}1{% else %}0{% endif %}"
-                                                data-mark-read-url="{{ mark_read_url|replace({'__ID__': n.id}) }}"
-                                                data-target-url="{{ target_urls[n.id] ?? '' }}"
-                                            >
-                                                <span class="notifications-page-item__header">
-                                                    <span class="notifications-page-item__title">{{ n.title }}</span>
-                                                    <span class="notifications-page-item__time">
-                                                        {{ n.createdAt|date('d/m/Y H:i') }}
-                                                    </span>
-                                                </span>
-                                                <span class="notifications-page-item__body">{{ n.body }}</span>
-                                            </button>
-                                        </div>
-                                    </li>
-                                {% endfor %}
-                            {% endif %}
-                        {% endfor %}
-                    </ul>
-
                     {% if total_pages > 1 %}
-                        <div class="sessions-used-history-footer">
+                        <div class="sessions-used-history-footer border-t border-linen py-4" data-server-pagination>
                             <div class="sessions-used-pagination">
                                 <ul class="pagination">
                                     <li class="{% if page <= 1 %}disabled{% endif %}">
                                         <a href="{% if page > 1 %}{{ path('notifications', { page: page - 1 }) }}{% else %}#{% endif %}">&laquo;</a>
                                     </li>
-                                    {% for p in 1..total_pages %}
+                                    {% set win_start = max(1, page - 2) %}
+                                    {% set win_end   = min(total_pages, page + 2) %}
+                                    {% if win_start > 1 %}
+                                        <li><a href="{{ path('notifications', { page: 1 }) }}">1</a></li>
+                                        {% if win_start > 2 %}<li class="pagination-ellipsis"><span>...</span></li>{% endif %}
+                                    {% endif %}
+                                    {% for p in win_start..win_end %}
                                         <li class="{% if p == page %}active{% endif %}">
                                             <a href="{{ path('notifications', { page: p }) }}">{{ p }}</a>
                                         </li>
                                     {% endfor %}
+                                    {% if win_end < total_pages %}
+                                        {% if win_end < total_pages - 1 %}<li class="pagination-ellipsis"><span>...</span></li>{% endif %}
+                                        <li><a href="{{ path('notifications', { page: total_pages }) }}">{{ total_pages }}</a></li>
+                                    {% endif %}
                                     <li class="{% if page >= total_pages %}disabled{% endif %}">
                                         <a href="{% if page < total_pages %}{{ path('notifications', { page: page + 1 }) }}{% else %}#{% endif %}">&raquo;</a>
                                     </li>
@@ -127,6 +196,10 @@
                             </div>
                         </div>
                     {% endif %}
+
+                    <div class="sessions-used-history-footer border-t border-linen py-4" data-filter-pagination hidden>
+                        <div class="sessions-used-pagination"></div>
+                    </div>
                 {% endif %}
             </div>
         </div>
@@ -141,6 +214,9 @@
 
         /* ── Badge y boton "Marcar todas" ─────────────────────────────────── */
         function updateHeaderBadge(count) {
+            // Persistir siempre en sessionStorage para que la siguiente página no dispare toasts
+            try { sessionStorage.setItem('pb_last_unread_count', String(count)); } catch (e) {}
+
             var badge = document.querySelector('[data-notification-badge]');
             if (!badge) { return; }
             if (count > 0) {
@@ -149,22 +225,14 @@
             } else {
                 badge.hidden = true;
             }
-            // Sincronizar con NotificationCenter para que el SSE no revierta el conteo local
+            // Sincronizar con NotificationCenter si está activo en la misma página
             if (window.NotificationCenter && null !== NotificationCenter.lastUnreadCount) {
                 NotificationCenter.lastUnreadCount = count;
             }
         }
 
         function updateMarkAllBtn(count) {
-            var wrap = document.querySelector('.notifications-actions');
-            var btn  = document.querySelector('.notifications-mark-all-btn');
-            if (!wrap || !btn) { return; }
-            if (count > 0) {
-                btn.textContent = 'Marcar todas como leídas (' + count + ')';
-                wrap.hidden = false;
-            } else {
-                wrap.hidden = true;
-            }
+            // Boton removido en la pagina central por redundancia con acciones bulk.
         }
 
         /* ── Toolbar ───────────────────────────────────────────────────────── */
@@ -172,11 +240,202 @@
         var toolbarCount   = document.querySelector('[data-notif-toolbar-count]');
         var controlsLeft   = document.querySelector('.notifications-controls-row__left');
         var pageList       = document.querySelector('.notifications-page-list');
+        var pageTabs       = document.querySelectorAll('[data-page-filter]');
+        var filterEmpty    = document.querySelector('[data-filter-empty]');
         var selectControls = document.querySelector('.notifications-select-controls');
         var btnRead        = document.querySelector('[data-bulk-read]');
         var btnUnread      = document.querySelector('[data-bulk-unread]');
         var btnDelete      = document.querySelector('[data-bulk-delete]');
         var btnCancel      = document.querySelector('[data-bulk-cancel]');
+        var activePageFilter = 'all';
+        var currentFilterPage = 1;
+        var FILTER_PAGE_SIZE = 20;
+        var serverPaginationWrap = document.querySelector('[data-server-pagination]');
+        var filterPaginationWrap = document.querySelector('[data-filter-pagination]');
+
+        function getAllFilterItems() {
+            return Array.from(document.querySelectorAll('[data-notif-item]'));
+        }
+
+        function matchesFilter(btn) {
+            if (activePageFilter === 'all') { return true; }
+            if (activePageFilter === 'unread') { return btn.dataset.isUnread === '1'; }
+            return (btn.dataset.category || 'sistema') === activePageFilter;
+        }
+
+        function renderFilterPagination(totalPages, page) {
+            if (!filterPaginationWrap) { return; }
+            var slot = filterPaginationWrap.querySelector('.sessions-used-pagination');
+            if (!slot) { return; }
+
+            if (totalPages <= 1) {
+                slot.innerHTML = '';
+                filterPaginationWrap.hidden = true;
+                return;
+            }
+
+            var winStart = Math.max(1, page - 2);
+            var winEnd = Math.min(totalPages, page + 2);
+            var html = '<ul class="pagination" data-filter-pagination-nav>';
+            html += '<li class="' + (page <= 1 ? 'disabled' : '') + '"><a href="#" data-filter-page="' + (page - 1) + '">&laquo;</a></li>';
+
+            if (winStart > 1) {
+                html += '<li><a href="#" data-filter-page="1">1</a></li>';
+                if (winStart > 2) { html += '<li class="pagination-ellipsis"><span>...</span></li>'; }
+            }
+
+            for (var p = winStart; p <= winEnd; p++) {
+                html += '<li class="' + (p === page ? 'active' : '') + '"><a href="#" data-filter-page="' + p + '">' + p + '</a></li>';
+            }
+
+            if (winEnd < totalPages) {
+                if (winEnd < totalPages - 1) { html += '<li class="pagination-ellipsis"><span>...</span></li>'; }
+                html += '<li><a href="#" data-filter-page="' + totalPages + '">' + totalPages + '</a></li>';
+            }
+
+            html += '<li class="' + (page >= totalPages ? 'disabled' : '') + '"><a href="#" data-filter-page="' + (page + 1) + '">&raquo;</a></li>';
+            html += '</ul>';
+            slot.innerHTML = html;
+            filterPaginationWrap.hidden = false;
+        }
+
+        function bindTabsRowDrag() {
+            var tabsRow = document.querySelector('.fullpage__tabs');
+            if (!tabsRow) { return; }
+
+            var dragging = false;
+            var startX = 0;
+            var startScrollLeft = 0;
+
+            tabsRow.addEventListener('pointerdown', function (event) {
+                if ('mouse' === event.pointerType && 0 !== event.button) {
+                    return;
+                }
+
+                dragging = true;
+                startX = event.clientX;
+                startScrollLeft = tabsRow.scrollLeft;
+                tabsRow.classList.add('is-dragging');
+            });
+
+            tabsRow.addEventListener('pointermove', function (event) {
+                if (!dragging) { return; }
+                var dx = event.clientX - startX;
+                tabsRow.scrollLeft = startScrollLeft - dx;
+            });
+
+            var stopDragging = function () {
+                dragging = false;
+                tabsRow.classList.remove('is-dragging');
+            };
+
+            tabsRow.addEventListener('pointerup', stopDragging);
+            tabsRow.addEventListener('pointercancel', stopDragging);
+            tabsRow.addEventListener('pointerleave', stopDragging);
+
+            tabsRow.addEventListener('wheel', function (event) {
+                if (Math.abs(event.deltaY) > Math.abs(event.deltaX)) {
+                    tabsRow.scrollLeft += event.deltaY;
+                    event.preventDefault();
+                }
+            }, { passive: false });
+        }
+
+        function formatRelativeTime(createdAtIso, absoluteText) {
+            if (!createdAtIso) { return absoluteText || ''; }
+
+            var createdAt = new Date(createdAtIso);
+            if (isNaN(createdAt.getTime())) { return absoluteText || ''; }
+
+            var now = new Date();
+            var diffMs = now.getTime() - createdAt.getTime();
+            if (diffMs >= 0 && diffMs < 86400000) {
+                var totalMinutes = Math.floor(diffMs / 60000);
+                if (totalMinutes < 1) { return '<1m'; }
+                if (totalMinutes < 60) { return totalMinutes + 'm'; }
+                return Math.floor(totalMinutes / 60) + 'h';
+            }
+
+            return absoluteText || '';
+        }
+
+        function updateRelativeTimes() {
+            document.querySelectorAll('.notifications-page-item__time[data-created-at]').forEach(function (el) {
+                var createdAtIso = el.getAttribute('data-created-at');
+                var absoluteText = el.getAttribute('data-absolute-time') || el.textContent;
+                el.textContent = formatRelativeTime(createdAtIso, absoluteText);
+            });
+        }
+
+        function updatePageFilterBadges() {
+            var counters = { unread: 0, reserva: 0, logro: 0, sistema: 0 };
+            document.querySelectorAll('[data-notification-page-item]').forEach(function (btn) {
+                if (btn.dataset.isUnread !== '1') { return; }
+                counters.unread++;
+                var category = btn.dataset.category || 'sistema';
+                if (counters[category] !== undefined) {
+                    counters[category]++;
+                }
+            });
+
+            document.querySelectorAll('[data-page-count]').forEach(function (badge) {
+                var key = badge.getAttribute('data-page-count');
+                var value = counters[key] || 0;
+                badge.textContent = value > 99 ? '99+' : String(value);
+            });
+        }
+
+        function applyPageFilter() {
+            if (!pageList) { return; }
+
+            var allItems = getAllFilterItems();
+            var labels = Array.from(pageList.querySelectorAll('[data-notif-group-label]'));
+
+            if (activePageFilter === 'all') {
+                labels.forEach(function (label) { label.style.display = ''; });
+                allItems.forEach(function (node) { node.style.display = ''; });
+                if (filterEmpty) { filterEmpty.hidden = true; }
+                currentFilterPage = 1;
+                if (serverPaginationWrap) { serverPaginationWrap.hidden = false; }
+                if (filterPaginationWrap) { filterPaginationWrap.hidden = true; }
+                return;
+            }
+
+            if (serverPaginationWrap) { serverPaginationWrap.hidden = true; }
+            labels.forEach(function (label) { label.style.display = 'none'; });
+
+            var filtered = allItems.filter(function (node) {
+                var btn = node.querySelector('[data-notification-page-item]');
+                return !!btn && matchesFilter(btn);
+            });
+
+            var totalPages = Math.max(1, Math.ceil(filtered.length / FILTER_PAGE_SIZE));
+            if (currentFilterPage > totalPages) { currentFilterPage = totalPages; }
+            if (currentFilterPage < 1) { currentFilterPage = 1; }
+
+            allItems.forEach(function (node) { node.style.display = 'none'; });
+
+            var start = (currentFilterPage - 1) * FILTER_PAGE_SIZE;
+            var visibleItems = filtered.slice(start, start + FILTER_PAGE_SIZE);
+            visibleItems.forEach(function (node) { node.style.display = ''; });
+
+            if (filterEmpty) { filterEmpty.hidden = filtered.length > 0; }
+            renderFilterPagination(totalPages, currentFilterPage);
+        }
+
+        if (filterPaginationWrap) {
+            filterPaginationWrap.addEventListener('click', function (event) {
+                var link = event.target.closest('[data-filter-page]');
+                if (!link) { return; }
+                event.preventDefault();
+
+                var nextPage = parseInt(link.getAttribute('data-filter-page'), 10);
+                if (!isNaN(nextPage) && nextPage > 0) {
+                    currentFilterPage = nextPage;
+                    applyPageFilter();
+                }
+            });
+        }
 
         function setBulkButtonsState(enabled) {
             [btnRead, btnUnread, btnDelete, btnCancel].forEach(function (btn) {
@@ -292,7 +551,13 @@
                 if (!btn && !li) { return; }
 
                 if (action === 'delete') {
-                    if (li) { li.remove(); }
+                    if (li) {
+                        var deletedBtn = li.querySelector('[data-notification-page-item]');
+                        if (deletedBtn && deletedBtn.dataset.isUnread === '1') {
+                            unreadCount = Math.max(0, unreadCount - 1);
+                        }
+                        li.remove();
+                    }
                     return;
                 }
 
@@ -317,6 +582,8 @@
 
             updateHeaderBadge(unreadCount);
             updateMarkAllBtn(unreadCount);
+            updatePageFilterBadges();
+            applyPageFilter();
 
             if (action === 'delete') {
                 var count = ids.length;
@@ -346,6 +613,16 @@
                 if (res.ok) { applyBulkResult(action, ids); }
             }).catch(function () {});
         }
+
+        pageTabs.forEach(function (tab) {
+            tab.addEventListener('click', function () {
+                activePageFilter = tab.getAttribute('data-page-filter') || 'all';
+                currentFilterPage = 1;
+                pageTabs.forEach(function (item) { item.classList.remove('active'); });
+                tab.classList.add('active');
+                applyPageFilter();
+            });
+        });
 
         if (btnRead)   { btnRead.addEventListener('click',   function () { doBulk('read'); }); }
         if (btnUnread) { btnUnread.addEventListener('click', function () { doBulk('unread'); }); }
@@ -437,6 +714,8 @@
                         unreadCount = Math.max(0, unreadCount - 1);
                         updateHeaderBadge(unreadCount);
                         updateMarkAllBtn(unreadCount);
+                        updatePageFilterBadges();
+                        applyPageFilter();
                     }
                     if (targetUrl) { window.location.href = targetUrl; }
                 }).catch(function () {
@@ -444,6 +723,11 @@
                 });
             });
         });
+
+        updateRelativeTimes();
+        updatePageFilterBadges();
+        applyPageFilter();
+        bindTabsRowDrag();
     }());
     </script>
 {% endblock %}

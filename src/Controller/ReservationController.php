@@ -58,10 +58,10 @@ class ReservationController extends AbstractController
         $period = $this->getPeriod($request->query->getInt('year'), $request->query->getInt('weekno'));
         $sessions = $sessionRepository->getCalendar($period, $branchOffice);
 
-        $weekPrev = $this->getWeekPrev($period->start->copy());
+        $weekPrev = $this->getWeekPrev(Carbon::instance($period->start));
         $weekNext = null;
-        $weekNextStart = $period->start->copy()->addWeek()->startOfWeek(CarbonInterface::MONDAY);
-        $periodNext = $weekNextStart->toPeriod($weekNextStart->copy()->endOfWeek(CarbonInterface::SUNDAY));
+        $weekNextStart = Carbon::instance($period->start)->addWeek()->startOfWeek(CarbonInterface::MONDAY);
+        $periodNext = $weekNextStart->toPeriod($weekNextStart->clone()->endOfWeek(CarbonInterface::SUNDAY));
         if ($sessionRepository->hasSessionsInPeriod($periodNext, $branchOffice)) {
             $weekNext = $weekNextStart;
         }
@@ -238,18 +238,18 @@ class ReservationController extends AbstractController
         }
 
         $now->setISODate($year, $weekNo);
-        $start = $now->copy()->startOfWeek(CarbonInterface::MONDAY);
+        $start = $now->clone()->startOfWeek(CarbonInterface::MONDAY);
 
-        return $start->toPeriod($start->copy()->endOfWeek(CarbonInterface::SUNDAY));
+        return $start->toPeriod($start->clone()->endOfWeek(CarbonInterface::SUNDAY));
     }
 
     private function getWeekPrev(CarbonInterface $carbon): ?CarbonInterface
     {
-        $carbon->subWeek();
+        $carbon = $carbon->subWeek();
 
         [$curWeek, $curYear] = $this->getCurWeekYear();
 
-        if ($carbon->yearIso < $curYear || ($carbon->yearIso === $curYear && $carbon->weekOfYear < $curWeek)) {
+        if ((int)$carbon->format('o') < $curYear || ((int)$carbon->format('o') === $curYear && (int)$carbon->format('W') < $curWeek)) {
             return null;
         }
 
@@ -260,15 +260,15 @@ class ReservationController extends AbstractController
     {
         $now = Carbon::now();
 
-        $curWeek = $now->weekOfYear;
-        $curYear = $now->yearIso;
+        $curWeek = (int)$now->format('W');
+        $curYear = (int)$now->format('o');
 
-        if ($now->isSunday() && $now->noZeroHour >= self::NEXT_WEEK_HOUR) {
+        if ($now->isSunday() && (int)$now->format('G') >= self::NEXT_WEEK_HOUR) {
             ++$curWeek;
         }
 
         // Next year start week 1
-        if ($curWeek > $now->weeksInYear) {
+        if ($curWeek > $now->isoWeeksInYear()) {
             $curWeek = 1;
             ++$curYear;
         }

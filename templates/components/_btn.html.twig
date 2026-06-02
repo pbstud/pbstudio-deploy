@@ -1,0 +1,44 @@
+{#
+  Componente: Botón
+  Parámetros:
+    - label      (string)  texto del botón — requerido
+    - variant    (string)  'primary' | 'secondary' | 'ghost' | 'danger'  — default: 'primary'
+    - size       (string)  'sm' | 'md' | 'lg'  — default: 'md'
+    - type       (string)  'button' | 'submit' | 'reset'  — default: 'button'
+    - disabled   (bool)    — default: false
+    - icon       (string)  clase bi-* opcional, antes del label
+    - attrs      (string)  atributos HTML extra (x-bind, @click, etc.)
+
+  Uso:
+    {% include 'components/_btn.html.twig' with { label: 'Guardar', variant: 'primary', type: 'submit' } %}
+    {% include 'components/_btn.html.twig' with { label: 'Cancelar', variant: 'ghost', attrs: '@click="open = false"' } %}
+#}
+{% set _variant = variant|default('primary') %}
+{% set _size    = size|default('md') %}
+{% set _type    = type|default('button') %}
+{% set _disabled = disabled|default(false) %}
+
+{% set _base = 'inline-flex items-center justify-center gap-2 font-semibold rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-terracota focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none' %}
+
+{% set _sizes = {
+    'sm': 'px-3 py-1.5 text-xs',
+    'md': 'px-5 py-2.5 text-sm',
+    'lg': 'px-7 py-3.5 text-base'
+} %}
+
+{% set _variants = {
+    'primary':   'bg-terracota text-white hover:bg-terracota-dark',
+    'secondary': 'bg-sand text-charcoal hover:bg-linen border border-linen',
+    'ghost':     'bg-transparent text-charcoal hover:bg-sand',
+    'danger':    'bg-red-600 text-white hover:bg-red-700'
+} %}
+
+<button
+    type="{{ _type }}"
+    class="{{ _base }} {{ _sizes[_size] }} {{ _variants[_variant] }}"
+    {% if _disabled %}disabled aria-disabled="true"{% endif %}
+    {% if attrs is defined %}{{ attrs|raw }}{% endif %}
+>
+    {% if icon is defined %}<i class="bi {{ icon }}" aria-hidden="true"></i>{% endif %}
+    {{ label }}
+</button>

@@ -1,0 +1,57 @@
+{#
+  Componente: Modal Alpine.js
+  Uso:
+    <div x-data="pbModal('my-modal')">
+      <button @click="open()">Abrir</button>
+      {% include 'components/_modal.html.twig' with { id: 'my-modal', title: 'Título' } %}
+    </div>
+
+  O con el store global (pbModalStore):
+    Alpine.store('pbModal').open('my-modal')
+#}
+<div
+    x-show="isOpen"
+    x-trap.inert.noscroll="isOpen"
+    @keydown.escape.window="close()"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4"
+    role="dialog"
+    aria-modal="true"
+    {% if title is defined %}aria-labelledby="modal-title-{{ id }}"{% endif %}
+    style="display: none;"
+>
+    {# Overlay #}
+    <div
+        class="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        @click="close()"
+        aria-hidden="true"
+    ></div>
+
+    {# Panel #}
+    <div
+        x-transition:enter="transition ease-out duration-200"
+        x-transition:enter-start="opacity-0 scale-95"
+        x-transition:enter-end="opacity-100 scale-100"
+        x-transition:leave="transition ease-in duration-150"
+        x-transition:leave-start="opacity-100 scale-100"
+        x-transition:leave-end="opacity-0 scale-95"
+        class="relative z-10 w-full max-w-lg bg-white rounded-2xl shadow-xl overflow-hidden"
+    >
+        {# Header #}
+        {% if title is defined %}
+        <div class="flex items-center justify-between px-6 py-4 border-b border-linen">
+            <h2 id="modal-title-{{ id }}" class="text-base font-semibold text-charcoal">{{ title }}</h2>
+            <button type="button" @click="close()" class="p-1 rounded-full text-muted hover:text-charcoal hover:bg-sand transition-colors" aria-label="Cerrar">
+                <i class="bi bi-x-lg text-sm" aria-hidden="true"></i>
+            </button>
+        </div>
+        {% endif %}
+
+        {# Body #}
+        <div class="px-6 py-5">
+            {% block modal_body %}{% endblock %}
+        </div>
+
+        {# Footer (opcional) #}
+        {% block modal_footer %}{% endblock %}
+    </div>
+</div>

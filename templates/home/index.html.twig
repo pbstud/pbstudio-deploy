@@ -2,88 +2,1101 @@
 
 {% block page_title %}Inicio | {% endblock %}
 
-{% block content %}
-    <h1 class="visually-hidden">Inicio</h1>
-    <section>
-        <div class="row">
-            <div class="banner-home">
-                <picture>
-                    <source media='(min-width: 701px)'
-                            srcset='{{ homeContent.bannerDesktop ? '/media/uploads/site/' ~ homeContent.bannerDesktop : asset('images/home/banner-desktop.jpg') }}'/>
-                    <source media='(max-width: 700px)'
-                            srcset='{{ homeContent.bannerMobile ? '/media/uploads/site/' ~ homeContent.bannerMobile : asset('images/home/banner-mobile.jpg') }}'/>
-                    <img src='{{ homeContent.bannerDesktop ? '/media/uploads/site/' ~ homeContent.bannerDesktop : asset('images/home/banner-desktop.jpg') }}'/>
-                </picture>
-                <a href="{{ path('reservation_calendar') }}" class="btn white reserve-class-toggle">Reservar clase</a>
-            </div>
-        </div>
-    </section>
-    <section>
-        <div class="box-row">
-            <div class="box">
-                <img src="{{ homeContent.box1Image ? '/media/uploads/site/' ~ homeContent.box1Image : asset('images/home/pilates.jpg') }}" alt="{{ homeContent.box1Title }}">
-                <h4 class="position-center">{{ homeContent.box1Title }}</h4>
-                <div class="overlay">
-                    <h4>{{ homeContent.box1Title }}</h4>
-                    <p>{{ homeContent.box1Description }}</p>
-                    <a href="{{ homeContent.box1Url }}" target="_blank" rel="noopener noreferrer" class="btn white">{{ homeContent.box1LinkLabel }}</a>
-                </div>
-            </div>
-            <div class="box">
-                <img src="{{ homeContent.box2Image ? '/media/uploads/site/' ~ homeContent.box2Image : asset('images/home/barra.jpg') }}" alt="{{ homeContent.box2Title }}">
-                <h4 class="position-center">{{ homeContent.box2Title }}</h4>
-                <div class="overlay">
-                    <h4>{{ homeContent.box2Title }}</h4>
-                    <p>{{ homeContent.box2Description }}</p>
-                    <a href="{{ homeContent.box2Url }}" target="_blank" rel="noopener noreferrer" class="btn white">{{ homeContent.box2LinkLabel }}</a>
-                </div>
-            </div>
-        </div>
-    </section>
-    <section>
-        <div class="box-row location">
-            <div class="content">
-                <div class="col branch-contact-col">
-                    <div class="social" id="home-social-links">
-                        <a href="{{ homeContent.contactFacebook }}" target="blank"><i class="bi bi-facebook"></i></a>
-                        <a href="{{ homeContent.contactInstagram }}" target="blank"><i class="bi bi-instagram"></i></a>
-                        <a href="{{ homeContent.contactWhatsapp }}" target="blank" aria-label="WhatsApp"><i class="bi bi-whatsapp"></i></a>
-                    </div>
-                    <div><a href="mailto:{{ homeContent.contactEmail }}">{{ homeContent.contactEmail }}</a></div>
-                </div>
-                <div class="col branch-office-col">
-                    <div class="branch-office-list">
-                        {% if branchOffices is defined and branchOffices is not empty %}
-                            {% for branchOffice in branchOffices %}
-                                <article class="branch-office-home">
-                                    <h6 class="branch-office-title">
-                                        {{ branchOffice.name }}
-                                        {% if branchOffice.plaza %}
-                                            <span>· {{ branchOffice.plaza }}</span>
-                                        {% endif %}
-                                    </h6>
-                                    {% if branchOffice.place %}
-                                        <p class="branch-office-city">{{ branchOffice.place }}</p>
-                                    {% endif %}
-                                    {% if branchOffice.zone %}
-                                        <p class="branch-office-meta"><b>Zona:</b> {{ branchOffice.zone }}</p>
-                                    {% endif %}
-                                    {% if branchOffice.address %}
-                                        <p class="branch-office-meta">{{ branchOffice.address }}</p>
-                                    {% endif %}
-                                    {% if branchOffice.phone %}
-                                        <p class="branch-office-meta"><b>Tel:</b> {{ branchOffice.phone }}</p>
-                                    {% endif %}
-                                </article>
-                            {% endfor %}
-                        {% else %}
-                            <p>No hay sucursales publicas configuradas.</p>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+{% block stylesheets %}
+    {{ parent() }}
+{% endblock %}
 
-    {{ config_notice() }}
+{% block content_offset %}{% endblock %}
+
+{% block content %}
+<h1 class="sr-only">P&amp;B Studio — Pilates Reformer en Santa Fe</h1>
+
+{# ── HERO ─────────────────────────────────────────────────────────────────── #}
+<section class="relative overflow-hidden" style="min-height: 100vh;">
+
+    {# Imagen de fondo — cubre toda la sección incluido el header #}
+    <picture>
+        <source media="(max-width: 768px)"
+                srcset="{{ homeContent.bannerMobile ? '/media/uploads/site/' ~ homeContent.bannerMobile : asset('images/home/banner-mobile.jpg') }}">
+        <img src="{{ homeContent.bannerDesktop ? '/media/uploads/site/' ~ homeContent.bannerDesktop : asset('images/home/banner-desktop.jpg') }}"
+             alt="Estudio P&amp;B — Pilates Reformer"
+             class="absolute inset-0 w-full h-full object-cover object-center">
+    </picture>
+
+    {# Degradado horizontal: arena izquierda → transparente derecha #}
+    <div class="absolute inset-0" style="background: linear-gradient(to right, #F5F0EB 22%, rgba(245,240,235,0.9) 32%, rgba(245,240,235,0.65) 45%, rgba(245,240,235,0.32) 57%, rgba(245,240,235,0.08) 70%, transparent 80%);"></div>
+    {# Degradado vertical: arena en la franja del header (top 80px) → transparente #}
+    <div class="absolute inset-0" style="background: linear-gradient(to bottom, rgba(245,240,235,0.92) 0%, rgba(245,240,235,0.55) 8%, transparent 18%);"></div>
+
+    {# Copy — z-10 sobre el degradado, pt-16 para bajar del header sticky #}
+    <div class="relative z-10 max-w-7xl mx-auto px-6 md:px-12 lg:px-16 flex items-center" style="min-height: 100vh; padding-top: 5rem; padding-bottom: 4rem;">
+        <div class="max-w-lg">
+            <h2 class="font-display normal-case text-5xl md:text-6xl lg:text-7xl text-charcoal leading-[1.05] tracking-tight mb-5"
+                style="text-shadow: 0 1px 8px rgba(245,240,235,0.9), 0 2px 20px rgba(245,240,235,0.7);">
+                Transforma tu cuerpo<br>
+                sin entrenamientos<br>
+                agresivos.
+            </h2>
+            <p class="text-charcoal/80 text-base leading-relaxed mb-8 max-w-md" style="text-shadow: 0 0 3px rgba(245,240,235,1), 0 0 8px rgba(245,240,235,1), 0 0 16px rgba(245,240,235,1), 0 0 30px rgba(245,240,235,0.9), 0 0 50px rgba(245,240,235,0.7);">
+                Clases personalizadas en Reformer, Barra y entrenamiento funcional de bajo impacto
+                para mujeres que buscan verse fuertes, definidas y sentirse increíbles.
+            </p>
+            <div class="flex flex-wrap gap-3 mb-6">
+                <a href="{{ path('reservation_calendar', {'slug': config_first_branch_slug()}) }}"
+                   class="inline-flex items-center gap-2 px-6 py-3 bg-charcoal text-white text-sm font-semibold rounded-full hover:bg-charcoal/90 transition-colors">
+                    Reservar clase
+                    <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                </a>
+                <a href="{{ path('package_index') }}"
+                   class="inline-flex items-center px-6 py-3 border border-charcoal text-charcoal text-sm font-semibold rounded-full hover:bg-charcoal hover:text-white transition-colors"
+                   style="background: rgba(245,240,235,0.65);">
+                    Ver paquetes
+                </a>
+            </div>
+            {% if branchOffices is defined and branchOffices is not empty %}
+            <div class="flex flex-col gap-1">
+                {% for branch in branchOffices %}
+                <a href="#mapa"
+                   class="pbs-hero-branch-link flex items-center gap-1.5 text-sm"
+                   style="text-shadow: 0 0 3px rgba(245,240,235,1), 0 0 8px rgba(245,240,235,1), 0 0 16px rgba(245,240,235,1), 0 0 30px rgba(245,240,235,0.9), 0 0 50px rgba(245,240,235,0.7);"
+                   data-tab-idx="{{ loop.index0 }}"
+                   aria-label="Ver {{ branch.name }} en el mapa">
+                    <i class="bi bi-geo-alt text-terracota flex-shrink-0" aria-hidden="true"></i>
+                    <span class="text-charcoal font-medium">{{ branch.name }}</span>
+                    {% if branch.plaza %}
+                        <span class="text-charcoal/70">· {{ branch.plaza }}</span>
+                    {% elseif branch.place %}
+                        <span class="text-charcoal/70">· {{ branch.place }}</span>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</section>
+
+{# ── FEATURES ─────────────────────────────────────────────────────────────── #}
+{% if featureItems is defined and featureItems is not empty %}
+<section class="bg-sand py-14">
+    <div class="max-w-7xl mx-auto px-6">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-6">
+            {% for item in featureItems %}
+            <div class="flex flex-col items-center text-center gap-3">
+                <i class="bi {{ item.icon }} text-3xl text-terracota" aria-hidden="true"></i>
+                <p class="text-xs font-bold tracking-widest uppercase text-charcoal">{{ item.title }}</p>
+                <p class="text-xs text-muted leading-relaxed">{{ item.text }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{# ── NUESTRAS CLASES ──────────────────────────────────────────────────────── #}
+<section class="bg-white py-20" id="nuestras-clases">
+    <div class="max-w-7xl mx-auto px-6">
+
+        <div class="text-center mb-12">
+            <p class="text-xs font-medium tracking-widest uppercase text-terracota mb-3">Nuestras clases</p>
+            <h2 class="font-display normal-case text-3xl md:text-4xl text-charcoal">Elige tu práctica favorita</h2>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5 md:gap-6">
+
+            {# Tarjetas dinámicas: salones activos de sucursales públicas #}
+            {% for room in rooms %}
+                {% set disciplineName = room.discipline ? room.discipline.name : '' %}
+                {% set isGroup = room.type == 'g' %}
+                <div class="block">
+                    {% set calendarUrl = path('reservation_calendar', {'slug': room.branchOffice ? room.branchOffice.slug : firstBranchSlug}) ~ '?discipline=' ~ (disciplineName|url_encode) ~ '&type=' ~ room.type %}
+                    {% set fallbackIcons = [
+                                'bi-person-arms-up',
+                                'bi-person-standing',
+                                'bi-person-walking',
+                                'bi-heart-pulse',
+                                'bi-activity',
+                                'bi-wind',
+                                'bi-flower1',
+                                'bi-flower2',
+                                'bi-stars',
+                                'bi-sun',
+                                'bi-moon-stars',
+                                'bi-infinity',
+                                'bi-feather',
+                                'bi-droplet-half',
+                                'bi-peace'
+                            ] %}
+                            {% set iconIdx = (loop.index0 * 3 + random(0, fallbackIcons|length - 1)) % (fallbackIcons|length) %}
+                    <a href="{{ calendarUrl }}" class="group peer block no-underline">
+                    <div class="aspect-[3/4] overflow-hidden rounded-xl mb-4 bg-linen flex items-center justify-center relative">
+                        {% if room.image %}
+                            <img src="/media/uploads/exercise_rooms/{{ room.image }}"
+                                 alt="{{ room.name }}"
+                                 class="pbs-room-img w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                 style="opacity:0; transition: opacity .3s"
+                                 onload="clearTimeout(this._t); this.style.opacity='1';"
+                                 onerror="clearTimeout(this._t); this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <span style="display:none" class="w-full h-full absolute inset-0 flex items-center justify-center">
+                                <i class="bi {{ fallbackIcons[iconIdx] }} text-5xl text-terracota opacity-40 group-hover:opacity-70 transition-opacity" aria-hidden="true"></i>
+                            </span>
+                        {% else %}
+                            <i class="bi {{ fallbackIcons[iconIdx] }} text-5xl text-terracota opacity-40 group-hover:opacity-70 transition-opacity" aria-hidden="true"></i>
+                        {% endif %}
+                        <span class="absolute top-2 left-2 flex items-center gap-1 bg-charcoal/70 text-linen text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full backdrop-blur-sm">
+                            <i class="bi {{ isGroup ? 'bi-people-fill' : 'bi-person-fill' }} text-[8px]" aria-hidden="true"></i>
+                            {{ isGroup ? 'Grupal' : 'Individual' }}
+                        </span>
+                        {# Hover overlay opción C #}
+                        <span class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-charcoal/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                            <i class="bi bi-calendar-check text-white" style="font-size:2rem;"></i>
+                            <span class="text-white text-xs font-bold tracking-widest uppercase">Ver horarios</span>
+                        </span>
+                    </div>
+                    </a>
+                    <p class="text-xs font-bold tracking-widest uppercase text-charcoal mb-1 peer-hover:text-terracota transition-colors">{{ room.name }}</p>
+                    {% if room.description %}
+                        <p class="text-xs text-muted leading-relaxed">{{ room.description }}</p>
+                    {% else %}
+                        <p class="text-xs text-muted leading-relaxed">{{ disciplineName }}</p>
+                    {% endif %}
+                    {% if branchOffices|length > 1 and room.branchOffice %}
+                        <p class="text-[10px] text-terracota font-medium mb-3 leading-relaxed">
+                            <i class="bi bi-geo-alt-fill text-[9px]" aria-hidden="true"></i> {{ room.branchOffice.name }}
+                        </p>
+                    {% else %}
+                        <div class="mb-3"></div>
+                    {% endif %}
+                    <a href="#" data-class-slug="{{ disciplineName|lower|replace({' ': '-'}) }}" class="pbs-class-info-btn text-xs font-semibold text-charcoal hover:text-terracota transition-colors no-underline">Más información →</a>
+                </div>
+            {% endfor %}
+            <script>
+            (function(){
+                var TIMEOUT = 5000;
+                document.querySelectorAll('.pbs-room-img').forEach(function(img){
+                    if (img.complete && img.naturalWidth > 0) { img.style.opacity = '1'; return; }
+                    img._t = setTimeout(function(){
+                        if (!img.complete || img.naturalWidth === 0) {
+                            img.style.display = 'none';
+                            var fb = img.nextElementSibling;
+                            if (fb) fb.style.display = 'flex';
+                        }
+                    }, TIMEOUT);
+                });
+            })();
+            </script>
+
+            {# Box1: programa especial (dinámico desde backend) #}
+            {% if homeContent.box1Title %}
+            <a href="{{ homeContent.box1Url }}" class="group block no-underline" target="_blank" rel="noopener noreferrer">
+                <div class="aspect-[3/4] overflow-hidden rounded-xl mb-4 bg-linen relative overflow-hidden">
+                    <img src="{{ homeContent.box1Image ? '/media/uploads/site/' ~ homeContent.box1Image : asset('images/home/pilates.jpg') }}"
+                         alt="{{ homeContent.box1Title }}"
+                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    <span class="absolute top-2 left-2 bg-terracota text-white text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full">Online</span>
+                </div>
+                <p class="text-xs font-bold tracking-widest uppercase text-charcoal mb-1 group-hover:text-terracota transition-colors">{{ homeContent.box1Title }}</p>
+                <p class="text-xs text-muted mb-3 leading-relaxed">{{ homeContent.box1Description }}</p>
+                <span class="text-xs font-semibold text-charcoal group-hover:text-terracota transition-colors">{{ homeContent.box1LinkLabel }} →</span>
+            </a>
+            {% endif %}
+
+            {# Box2: programa especial (dinámico desde backend) #}
+            {% if homeContent.box2Title %}
+            <a href="{{ homeContent.box2Url }}" class="group block no-underline" target="_blank" rel="noopener noreferrer">
+                <div class="aspect-[3/4] overflow-hidden rounded-xl mb-4 bg-linen relative overflow-hidden">
+                    <img src="{{ homeContent.box2Image ? '/media/uploads/site/' ~ homeContent.box2Image : asset('images/home/barra.jpg') }}"
+                         alt="{{ homeContent.box2Title }}"
+                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    <span class="absolute top-2 left-2 bg-terracota text-white text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full">Online</span>
+                </div>
+                <p class="text-xs font-bold tracking-widest uppercase text-charcoal mb-1 group-hover:text-terracota transition-colors">{{ homeContent.box2Title }}</p>
+                <p class="text-xs text-muted mb-3 leading-relaxed">{{ homeContent.box2Description }}</p>
+                <span class="text-xs font-semibold text-charcoal group-hover:text-terracota transition-colors">{{ homeContent.box2LinkLabel }} →</span>
+            </a>
+            {% endif %}
+
+        </div>
+    </div>
+</section>
+
+{# ── PAQUETES ─────────────────────────────────────────────────────────────── #}
+<section class="bg-linen py-20" id="paquetes-destacados">
+    <div class="max-w-7xl mx-auto px-6">
+
+        <div class="text-center mb-12">
+            <p class="text-xs font-medium tracking-widest uppercase text-terracota mb-3">Paquetes destacados</p>
+            <h2 class="font-display normal-case text-3xl md:text-4xl text-charcoal">Elige el plan que va contigo</h2>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+
+            {# 8 clases #}
+            <div class="bg-white rounded-2xl p-8 flex flex-col">
+                <p class="text-xs font-bold tracking-widest uppercase text-charcoal mb-1">8 Clases</p>
+                <p class="text-xs text-muted mb-6">1 mes de vigencia</p>
+                <p class="font-display normal-case text-4xl text-charcoal mb-1">$2,560</p>
+                <p class="text-xs text-muted mb-6">($320 por clase)</p>
+                <ul class="space-y-2 mb-8 flex-1">
+                    <li class="flex items-start gap-2 text-xs text-charcoal">
+                        <i class="bi bi-check2 text-terracota mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        Clases en Reformer, Barra o Dual
+                    </li>
+                    <li class="flex items-start gap-2 text-xs text-charcoal">
+                        <i class="bi bi-check2 text-terracota mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        Reservación de clases en línea
+                    </li>
+                    <li class="flex items-start gap-2 text-xs text-charcoal">
+                        <i class="bi bi-check2 text-terracota mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        Grupos reducidos
+                    </li>
+                </ul>
+                <a href="{{ path('package_index') }}"
+                   class="block text-center py-2.5 px-6 rounded-full bg-charcoal text-white text-sm font-semibold hover:bg-charcoal/90 transition-colors">
+                    Comprar ahora
+                </a>
+            </div>
+
+            {# 16 clases — destacado #}
+            <div class="bg-white rounded-2xl p-8 ring-2 ring-terracota relative flex flex-col">
+                <span class="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-terracota text-white text-xs font-bold px-4 py-1 rounded-full tracking-wide whitespace-nowrap">
+                    Más elegido
+                </span>
+                <p class="text-xs font-bold tracking-widest uppercase text-charcoal mb-1">16 Clases</p>
+                <p class="text-xs text-muted mb-6">2 meses de vigencia</p>
+                <p class="font-display normal-case text-4xl text-terracota mb-1">$4,480</p>
+                <p class="text-xs text-muted mb-6">($280 por clase)</p>
+                <ul class="space-y-2 mb-8 flex-1">
+                    <li class="flex items-start gap-2 text-xs text-charcoal">
+                        <i class="bi bi-check2 text-terracota mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        Clases en Reformer, Barra o Dual
+                    </li>
+                    <li class="flex items-start gap-2 text-xs text-charcoal">
+                        <i class="bi bi-check2 text-terracota mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        Reservación de clases en línea
+                    </li>
+                    <li class="flex items-start gap-2 text-xs text-charcoal">
+                        <i class="bi bi-check2 text-terracota mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        Grupos reducidos
+                    </li>
+                </ul>
+                <a href="{{ path('package_index') }}"
+                   class="block text-center py-2.5 px-6 rounded-full bg-terracota text-white text-sm font-semibold hover:bg-terracota-dark transition-colors">
+                    Comprar ahora
+                </a>
+            </div>
+
+            {# 24 clases #}
+            <div class="bg-white rounded-2xl p-8 flex flex-col">
+                <p class="text-xs font-bold tracking-widest uppercase text-charcoal mb-1">24 Clases</p>
+                <p class="text-xs text-muted mb-6">3 meses de vigencia</p>
+                <p class="font-display normal-case text-4xl text-charcoal mb-1">$6,240</p>
+                <p class="text-xs text-muted mb-6">($260 por clase)</p>
+                <ul class="space-y-2 mb-8 flex-1">
+                    <li class="flex items-start gap-2 text-xs text-charcoal">
+                        <i class="bi bi-check2 text-terracota mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        Clases en Reformer, Barra o Dual
+                    </li>
+                    <li class="flex items-start gap-2 text-xs text-charcoal">
+                        <i class="bi bi-check2 text-terracota mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        Reservación de clases en línea
+                    </li>
+                    <li class="flex items-start gap-2 text-xs text-charcoal">
+                        <i class="bi bi-check2 text-terracota mt-0.5 flex-shrink-0" aria-hidden="true"></i>
+                        Grupos reducidos
+                    </li>
+                </ul>
+                <a href="{{ path('package_index') }}"
+                   class="block text-center py-2.5 px-6 rounded-full bg-charcoal text-white text-sm font-semibold hover:bg-charcoal/90 transition-colors">
+                    Comprar ahora
+                </a>
+            </div>
+
+        </div>
+
+        <p class="text-center mt-8 text-xs text-muted flex items-center justify-center gap-1.5">
+            <i class="bi bi-info-circle text-terracota" aria-hidden="true"></i>
+            Pregunta por nuestros paquetes para nuevas clientas.
+        </p>
+
+    </div>
+</section>
+
+{# ── GALERÍA ───────────────────────────────────────────────────────────────── #}
+<style>
+  .pbs-gallery-section { background: #f5f0eb; padding: 80px 0; }
+  .pbs-gallery-inner   { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+  .pbs-gallery-feature {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: 255px 255px;
+    gap: 10px;
+    height: 520px;
+  }
+  /* Contenedor con posición relativa + altura forzada → la imagen nunca distorsiona */
+  .pbs-gfeat-main {
+    grid-row: 1/3;
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+    height: 100%;
+  }
+  .pbs-gfeat-side {
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    height: 100%;
+  }
+  /* La imagen llena el contenedor por completo y se recorta (nunca se estira) */
+  .pbs-gfeat-main img,
+  .pbs-gfeat-side  img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    transition: opacity .4s ease, transform .5s ease;
+  }
+  .pbs-gfeat-main img,
+  .pbs-gfeat-side  img { cursor: zoom-in; }
+  .pbs-gfeat-main:hover img,
+  .pbs-gfeat-side:hover  img { transform: scale(1.04); }
+
+  /* ── Lightbox ── */
+  .pbs-lightbox {
+    display: none;
+    position: fixed; inset: 0; z-index: 9999;
+    background: rgba(20,16,14,.92);
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .pbs-lightbox.open { display: flex; }
+  .pbs-lightbox img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: min(92vw, 1100px);
+    max-height: 88vh;
+    object-fit: unset;
+    border-radius: 12px;
+    box-shadow: 0 24px 80px rgba(0,0,0,.6);
+    animation: pbs-lb-in .25s ease;
+  }
+  @keyframes pbs-lb-in {
+    from { opacity: 0; transform: scale(.94); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  .pbs-lightbox-close {
+    position: absolute; top: 20px; right: 24px;
+    background: none; border: none; color: #fff;
+    font-size: 32px; line-height: 1; cursor: pointer;
+    opacity: .8; transition: opacity .15s;
+  }
+  .pbs-lightbox-close:hover { opacity: 1; }
+  .pbs-gallery-controls { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 24px; }
+  .pbs-gallery-controls button {
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 2px solid #2C2C2C; background: transparent; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: #2C2C2C; transition: background .2s, color .2s;
+  }
+  .pbs-gallery-controls button:hover { background: #2C2C2C; color: #fff; }
+  .pbs-gdots-wrap { display: flex; gap: 6px; }
+  .pbs-gdots-wrap span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: rgba(44,44,44,.2); cursor: pointer; transition: background .2s, transform .2s;
+  }
+  .pbs-gdots-wrap span.active { background: #C17A6A; transform: scale(1.3); }
+  .pbs-gfeat-main img.pbs-fade, .pbs-gfeat-side img.pbs-fade { opacity: 0; }
+  @media (max-width: 640px) {
+    .pbs-gallery-feature {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto auto;
+      height: auto;
+      gap: 8px;
+    }
+    .pbs-gfeat-main { grid-row: auto; }
+    /* Opción C: alto natural, imagen completa sin recorte, máximo 340px */
+    .pbs-gfeat-main,
+    .pbs-gfeat-side {
+      position: static;
+      width: 100%;
+      padding-bottom: 0;
+      max-height: 340px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .pbs-gfeat-main img,
+    .pbs-gfeat-side  img {
+      position: static;
+      width: 100%;
+      height: auto;
+      max-height: 340px;
+      object-fit: contain;
+      object-position: center;
+    }
+  }
+
+  /* ── FAQ ── */
+  .pbs-faq-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .pbs-faq-card {
+    background: #f5f0eb; border: 1px solid rgba(44,44,44,.06);
+    border-radius: 16px; padding: 28px;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .pbs-faq-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(44,44,44,.08); }
+  .pbs-faq-card .pbs-faq-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .pbs-faq-card .pbs-faq-icon { font-size: 22px; color: #C17A6A; flex-shrink: 0; }
+  .pbs-faq-card .pbs-faq-q   { font-size: 14px; font-weight: 700; color: #2C2C2C; line-height: 1.4; margin: 0; }
+  .pbs-faq-card .pbs-faq-a   { font-size: 13px; color: #9e8c84; line-height: 1.65; }
+  @media (max-width: 768px) {
+    .pbs-faq-cards { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 480px) {
+    .pbs-faq-cards { grid-template-columns: 1fr; }
+  }
+</style>
+
+<section class="pbs-gallery-section" id="galeria">
+    <div class="pbs-gallery-inner">
+
+        <div class="text-center mb-10">
+            <p class="text-xs font-medium tracking-widest uppercase text-terracota mb-3">Nuestro estudio</p>
+            <h2 class="text-charcoal" style="font-size:clamp(1.6rem,3vw,2.2rem);font-weight:700;line-height:1.2">Un espacio diseñado para moverte</h2>
+        </div>
+
+        {# Lightbox overlay #}
+        <div id="pbs-lightbox" class="pbs-lightbox" role="dialog" aria-modal="true" aria-label="Ver imagen">
+            <button class="pbs-lightbox-close" id="pbs-lb-close" aria-label="Cerrar">&times;</button>
+            <img id="pbs-lb-img" src="" alt="P&amp;B Studio">
+        </div>
+
+        {% if galleryImages is defined and galleryImages|length >= 3 %}
+        <div class="pbs-gallery-feature">
+            <div class="pbs-gfeat-main">
+                <img id="pbs-gimg-main" src="{{ galleryImages[0] }}" alt="P&amp;B Studio — espacio de entrenamiento">
+            </div>
+            <div class="pbs-gfeat-side">
+                <img id="pbs-gimg-side1" src="{{ galleryImages[1] }}" alt="P&amp;B Studio — sala de reformer">
+            </div>
+            <div class="pbs-gfeat-side">
+                <img id="pbs-gimg-side2" src="{{ galleryImages[2] }}" alt="P&amp;B Studio — ambiente del estudio">
+            </div>
+        </div>
+
+        <div class="pbs-gallery-controls">
+            <button id="pbs-gprev" aria-label="Anterior"><i class="bi bi-chevron-left" aria-hidden="true"></i></button>
+            <div class="pbs-gdots-wrap" id="pbs-gdots"></div>
+            <button id="pbs-gnext" aria-label="Siguiente"><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+        </div>
+
+        <script>
+        (function(){
+            var allUrls = {{ galleryImages|json_encode|raw }};
+            var imgMain  = document.getElementById('pbs-gimg-main');
+            var imgSide1 = document.getElementById('pbs-gimg-side1');
+            var imgSide2 = document.getElementById('pbs-gimg-side2');
+            var dotsWrap = document.getElementById('pbs-gdots');
+            var current  = 0;
+            var autoTimer = null;
+            var slides   = [];
+
+            // Precarga todas las imágenes y mide su área natural (px²)
+            function preloadAll(urls, cb) {
+                var results = [];
+                var done = 0;
+                urls.forEach(function(url) {
+                    var img = new Image();
+                    img.onload = img.onerror = function() {
+                        var w = img.naturalWidth  || 1;
+                        var h = img.naturalHeight || 1;
+                        results.push({ url: url, w: w, h: h, area: w * h });
+                        if (++done === urls.length) cb(results);
+                    };
+                    img.src = url;
+                });
+            }
+
+            // Distribuye imágenes en slides:
+            // - Las primeras N = ceil(total/3) van al slot principal de cada slide
+            // - El resto son laterales; si no alcanzan exacto, ciclan con módulo
+            function buildSlides(urls) {
+                var total     = urls.length;
+                var numSlides = Math.max(1, Math.ceil(total / 3));
+                var mains     = urls.slice(0, numSlides);
+                var sides     = urls.slice(numSlides);
+                var sideCount = sides.length;
+                var pages     = [];
+                for (var i = 0; i < numSlides; i++) {
+                    var s1 = sideCount > 0 ? sides[(i * 2)     % sideCount] : mains[i];
+                    var s2 = sideCount > 0 ? sides[(i * 2 + 1) % sideCount] : mains[i];
+                    pages.push([mains[i], s1, s2]);
+                }
+                return pages;
+            }
+
+            function resetTimer() {
+                if (autoTimer) clearInterval(autoTimer);
+                autoTimer = setInterval(function() {
+                    goTo((current + 1) % slides.length);
+                }, 4000);
+            }
+
+            function goTo(idx) {
+                var imgs = [imgMain, imgSide1, imgSide2];
+                imgs.forEach(function(img) { img.classList.add('pbs-fade'); });
+                setTimeout(function() {
+                    imgMain.src  = slides[idx][0];
+                    imgSide1.src = slides[idx][1];
+                    imgSide2.src = slides[idx][2];
+                    imgs.forEach(function(img) { img.classList.remove('pbs-fade'); });
+                    fitImage(imgMain,  slides[idx][0]);
+                    fitImage(imgSide1, slides[idx][1]);
+                    fitImage(imgSide2, slides[idx][2]);
+                    dotsWrap.querySelectorAll('span').forEach(function(d, i) {
+                        d.classList.toggle('active', i === idx);
+                    });
+                    current = idx;
+                }, 350);
+            }
+
+            // Ratio del contenedor (3:2 ≈ 1.5 tanto en mobile como desktop)
+            var CONTAINER_RATIO = 3 / 2;
+            var CROP_THRESHOLD  = 0.25; // si se recortaría más del 25%, usar contain
+
+            // Mapa url → {w, h} para consultar rápido en goTo
+            var imgDims = {};
+
+            // Aplica object-fit correcto según cuánto se recortaría la imagen
+            function fitImage(imgEl, url) {
+                var d = imgDims[url];
+                if (!d) return;
+                var imgRatio  = d.w / d.h;
+                var cropFrac  = 1 - Math.min(CONTAINER_RATIO, imgRatio) / Math.max(CONTAINER_RATIO, imgRatio);
+                if (cropFrac > CROP_THRESHOLD) {
+                    imgEl.classList.add('pbs-contain');
+                } else {
+                    imgEl.classList.remove('pbs-contain');
+                }
+            }
+
+            // ── Lightbox ──
+            var lightbox   = document.getElementById('pbs-lightbox');
+            var lbImg      = document.getElementById('pbs-lb-img');
+            var lbClose    = document.getElementById('pbs-lb-close');
+            var lbOpen     = false;
+
+            function openLightbox(src) {
+                lbImg.src = src;
+                lightbox.classList.add('open');
+                document.body.style.overflow = 'hidden';
+                lbOpen = true;
+                if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+            }
+            function closeLightbox() {
+                lightbox.classList.remove('open');
+                document.body.style.overflow = '';
+                lbOpen = false;
+                resetTimer();
+            }
+            lbClose.addEventListener('click', closeLightbox);
+            lightbox.addEventListener('click', function(e) { if (e.target === lightbox) closeLightbox(); });
+            document.addEventListener('keydown', function(e) { if (e.key === 'Escape' && lbOpen) closeLightbox(); });
+
+            // Añadir click a las 3 imágenes de la galería
+            [imgMain, imgSide1, imgSide2].forEach(function(img) {
+                img.addEventListener('click', function() { openLightbox(img.src); });
+            });
+
+            preloadAll(allUrls, function(measured) {
+                // Guardar dimensiones por URL para fitImage
+                measured.forEach(function(m) { imgDims[m.url] = { w: m.w, h: m.h }; });
+
+                // Ordenar desc por área: las imágenes más grandes van a los slots principales
+                measured.sort(function(a, b) { return b.area - a.area; });
+                var orderedUrls = measured.map(function(m) { return m.url; });
+                slides = buildSlides(orderedUrls);
+
+                // Actualizar imágenes iniciales con el orden correcto (más grande en main)
+                imgMain.src  = slides[0][0];
+                imgSide1.src = slides[0][1];
+                imgSide2.src = slides[0][2];
+                fitImage(imgMain,  slides[0][0]);
+                fitImage(imgSide1, slides[0][1]);
+                fitImage(imgSide2, slides[0][2]);
+
+                // Crear dots
+                slides.forEach(function(_, i) {
+                    var d = document.createElement('span');
+                    if (i === 0) d.classList.add('active');
+                    d.addEventListener('click', function() { goTo(i); resetTimer(); });
+                    dotsWrap.appendChild(d);
+                });
+
+                // Botones prev/next → resetean el timer
+                document.getElementById('pbs-gprev').addEventListener('click', function() {
+                    goTo((current - 1 + slides.length) % slides.length);
+                    resetTimer();
+                });
+                document.getElementById('pbs-gnext').addEventListener('click', function() {
+                    goTo((current + 1) % slides.length);
+                    resetTimer();
+                });
+
+                resetTimer();
+            });
+        })();
+        </script>
+        {% endif %}
+
+    </div>
+</section>
+
+{# ── FAQ ───────────────────────────────────────────────────────────────────── #}
+{% if faqItems is not empty %}
+<section class="bg-white py-20">
+    <div class="max-w-5xl mx-auto px-6">
+
+        <div class="text-center mb-12">
+            <p class="text-xs font-medium tracking-widest uppercase text-terracota mb-3">Preguntas frecuentes</p>
+            <h2 class="text-charcoal" style="font-size:clamp(1.6rem,3vw,2.2rem);font-weight:700;line-height:1.2">Todo lo que necesitas saber</h2>
+        </div>
+
+        <div class="pbs-faq-cards">
+            {% for item in faqItems %}
+            <div class="pbs-faq-card">
+                <div class="pbs-faq-header">
+                    <i class="bi {{ item.icon }} pbs-faq-icon" aria-hidden="true"></i>
+                    <p class="pbs-faq-q">{{ item.question }}</p>
+                </div>
+                <p class="pbs-faq-a">{{ item.answer }}</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="text-center mt-12">
+            <p class="text-sm mb-4" style="color:#9e8c84">¿Tienes otra pregunta? Escríbenos directamente</p>
+            <a href="https://wa.me/525552920036" target="_blank" rel="noopener noreferrer"
+               class="inline-flex items-center gap-2 text-white rounded-full text-xs font-bold tracking-widest uppercase no-underline"
+               style="background:#C17A6A;padding:13px 28px;transition:background .2s"
+               onmouseover="this.style.background='#a8655a'" onmouseout="this.style.background='#C17A6A'">
+                <i class="bi bi-whatsapp" aria-hidden="true"></i>
+                Contactar por WhatsApp
+            </a>
+        </div>
+
+    </div>
+</section>
+{% endif %}
+
+{# ── SCHEDULE + SUCURSALES ────────────────────────────────────────────────── #}
+<section class="pbs-cta-section" id="horarios">
+
+    {# Izquierda: próximas clases disponibles (dinámico desde backend) #}
+    <div class="pbs-sched-col">
+        {% set schedDate = upcomingSessions is not empty ? upcomingSessions[0].session.dateTimeStart : date('now', 'America/Mexico_City') %}
+        <div class="pbs-sched-header">
+            <p class="pbs-sched-eyebrow">Próximas clases</p>
+            <span class="pbs-sched-date">{{ schedDate|format_date(pattern='EEE d MMM', locale='es_MX', timezone='America/Mexico_City') }}</span>
+        </div>
+
+        {% if upcomingSessions is defined and upcomingSessions is not empty %}
+        <div class="pbs-sched-list">
+            {% for item in upcomingSessions %}
+            {% set session = item.session %}
+            {% set remaining = item.remaining %}
+            {% set isFull = session.status == constant('App\\Entity\\Session::STATUS_FULL') or remaining == 0 %}
+            <a href="{{ path('reservation_confirm', {'id': session.id}) }}"
+               data-remodal
+               data-url="{{ path('reservation_confirm', {'id': session.id}) }}"
+               class="pbs-sched-item"
+               aria-label="Reservar {{ session.discipline.name }} — {{ session.dateTimeStart|date('g:i A', 'America/Mexico_City') }}">
+                <div class="pbs-sched-time">
+                    <div class="pbs-t">{{ session.dateTimeStart|date('g:i', 'America/Mexico_City') }}</div>
+                    <div class="pbs-d">{{ session.dateTimeStart|date('A', 'America/Mexico_City') }}</div>
+                </div>
+                <div class="pbs-sched-sep"></div>
+                <div class="pbs-sched-info">
+                    <div class="pbs-sc-name">{{ session.discipline.name }}</div>
+                    <div class="pbs-sc-meta">
+                        {% if session.instructor.profile %}
+                        <span><i class="bi bi-person" aria-hidden="true"></i> {{ session.instructor.profile.firstname }}</span>
+                        {% endif %}
+                        <span><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ session.exerciseRoom.branchOffice.name }}</span>
+                    </div>
+                    {% if session.information %}
+                    <div class="pbs-sc-tags">
+                        <span class="pbs-sc-tag">{{ session.information }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="pbs-sched-spots">
+                    {% if isFull %}
+                        <div class="pbs-sp-last">Llena</div>
+                    {% elseif remaining <= 2 %}
+                        <div class="pbs-sp-num">{{ remaining }}</div>
+                        <div class="pbs-sp-last">¡Últimos!</div>
+                    {% else %}
+                        <div class="pbs-sp-num">{{ remaining }}</div>
+                        <div class="pbs-sp-lbl">lugares</div>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+
+        {% if upcomingSessions|length == 1 %}
+        <div class="pbs-sched-hint">
+            <i class="bi bi-calendar3" aria-hidden="true"></i>
+            <div>
+                <p class="pbs-sched-hint-title">Esta es la única clase con disponibilidad.</p>
+                <p class="pbs-sched-hint-sub">Las demás están llenas. Consulta el calendario para unirte a la lista de espera.</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="flex flex-col items-center justify-center text-center py-8 px-4 gap-3 flex-1"
+             x-data x-init="$el.classList.add('animate__animated','animate__fadeIn')" style="animation-duration:.6s;">
+            <i class="bi bi-moon-stars text-5xl text-terracota animate__animated animate__bounce"
+               style="animation-duration:1.6s;animation-delay:.4s;animation-iteration-count:2;"
+               aria-hidden="true"></i>
+            <p class="text-charcoal font-semibold text-sm leading-snug mt-1">
+                Aún no hay sesiones próximas en agenda.
+            </p>
+            <p class="text-muted text-xs leading-relaxed">
+                Pronto se abrirán nuevas clases.<br>¡Mantente al pendiente del calendario!
+            </p>
+            {% if branchOffices is defined and branchOffices is not empty %}
+            <a href="{{ path('reservation_calendar', {'slug': branchOffices[0].slug}) }}"
+               class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold border px-4 py-2 rounded-full transition-all duration-200"
+               style="color:#C17A6A;border-color:rgba(193,122,106,0.4);" 
+               onmouseenter="this.style.background='#C17A6A';this.style.color='#fff';this.style.borderColor='#C17A6A';"
+               onmouseleave="this.style.background='';this.style.color='#C17A6A';this.style.borderColor='rgba(193,122,106,0.4)';">
+                Explorar el calendario <i class="bi bi-arrow-right" aria-hidden="true"></i>
+            </a>
+            {% else %}
+            <a href="{{ path('reservation_calendar', {'slug': 'santa-fe'}) }}"
+               class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold border px-4 py-2 rounded-full transition-all duration-200"
+               style="color:#C17A6A;border-color:rgba(193,122,106,0.4);"
+               onmouseenter="this.style.background='#C17A6A';this.style.color='#fff';this.style.borderColor='#C17A6A';"
+               onmouseleave="this.style.background='';this.style.color='#C17A6A';this.style.borderColor='rgba(193,122,106,0.4)';">
+                Explorar el calendario <i class="bi bi-arrow-right" aria-hidden="true"></i>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if upcomingSessions is defined and upcomingSessions is not empty %}
+        {% if branchOffices is defined and branchOffices is not empty %}
+        <a href="{{ path('reservation_calendar', {'slug': branchOffices[0].slug}) }}" class="pbs-sched-more">
+            Ver horario completo <i class="bi bi-arrow-right" aria-hidden="true"></i>
+        </a>
+        {% else %}
+        <a href="#" class="pbs-sched-more">
+            Ver horario completo <i class="bi bi-arrow-right" aria-hidden="true"></i>
+        </a>
+        {% endif %}
+        {% endif %}
+    </div>
+
+    {# Derecha: selector de sucursales con mapa dinámico #}
+    <div class="pbs-branch-col" id="mapa">
+
+        {% if branchOffices is defined and branchOffices is not empty %}
+
+        {% if branchOffices|length > 1 %}
+        <p class="pbs-branch-eyebrow">Nuestras sucursales</p>
+
+        <div class="pbs-branch-tabs">
+            {% for branchOffice in branchOffices %}
+            {% set _c = branchCoords[branchOffice.id] ?? null %}
+            {% if _c.embedSrc is defined %}
+                {% set _tabSrc = _c.embedSrc %}
+            {% elseif _c.lat is defined %}
+                {% set _tabSrc = 'https://maps.google.com/maps?q=' ~ _c.lat ~ ',' ~ _c.lng ~ '&z=18&output=embed' %}
+            {% elseif branchOffice.address %}
+                {% set _tabSrc = 'https://maps.google.com/maps?q=' ~ (branchOffice.address|url_encode) ~ '&z=16&output=embed' %}
+            {% else %}
+                {% set _tabSrc = '' %}
+            {% endif %}
+            <button class="pbs-branch-tab{% if loop.first %} active{% endif %}"
+                    id="pbs-tab-{{ loop.index0 }}"
+                    data-name="{{ branchOffice.name|e('html_attr') }}"
+                    data-addr="{{ branchOffice.address|default('')|e('html_attr') }}{% if branchOffice.plaza %} · {{ branchOffice.plaza|e('html_attr') }}{% elseif branchOffice.place %} · {{ branchOffice.place|e('html_attr') }}{% endif %}"
+                    data-zone="{{ branchOffice.zone|default('')|e('html_attr') }}"
+                    data-map-src="{{ _tabSrc|e('html_attr') }}"
+                    data-has-map="{{ _tabSrc is not empty ? '1' : '0' }}"
+                    data-gmaps="https://www.google.com/maps/search/?api=1&query={{ (branchOffice.plaza is not empty ? branchOffice.plaza ~ ' ' ~ branchOffice.name ~ ' ' ~ branchOffice.zone : branchOffice.name ~ ' ' ~ branchOffice.address)|url_encode|e('html_attr') }}"
+                    type="button">
+                <i class="bi bi-geo-alt" aria-hidden="true"></i> {{ branchOffice.name }}
+            </button>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% set first = branchOffices[0] %}
+        {% set _firstCoords = branchCoords[first.id] ?? null %}
+        {% if _firstCoords.embedSrc is defined %}
+            {% set _firstSrc = _firstCoords.embedSrc %}
+        {% elseif _firstCoords.lat is defined %}
+            {% set _firstSrc = 'https://maps.google.com/maps?q=' ~ _firstCoords.lat ~ ',' ~ _firstCoords.lng ~ '&z=18&output=embed' %}
+        {% elseif first.address %}
+            {% set _firstSrc = 'https://maps.google.com/maps?q=' ~ (first.address|url_encode) ~ '&z=16&output=embed' %}
+        {% else %}
+            {% set _firstSrc = '' %}
+        {% endif %}
+        <div class="pbs-map-card{% if branchOffices|length == 1 %} pbs-map-single{% endif %}">
+            <iframe id="pbs-branch-map" class="pbs-map-leaflet"
+                    src="{{ _firstSrc }}"
+                    allowfullscreen
+                    referrerpolicy="no-referrer-when-downgrade"
+                    {% if not _firstSrc %}style="display:none"{% endif %}>
+            </iframe>
+            <div id="pbs-branch-nomap" class="pbs-map-leaflet pbs-map-no-addr"{% if _firstSrc %} style="display:none"{% endif %}>
+                <i class="bi bi-geo-alt" aria-hidden="true"></i>
+                <p>No hay dirección disponible</p>
+            </div>
+            <div class="pbs-map-body">
+                <div class="pbs-map-name">
+                    <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+                    <span id="pbs-branch-name">{{ first.name }}</span>
+                </div>
+                <div id="pbs-branch-addr" class="pbs-map-addr">
+                    {{ first.address }}{% if first.plaza %} · {{ first.plaza }}{% elseif first.place %} · {{ first.place }}{% endif %}
+                </div>
+                <div class="pbs-map-badges">
+                    <span class="pbs-map-badge">
+                        <i class="bi bi-signpost-split" aria-hidden="true"></i>
+                        <span id="pbs-branch-zone">{{ first.zone|default('') }}</span>
+                    </span>
+                    <a id="pbs-branch-gmaps"
+                       href="https://www.google.com/maps/search/?api=1&query={{ (first.plaza is not empty ? first.plaza ~ ' ' ~ first.name ~ ' ' ~ first.zone : first.name ~ ' ' ~ first.address)|url_encode }}"
+                       target="_blank" rel="noopener noreferrer"
+                       class="pbs-map-badge pbs-map-gmaps-link">
+                        <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i> Ver en Google Maps
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {% endif %}
+    </div>
+
+</section>
+
+{{ config_notice() }}
+
+{# ── PANEL LATERAL: detalle de clase ───────────────────────────────────────── #}
+<div id="pbs-class-panel" aria-modal="true" role="dialog" aria-label="Detalle de clase"
+     style="display:none; position:fixed; inset:0; z-index:1050; background:rgba(28,22,18,.5); backdrop-filter:blur(2px);">
+
+    <div id="pbs-class-panel-inner"
+         style="position:absolute; right:0; top:0; bottom:0; width:min(460px,100vw);
+                display:flex; flex-direction:column; background:#FAFAF8;
+                box-shadow:-8px 0 48px rgba(44,44,44,.18);
+                transform:translateX(100%); transition:transform .32s cubic-bezier(.4,0,.2,1);">
+
+        {# ── Cabecera arena ── #}
+        <div style="background:#F5F0EB; padding:28px 26px 22px; position:relative; flex-shrink:0; border-bottom:1px solid #E0DAD4;">
+            <button id="pbs-class-panel-close" aria-label="Cerrar"
+                    style="position:absolute; top:16px; right:18px; background:transparent;
+                           border:1px solid #D0C8C0; cursor:pointer; width:30px; height:30px; border-radius:50%;
+                           color:#A09890; font-size:12px; display:flex; align-items:center; justify-content:center;">
+                &#10005;
+            </button>
+            <h2 id="pbs-panel-focus"
+                style="font-family:'Libre Baskerville',serif; font-size:1.45rem; font-weight:700; color:#2C2C2C;
+                       margin:0 0 10px; line-height:1.2; padding-right:44px; font-style:normal; text-transform:none; letter-spacing:-.3px;">
+                Pilates Reformer: Fuerza funcional y control del core
+            </h2>
+            <p id="pbs-panel-desc"
+               style="font-size:12px; color:#8C8C8C; margin:0; line-height:1.65;">
+                Bajo impacto, movimiento consciente, resultados reales.
+            </p>
+        </div>
+
+        {# ── Fila de stats ── #}
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; background:#EDE8E3; border-bottom:1px solid #E0DAD4; flex-shrink:0;">
+            <div style="text-align:center; padding:14px 8px; border-right:1px solid #E0DAD4;">
+                <div style="font-family:'Libre Baskerville',serif; font-size:1.4rem; font-weight:400; color:#2C2C2C; line-height:1;">50</div>
+                <div style="font-family:'Inter',sans-serif; font-size:8.5px; font-weight:500; letter-spacing:1.5px; text-transform:uppercase; color:#B0A8A0; margin-top:5px;">minutos</div>
+            </div>
+            <div style="text-align:center; padding:14px 8px; border-right:1px solid #E0DAD4;">
+                <div style="font-family:'Libre Baskerville',serif; font-size:1.4rem; font-weight:400; color:#2C2C2C; line-height:1;">≤6</div>
+                <div style="font-family:'Inter',sans-serif; font-size:8.5px; font-weight:500; letter-spacing:1.5px; text-transform:uppercase; color:#B0A8A0; margin-top:5px;">personas</div>
+            </div>
+            <div style="text-align:center; padding:14px 8px;">
+                <div style="font-family:'Libre Baskerville',serif; font-size:1.1rem; font-weight:400; color:#C17A6A; line-height:1; letter-spacing:2px;">★★★</div>
+                <div style="font-family:'Inter',sans-serif; font-size:8.5px; font-weight:500; letter-spacing:1.5px; text-transform:uppercase; color:#B0A8A0; margin-top:5px;">nivel</div>
+            </div>
+        </div>
+
+        {# ── Cuerpo scrollable ── #}
+        <div style="flex:1; overflow-y:auto; padding:24px 26px 16px; background:#FAFAF8;">
+
+            <p style="font-size:9px; font-weight:700; letter-spacing:2.5px; text-transform:uppercase;
+                      color:#C17A6A; margin:0 0 20px;">Así es la clase</p>
+
+            {# Timeline #}
+            <div style="position:relative; padding-left:22px; border-left:1.5px solid #E0DAD4; display:flex; flex-direction:column; gap:24px; margin-bottom:24px;">
+
+                <div style="position:relative;">
+                    <span style="position:absolute; left:-27px; top:5px; width:9px; height:9px; border-radius:50%;
+                                 background:#C17A6A; border:2px solid #FAFAF8; box-shadow:0 0 0 1.5px #C17A6A; display:block;"></span>
+                    <p style="margin:0 0 4px; font-family:'Libre Baskerville',serif; font-size:13px; font-weight:700; color:#2C2C2C; line-height:1.3;">Calentamiento articular</p>
+                    <p style="margin:0; font-size:12px; color:#8C8C8C; line-height:1.6;">Activación del centro y movilización progresiva de articulaciones.</p>
+                </div>
+
+                <div style="position:relative;">
+                    <span style="position:absolute; left:-27px; top:5px; width:9px; height:9px; border-radius:50%;
+                                 background:#C17A6A; border:2px solid #FAFAF8; box-shadow:0 0 0 1.5px #C17A6A; display:block;"></span>
+                    <p style="margin:0 0 4px; font-family:'Libre Baskerville',serif; font-size:13px; font-weight:700; color:#2C2C2C; line-height:1.3;">Bloque principal en reformer</p>
+                    <p style="margin:0; font-size:12px; color:#8C8C8C; line-height:1.6;">Core, fuerza funcional y trabajo de todo el cuerpo con resistencia variable.</p>
+                </div>
+
+                <div style="position:relative;">
+                    <span style="position:absolute; left:-27px; top:5px; width:9px; height:9px; border-radius:50%;
+                                 background:#C17A6A; border:2px solid #FAFAF8; box-shadow:0 0 0 1.5px #C17A6A; display:block;"></span>
+                    <p style="margin:0 0 4px; font-family:'Libre Baskerville',serif; font-size:13px; font-weight:700; color:#2C2C2C; line-height:1.3;">Movilidad y elongación</p>
+                    <p style="margin:0; font-size:12px; color:#8C8C8C; line-height:1.6;">Stretching integrado y respiración consciente al cierre.</p>
+                </div>
+
+                <div style="position:relative;">
+                    <span style="position:absolute; left:-27px; top:5px; width:9px; height:9px; border-radius:50%;
+                                 background:#D8CFC8; border:2px solid #FAFAF8; box-shadow:0 0 0 1.5px #D8CFC8; display:block;"></span>
+                    <p style="margin:0 0 4px; font-family:'Libre Baskerville',serif; font-size:13px; font-weight:700; color:#2C2C2C; line-height:1.3;">Vuelta a la calma</p>
+                    <p style="margin:0; font-size:12px; color:#8C8C8C; line-height:1.6;">Liberación de tensiones y regulación del sistema nervioso.</p>
+                </div>
+
+            </div>
+
+            {# Chips para quién es #}
+            <p style="font-size:9px; font-weight:700; letter-spacing:2.5px; text-transform:uppercase;
+                      color:#C17A6A; margin:0 0 14px;">Para ti si…</p>
+            <div style="display:flex; flex-wrap:wrap; gap:7px;">
+                <span style="background:#F5F0EB; border:1px solid #E0DAD4; color:#5C5048; font-size:11.5px; font-weight:500; padding:6px 14px; border-radius:6px;">Mejorar postura</span>
+                <span style="background:#F5F0EB; border:1px solid #E0DAD4; color:#5C5048; font-size:11.5px; font-weight:500; padding:6px 14px; border-radius:6px;">Sin impacto articular</span>
+                <span style="background:#F5F0EB; border:1px solid #E0DAD4; color:#5C5048; font-size:11.5px; font-weight:500; padding:6px 14px; border-radius:6px;">Fortalecer el core</span>
+                <span style="background:#F5F0EB; border:1px solid #E0DAD4; color:#5C5048; font-size:11.5px; font-weight:500; padding:6px 14px; border-radius:6px;">Retomar el movimiento</span>
+            </div>
+
+        </div>
+
+        {# ── CTA fijo ── #}
+        <div style="padding:14px 18px 22px; background:#FAFAF8; border-top:1px solid #E0DAD4; flex-shrink:0;">
+            <a id="pbs-class-panel-cta" href="#"
+               style="display:block; background:#2C2C2C; color:#F5F0EB; text-align:center;
+                      padding:14px; border-radius:7px; font-size:10.5px; font-weight:700;
+                      letter-spacing:2px; text-transform:uppercase; text-decoration:none;">
+                Reservar clase &rarr;
+            </a>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+    (function () {
+        var mapFrame  = document.getElementById('pbs-branch-map');
+        var noMapDiv  = document.getElementById('pbs-branch-nomap');
+        var nameEl    = document.getElementById('pbs-branch-name');
+        var addrEl    = document.getElementById('pbs-branch-addr');
+        var zoneEl    = document.getElementById('pbs-branch-zone');
+        var gmapsEl   = document.getElementById('pbs-branch-gmaps');
+        function showMap(src) {
+            if (mapFrame.src !== src) { mapFrame.src = src; }
+            mapFrame.style.display = '';
+            noMapDiv.style.display = 'none';
+        }
+        function hideMap() {
+            mapFrame.style.display = 'none';
+            noMapDiv.style.display = '';
+        }
+
+        /* Hero branch links → scroll a mapa + activar tab */
+        document.querySelectorAll('.pbs-hero-branch-link').forEach(function (link) {
+            link.addEventListener('click', function (e) {
+                e.preventDefault();
+                var idx = link.getAttribute('data-tab-idx');
+                var tab = document.getElementById('pbs-tab-' + idx);
+                if (tab) { tab.click(); }
+                var mapaEl = document.getElementById('mapa');
+                if (mapaEl) {
+                    mapaEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        /* Cambio de tabs */
+        document.querySelectorAll('.pbs-branch-tab').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.pbs-branch-tab').forEach(function (b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                if (nameEl)  nameEl.textContent = btn.dataset.name;
+                if (addrEl)  addrEl.textContent = btn.dataset.addr;
+                if (zoneEl)  zoneEl.textContent = btn.dataset.zone;
+                if (gmapsEl && btn.dataset.gmaps) gmapsEl.href = btn.dataset.gmaps;
+
+                if (btn.dataset.hasMap === '1' && btn.dataset.mapSrc) {
+                    showMap(btn.dataset.mapSrc);
+                } else {
+                    hideMap();
+                }
+            });
+        });
+    })();
+    </script>
+
+    <script>
+    // === Panel lateral: detalle de clase (prototipo datos prueba) ===
+    (function () {
+        var panel    = document.getElementById('pbs-class-panel');
+        var inner    = document.getElementById('pbs-class-panel-inner');
+        var closeBtn = document.getElementById('pbs-class-panel-close');
+        if (!panel) return;
+
+        function openPanel() {
+            panel.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    inner.style.transform = 'translateX(0)';
+                });
+            });
+        }
+
+        function closePanel() {
+            inner.style.transform = 'translateX(100%)';
+            setTimeout(function () {
+                panel.style.display = 'none';
+                document.body.style.overflow = '';
+            }, 320);
+        }
+
+        closeBtn.addEventListener('click', closePanel);
+        panel.addEventListener('click', function (e) { if (e.target === panel) closePanel(); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePanel(); });
+
+        document.querySelectorAll('.pbs-class-info-btn').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                openPanel();
+            });
+        });
+    })();
+    </script>
+
 {% endblock %}

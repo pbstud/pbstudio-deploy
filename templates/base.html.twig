@@ -29,9 +29,6 @@
         {{ encore_entry_link_tags('app') }}
     {% endblock %}
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
     {{ config_header_scripts() }}
 </head>
 <body>
@@ -42,28 +39,12 @@
     <div class="processing"><img src="{{ asset('images/loader.gif') }}" alt="Procesando"></div>
 </div>
 
-<div class="off-canvas" id="select-branch-menu">
-    <div class="container">
-        <div class="close-off-canvas">
-            <a href="#" class="reserve-class-toggle">
-                <span></span>
-            </a>
-        </div>
-        <h6>Selecciona una sucursal</h6>
-        {{ render(controller('App\\Controller\\BranchOfficeController::all')) }}
-    </div>
-</div>
+{# Toast Alpine — disponible en toda la app pública #}
+{% include 'components/_toast.html.twig' %}
 
-<a
-    class="floating-whatsapp"
-    data-floating-whatsapp
-    href="{{ config_whatsapp_url()|trim }}"
-    target="_blank"
-    rel="noopener noreferrer"
-    aria-label="Contactar por WhatsApp"
->
-    <i class="bi bi-whatsapp" aria-hidden="true"></i>
-</a>
+
+
+
 
 {% block javascripts %}
     {{ encore_entry_script_tags('app') }}

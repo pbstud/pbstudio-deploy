@@ -25,6 +25,8 @@ class ConfigExtension extends AbstractExtension
                 'needs_environment' => true,
             ]),
             new TwigFunction('config_whatsapp_url', [ConfigExtensionRuntime::class, 'getWhatsappUrl']),
+            new TwigFunction('config_whatsapp_phone', [ConfigExtensionRuntime::class, 'getWhatsappPhone']),
+            new TwigFunction('config_first_branch_slug', [ConfigExtensionRuntime::class, 'getFirstPublicBranchSlug']),
         ];
     }
 }

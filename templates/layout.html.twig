@@ -3,7 +3,9 @@
 {% block body %}
     {{ include('default/_header.html.twig') }}
 
-    {% block content %}{% endblock %}
+    <div class="{% block content_offset %}pt-16{% endblock %}">
+        {% block content %}{% endblock %}
+    </div>
 
     {{ include('default/_footer.html.twig') }}
 {% endblock %}

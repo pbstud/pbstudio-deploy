@@ -29,7 +29,7 @@ class HomeContentService
     public const DEFAULT_CONTACT_EMAIL     = 'contacto@pbstudio.mx';
     public const DEFAULT_CONTACT_FACEBOOK  = 'https://www.facebook.com/pbstudiomx/';
     public const DEFAULT_CONTACT_INSTAGRAM = 'https://www.instagram.com/pbstudiomx/';
-    public const DEFAULT_CONTACT_WHATSAPP  = 'https://wa.me/52552920036';
+    public const DEFAULT_CONTACT_WHATSAPP  = 'https://wa.me/525552920036';
 
     public function __construct(private readonly HomeContentRepository $homeContentRepository)
     {

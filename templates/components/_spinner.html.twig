@@ -1,0 +1,35 @@
+{#
+  Componente: Spinner de carga
+  Parámetros:
+    - size    (string) 'sm' | 'md' | 'lg' — default: 'md'
+    - label   (string) texto accesible — default: 'Cargando...'
+    - color   (string) clase Tailwind de color — default: 'text-terracota'
+
+  Uso:
+    {% include 'components/_spinner.html.twig' %}
+    {% include 'components/_spinner.html.twig' with { size: 'sm', color: 'text-white' } %}
+
+    Con Alpine (mostrar solo cuando carga):
+    <div x-show="loading">{% include 'components/_spinner.html.twig' %}</div>
+#}
+{% set _size  = size|default('md') %}
+{% set _label = label|default('Cargando...') %}
+{% set _color = color|default('text-terracota') %}
+
+{% set _sizes = {
+    'sm': 'w-4 h-4 border-2',
+    'md': 'w-6 h-6 border-2',
+    'lg': 'w-10 h-10 border-[3px]'
+} %}
+
+<span
+    role="status"
+    aria-label="{{ _label }}"
+    class="inline-flex items-center justify-center"
+>
+    <span
+        class="block rounded-full border-current border-r-transparent animate-spin {{ _sizes[_size] }} {{ _color }}"
+        aria-hidden="true"
+    ></span>
+    <span class="sr-only">{{ _label }}</span>
+</span>

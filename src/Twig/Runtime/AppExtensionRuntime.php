@@ -6,6 +6,7 @@ namespace App\Twig\Runtime;
 
 use App\Entity\Reservation;
 use App\Entity\GiftCard;
+use App\Repository\BranchOfficeRepository;
 use App\Repository\SessionAuditRepository;
 use App\Security\Voter\RouteAccessVoter;
 use App\Service\Reservation\ReservationService;
@@ -29,12 +30,19 @@ readonly class AppExtensionRuntime implements RuntimeExtensionInterface
         private ReservationService $reservationService,
         private SessionAuditRepository $sessionAuditRepository,
         private WaitingListCancellationWindowService $waitingListCancellationWindowService,
+        private BranchOfficeRepository $branchOfficeRepository,
     ) {
     }
 
     public function isAllowedRoute(string $route): bool
     {
         return $this->security->isGranted(RouteAccessVoter::ALLOWED_ROUTE_ACCESS, $route);
+    }
+
+    /** @return \App\Entity\BranchOffice[] */
+    public function getPublicBranchOffices(): array
+    {
+        return $this->branchOfficeRepository->getPublic();
     }
 
     public function getPackageSessionType(string $type): string

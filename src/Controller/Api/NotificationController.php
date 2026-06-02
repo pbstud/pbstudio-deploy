@@ -128,6 +128,18 @@ class NotificationController extends AbstractController
         ]);
     }
 
+    #[Route('/read-all', name: 'mark_all_read', methods: ['POST'])]
+    public function markAllRead(): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('IS_AUTHENTICATED_REMEMBERED');
+
+        /** @var User $user */
+        $user    = $this->getUser();
+        $marked  = $this->notificationRepository->markAllAsRead($user);
+
+        return $this->json(['marked' => $marked]);
+    }
+
     #[Route('/{id}/read', name: 'mark_read', methods: ['PATCH'])]
     public function markRead(int $id): JsonResponse
     {

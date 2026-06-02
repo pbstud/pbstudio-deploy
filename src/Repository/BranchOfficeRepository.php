@@ -63,7 +63,7 @@ class BranchOfficeRepository extends ServiceEntityRepository
         $qb
             ->where('bo.public = :public')
             ->andWhere('bo.isActive = :is_active')
-            ->orderBy('bo.name')
+            ->orderBy('bo.id', 'ASC')
 
             ->setParameter('public', true)
             ->setParameter('is_active', true)

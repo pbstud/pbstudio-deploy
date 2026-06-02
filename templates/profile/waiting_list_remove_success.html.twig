@@ -8,7 +8,7 @@
 
         <div class="modal-actions">
             <a href="{{ path('profile_waiting_list') }}" class="btn secondary">Ver lista de espera</a>
-            <a href="{{ path('reservation_calendar') }}" class="btn">Reservar clase</a>
+            <a href="{{ path('reservation_calendar', {'slug': config_first_branch_slug()}) }}" class="btn">Reservar clase</a>
         </div>
     </div>
 </section>

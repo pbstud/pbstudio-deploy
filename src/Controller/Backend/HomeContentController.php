@@ -19,6 +19,122 @@ use Vich\UploaderBundle\Handler\UploadHandler;
 #[Route('/backend/home-contenido', name: 'backend_home_content', methods: ['GET', 'POST'])]
 class HomeContentController extends AbstractController
 {
+    private const FAQ_ICONS = [
+        // Personas / comunidad
+        'bi-person-check'           => 'Persona con check',
+        'bi-person-arms-up'         => 'Persona activa',
+        'bi-person-walking'         => 'Persona caminando',
+        'bi-person-raised-hand'     => 'Persona levantando mano',
+        'bi-people'                 => 'Grupo / comunidad',
+        'bi-people-fill'            => 'Grupo sólido',
+        'bi-person-workspace'       => 'Sesión privada',
+        'bi-person-badge'           => 'Instructor / certificado',
+        'bi-person-heart'           => 'Persona con corazón',
+        // Fitness / salud
+        'bi-heart-pulse'            => 'Salud / pulso',
+        'bi-heart-pulse-fill'       => 'Pulso sólido',
+        'bi-activity'               => 'Actividad / ritmo',
+        'bi-bicycle'                => 'Bicicleta',
+        'bi-lungs'                  => 'Respiración',
+        'bi-lungs-fill'             => 'Pulmones sólido',
+        'bi-bandaid'                => 'Lesión / cuidado',
+        'bi-capsule'                => 'Suplemento',
+        'bi-clipboard-heart'        => 'Plan de salud',
+        'bi-droplet'                => 'Hidratación',
+        'bi-fire'                   => 'Quema de calorías',
+        'bi-lightning'              => 'Energía / intensidad',
+        'bi-lightning-charge'       => 'Alta intensidad',
+        'bi-wind'                   => 'Cardio / aire libre',
+        'bi-stopwatch'              => 'Cronómetro',
+        'bi-trophy'                 => 'Logro / resultado',
+        'bi-trophy-fill'            => 'Logro sólido',
+        'bi-award'                  => 'Premio',
+        'bi-award-fill'             => 'Premio sólido',
+        // Clases / horarios
+        'bi-calendar-check'         => 'Calendario',
+        'bi-calendar-week'          => 'Semana / horario',
+        'bi-calendar-event'         => 'Evento / clase',
+        'bi-calendar2-heart'        => 'Calendario corazón',
+        'bi-clock'                  => 'Reloj / horario',
+        'bi-clock-fill'             => 'Reloj sólido',
+        'bi-alarm'                  => 'Alarma',
+        'bi-repeat'                 => 'Clases recurrentes',
+        // Estudio / instalaciones
+        'bi-house'                  => 'Sucursal / estudio',
+        'bi-house-heart'            => 'Estudio favorito',
+        'bi-building'               => 'Edificio',
+        'bi-geo-alt'                => 'Ubicación',
+        'bi-geo-alt-fill'           => 'Ubicación sólida',
+        'bi-pin-map'                => 'Mapa / pin',
+        'bi-door-open'              => 'Acceso / entrada',
+        'bi-door-closed'            => 'Acceso cerrado',
+        // Ropa / equipo
+        'bi-bag'                    => 'Bolsa / ropa',
+        'bi-bag-heart'              => 'Bolsa favorita',
+        'bi-box2-heart'             => 'Kit de inicio',
+        'bi-tools'                  => 'Equipamiento',
+        'bi-music-note-beamed'      => 'Música / ambiente',
+        'bi-water'                  => 'Piscina / agua',
+        // Precios / pagos
+        'bi-cash-coin'              => 'Precios / pago',
+        'bi-cash-stack'             => 'Paquetes / tarifas',
+        'bi-credit-card'            => 'Tarjeta de crédito',
+        'bi-wallet2'                => 'Cartera / saldo',
+        'bi-gift'                   => 'Regalo / promo',
+        'bi-tag'                    => 'Etiqueta / precio',
+        'bi-percent'                => 'Descuento',
+        // Comunicación / soporte
+        'bi-chat-dots'              => 'Chat / contacto',
+        'bi-chat-heart'             => 'Chat amigable',
+        'bi-envelope'               => 'Email',
+        'bi-envelope-heart'         => 'Email personalizado',
+        'bi-phone'                  => 'Teléfono / reserva',
+        'bi-whatsapp'               => 'WhatsApp',
+        'bi-headset'                => 'Soporte / atención',
+        'bi-megaphone'              => 'Anuncio / novedad',
+        // Información / ayuda
+        'bi-question-circle'        => 'Pregunta',
+        'bi-question-circle-fill'   => 'Pregunta sólida',
+        'bi-info-circle'            => 'Información',
+        'bi-info-circle-fill'       => 'Información sólida',
+        'bi-lightbulb'              => 'Consejo / tip',
+        'bi-lightbulb-fill'         => 'Consejo sólido',
+        'bi-book'                   => 'Guía / manual',
+        'bi-journals'               => 'Contenido / blog',
+        'bi-patch-check'            => 'Verificado',
+        'bi-patch-check-fill'       => 'Verificado sólido',
+        // Seguridad / confianza
+        'bi-shield-check'           => 'Seguridad',
+        'bi-shield-fill-check'      => 'Seguridad sólida',
+        'bi-lock'                   => 'Privacidad',
+        'bi-key'                    => 'Acceso / membresía',
+        // Bienestar / estado de ánimo
+        'bi-emoji-smile'            => 'Bienestar',
+        'bi-emoji-heart-eyes'       => 'Encantado',
+        'bi-emoji-laughing'         => 'Diversión',
+        'bi-emoji-sunglasses'       => 'Actitud',
+        'bi-heart'                  => 'Corazón',
+        'bi-heart-fill'             => 'Corazón sólido',
+        'bi-stars'                  => 'Estrellas',
+        'bi-star'                   => 'Estrella',
+        'bi-star-fill'              => 'Estrella sólida',
+        'bi-sun'                    => 'Energía / mañana',
+        'bi-moon-stars'             => 'Sesión nocturna',
+        // Nutrición / bienestar
+        'bi-egg-fried'              => 'Nutrición',
+        'bi-cup-hot'                => 'Nutrición caliente',
+        'bi-apple'                  => 'Alimentación sana',
+        // Contenido digital / app
+        'bi-camera-video'           => 'Clases en video',
+        'bi-play-circle'            => 'Reproducir / contenido',
+        'bi-wifi'                   => 'Acceso online',
+        'bi-broadcast'              => 'Streaming / en vivo',
+        'bi-phone-vibrate'          => 'App / notificaciones',
+        'bi-qr-code'                => 'QR / check-in',
+    ];
+
+    private const FAQ_FILE      = 'var/data/faq_items.json';
+    private const FEATURES_FILE  = 'var/data/feature_items.json';
     public function __construct(
         private readonly HomeContentRepository $homeContentRepository,
         private readonly EntityManagerInterface $entityManager,
@@ -36,8 +152,12 @@ class HomeContentController extends AbstractController
         }
 
         return $this->render('backend/home_content/edit.html.twig', [
-            'homeContent' => $homeContent,
-            'defaults'    => $this->getDefaults(),
+            'homeContent'    => $homeContent,
+            'defaults'       => $this->getDefaults(),
+            'galleryImages'  => $this->getGalleryImages(),
+            'faqItems'       => $this->readFaqItems(),
+            'faqIcons'       => self::FAQ_ICONS,
+            'featureItems'   => $this->readFeatureItems(),
         ]);
     }
 
@@ -70,6 +190,46 @@ class HomeContentController extends AbstractController
 
         // Actualizar timestamp en cada guardado (no solo al subir imagen)
         $homeContent->setUpdatedAt(new \DateTimeImmutable());
+
+        // === FAQ ===
+        $faqIcons      = array_keys(self::FAQ_ICONS);
+        $faqQuestions  = (array) ($raw['faqQuestion'] ?? []);
+        $faqAnswers    = (array) ($raw['faqAnswer'] ?? []);
+        $faqIconsInput = (array) ($raw['faqIcon'] ?? []);
+        $faqItems      = [];
+        foreach ($faqQuestions as $i => $q) {
+            $q = trim((string) $q);
+            $a = trim((string) ($faqAnswers[$i] ?? ''));
+            $icon = trim((string) ($faqIconsInput[$i] ?? ''));
+            if ($q === '' && $a === '') {
+                continue; // omitir filas vacías
+            }
+            if (!in_array($icon, $faqIcons, true)) {
+                $icon = 'bi-question-circle';
+            }
+            $faqItems[] = ['icon' => $icon, 'question' => $q, 'answer' => $a];
+        }
+        $this->saveFaqItems($faqItems);
+
+        // === FEATURES ===
+        $faqIconKeys      = array_keys(self::FAQ_ICONS);
+        $featTitles       = (array) ($raw['featureTitle'] ?? []);
+        $featTexts        = (array) ($raw['featureText'] ?? []);
+        $featIconsInput   = (array) ($raw['featureIcon'] ?? []);
+        $featureItems     = [];
+        foreach ($featTitles as $i => $t) {
+            $t    = trim((string) $t);
+            $txt  = trim((string) ($featTexts[$i] ?? ''));
+            $icon = trim((string) ($featIconsInput[$i] ?? ''));
+            if ($t === '' && $txt === '') {
+                continue;
+            }
+            if (!in_array($icon, $faqIconKeys, true)) {
+                $icon = 'bi-check-circle';
+            }
+            $featureItems[] = ['icon' => $icon, 'title' => $t, 'text' => $txt];
+        }
+        $this->saveFeatureItems($featureItems);
 
         // Imágenes — solo se actualizan si se sube un archivo nuevo
         if (!empty($files['bannerDesktopFile'])) {
@@ -115,9 +275,117 @@ class HomeContentController extends AbstractController
 
         $this->entityManager->flush();
 
+        // === GALERÍA ===
+        $galleryDir = $this->getParameter('kernel.project_dir') . '/public/media/uploads/gallery';
+        if (!is_dir($galleryDir)) {
+            mkdir($galleryDir, 0775, true);
+        }
+
+        // Eliminar imágenes marcadas
+        foreach ((array) ($raw['deleteGallery'] ?? []) as $filename) {
+            $filename = basename((string) $filename); // evitar path traversal
+            $path = $galleryDir . '/' . $filename;
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
+
+        // Subir nuevas imágenes
+        $newFiles = $request->files->get('galleryFiles') ?? [];
+        if (!is_array($newFiles)) {
+            $newFiles = [$newFiles];
+        }
+        $allowed  = ['image/jpeg', 'image/png', 'image/webp'];
+        $maxBytes = 8 * 1024 * 1024; // 8 MB por imagen
+        $maxFiles = 50;              // máximo de imágenes totales en la galería
+        $uploaded = 0;
+
+        foreach ($newFiles as $uploadedFile) {
+            if (!$uploadedFile || !$uploadedFile->isValid()) {
+                continue;
+            }
+
+            // Validar MIME real (usa finfo internamente, no confiar en la extensión del cliente)
+            $mime = $uploadedFile->getMimeType();
+            if (!in_array($mime, $allowed, true)) {
+                continue;
+            }
+
+            // Validar tamaño
+            if ($uploadedFile->getSize() > $maxBytes) {
+                continue;
+            }
+
+            // Limitar cantidad total en galería
+            $existingCount = count(glob($galleryDir . '/*.{webp,jpg,jpeg,png}', GLOB_BRACE) ?: []);
+            if (($existingCount + $uploaded) >= $maxFiles) {
+                break;
+            }
+
+            // La extensión se infiere desde el MIME (no desde el nombre del cliente)
+            $ext  = $uploadedFile->guessExtension() ?: 'jpg';
+            $name = uniqid('g_', true) . '.' . $ext;
+            $uploadedFile->move($galleryDir, $name);
+            ++$uploaded;
+        }
+
         $this->addFlash('success', 'El contenido del home ha sido guardado.');
 
         return $this->redirectToRoute('backend_home_content');
+    }
+
+    private function readFaqItems(): array
+    {
+        $path = $this->getParameter('kernel.project_dir') . '/' . self::FAQ_FILE;
+        if (!is_file($path)) {
+            return [];
+        }
+        $data = json_decode((string) file_get_contents($path), true);
+        return is_array($data) ? $data : [];
+    }
+
+    private function saveFaqItems(array $items): void
+    {
+        $path = $this->getParameter('kernel.project_dir') . '/' . self::FAQ_FILE;
+        $dir  = dirname($path);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        file_put_contents($path, json_encode($items, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    }
+
+    private function readFeatureItems(): array
+    {
+        $path = $this->getParameter('kernel.project_dir') . '/' . self::FEATURES_FILE;
+        if (!is_file($path)) {
+            return [];
+        }
+        $data = json_decode((string) file_get_contents($path), true);
+        return is_array($data) ? $data : [];
+    }
+
+    private function saveFeatureItems(array $items): void
+    {
+        $path = $this->getParameter('kernel.project_dir') . '/' . self::FEATURES_FILE;
+        $dir  = dirname($path);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+        file_put_contents($path, json_encode($items, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    }
+
+    /**
+     * @return array<string>
+     */
+    private function getGalleryImages(): array
+    {
+        $dir = $this->getParameter('kernel.project_dir') . '/public/media/uploads/gallery';
+        if (!is_dir($dir)) {
+            return [];
+        }
+        $files = glob($dir . '/*.{webp,jpg,jpeg,png}', GLOB_BRACE) ?: [];
+        sort($files);
+        return array_map(fn(string $f) => basename($f), $files);
     }
 
     /**

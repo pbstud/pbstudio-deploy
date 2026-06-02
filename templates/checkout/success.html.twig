@@ -236,7 +236,7 @@
                                     if ((item.type === 'achievement_unlocked' || item.type === 'achievement_unlocked_special') && item.payload) {
                                         PBNotify.achievementToast(item, nc.markReadUrlTemplate);
                                     } else {
-                                        PBNotify.notif(item.id, item.title || 'Notificación nueva', item.body || '', item.targetUrl || null, nc.markReadUrlTemplate || null);
+                                        PBNotify.notif(item.id, item.type || null, item.title || 'Notificación nueva', item.body || '', item.targetUrl || null, nc.markReadUrlTemplate || null);
                                     }
                                 }, index * 220);
                             });

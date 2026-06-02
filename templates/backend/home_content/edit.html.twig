@@ -6,6 +6,7 @@
 
 {% block stylesheets %}
     {{ parent() }}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         .hc-section-title {
             font-size: 15px;
@@ -37,10 +38,48 @@
             margin-bottom: 8px;
         }
 
-        .hc-clear-label {
+        .hc-gallery-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .hc-gallery-item {
+            position: relative;
+            width: 110px;
+        }
+        .hc-gallery-item img {
+            width: 110px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            display: block;
+        }
+        .hc-gallery-item label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
             color: #c0392b;
-            font-size: 12px;
-            margin-top: 4px;
+            margin-top: 3px;
+            cursor: pointer;
+        }
+        .hc-gallery-item input[type=checkbox] {
+            margin: 0;
+        }
+        .hc-gallery-new-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .hc-gallery-new-preview img {
+            width: 90px;
+            height: 65px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 2px solid #f0ad4e;
         }
     </style>
 {% endblock %}
@@ -98,6 +137,49 @@
                                data-preview="preview-bannerMobile">
                     </div>
                 </div>
+
+                <div class="ln_solid"></div>
+
+                {# === INFO BOXES (debajo del hero) === #}
+                <h5 class="hc-section-title">Destacados del estudio <small class="text-muted">(iconos bajo el hero)</small></h5>
+                <p class="text-muted" style="font-size:12px;margin-bottom:14px;">
+                    Cada fila es una tarjeta de característica en la franja que aparece justo debajo del banner principal.
+                    Se muestran en grid de 4 columnas. Las filas en blanco se omiten.
+                </p>
+
+                <div id="hc-feat-rows">
+                    {% for item in featureItems %}
+                    <div class="hc-feat-row row" style="margin-bottom:10px;align-items:flex-start;">
+                        <div class="col-md-1 form-group" style="padding-right:6px;">
+                            <label style="font-size:11px;">Ícono</label>
+                            <input type="hidden" name="featureIcon[]" class="hc-feat-icon-val" value="{{ item.icon }}">
+                            <div class="hc-feat-icon-btn" title="Cambiar ícono">
+                                <i class="bi {{ item.icon }}" style="font-size:22px;color:#C17A6A;"></i>
+                            </div>
+                            <div class="hc-feat-icon-picker" style="display:none;"></div>
+                        </div>
+                        <div class="col-md-4 form-group" style="padding-right:6px;">
+                            <label style="font-size:11px;">Título</label>
+                            <input type="text" name="featureTitle[]" class="form-control" style="font-size:12px;"
+                                   value="{{ item.title }}" placeholder="Atención personalizada" maxlength="80">
+                        </div>
+                        <div class="col-md-6 form-group" style="padding-right:6px;">
+                            <label style="font-size:11px;">Descripción</label>
+                            <textarea name="featureText[]" class="form-control hc-feat-text" style="font-size:12px;resize:none;overflow:hidden;" rows="2"
+                                      placeholder="Grupos reducidos para corregir y potenciar tu progreso." maxlength="200">{{ item.text }}</textarea>
+                        </div>
+                        <div class="col-md-1 form-group" style="padding-top:22px;">
+                            <button type="button" class="btn btn-danger btn-xs hc-feat-remove" title="Eliminar fila">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <button type="button" id="hc-feat-add" class="btn btn-default btn-sm" style="margin-bottom:10px;">
+                    <i class="fa fa-plus"></i> Agregar destacado
+                </button>
 
                 <div class="ln_solid"></div>
 
@@ -182,6 +264,93 @@
 
                 <div class="ln_solid"></div>
 
+                {# === GALERÍA === #}
+                <h5 class="hc-section-title">Galería de instalaciones</h5>
+                <p class="text-muted" style="font-size:12px; margin-bottom:14px;">
+                    Las imágenes se muestran en el slider de la sección galería del home.
+                    Se ordenan automáticamente por tamaño (las más grandes al slot principal).
+                    Formatos aceptados: JPG, PNG, WEBP.
+                </p>
+
+                {# Imágenes actuales #}
+                {% if galleryImages is not empty %}
+                    <div class="hc-gallery-grid" id="hc-gallery-current">
+                        {% for filename in galleryImages %}
+                            <div class="hc-gallery-item">
+                                <img src="/media/uploads/gallery/{{ filename }}" alt="{{ filename }}"
+                                     onerror="this.style.opacity='.3'">
+                                <label>
+                                    <input type="checkbox" name="deleteGallery[]" value="{{ filename }}">
+                                    Eliminar
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <p class="text-muted" style="font-size:11px; margin-top:-6px; margin-bottom:14px;">
+                        Marca "Eliminar" en las fotos que quieras quitar y guarda el formulario.
+                    </p>
+                {% else %}
+                    <div class="alert alert-info" style="font-size:12px; padding:8px 14px;">
+                        <i class="fa fa-info-circle"></i> No hay imágenes en la galería todavía.
+                    </div>
+                {% endif %}
+
+                {# Subir nuevas #}
+                <div class="row">
+                    <div class="col-md-8 form-group">
+                        <label>Subir imágenes nuevas <small class="text-muted">(puedes seleccionar varias a la vez)</small></label>
+                        <input type="file" name="galleryFiles[]" id="galleryFilesInput"
+                               class="form-control" accept="image/jpeg,image/png,image/webp"
+                               multiple>
+                        <div class="hc-gallery-new-preview" id="hc-gallery-new-preview"></div>
+                    </div>
+                </div>
+
+                <div class="ln_solid"></div>
+
+                {# === PREGUNTAS FRECUENTES === #}
+                <h5 class="hc-section-title">Preguntas frecuentes (FAQ)</h5>
+                <p class="text-muted" style="font-size:12px;margin-bottom:14px;">
+                    Cada fila es una tarjeta en la sección de FAQ del home. Puedes agregar o quitar cuantas quieras.
+                    Las filas en blanco se omiten al guardar.
+                </p>
+
+                <div id="hc-faq-rows">
+                    {% for item in faqItems %}
+                    <div class="hc-faq-row row" style="margin-bottom:10px;align-items:flex-start;">
+                        <div class="col-md-1 form-group" style="padding-right:6px;">
+                            <label style="font-size:11px;">Ícono</label>
+                            <input type="hidden" name="faqIcon[]" class="hc-faq-icon-val" value="{{ item.icon }}">
+                            <div class="hc-faq-icon-btn" title="Cambiar ícono">
+                                <i class="bi {{ item.icon }}" style="font-size:22px;color:#C17A6A;"></i>
+                            </div>
+                            <div class="hc-faq-icon-picker" style="display:none;"></div>
+                        </div>
+                        <div class="col-md-5 form-group" style="padding-right:6px;">
+                            <label style="font-size:11px;">Pregunta</label>
+                            <input type="text" name="faqQuestion[]" class="form-control" style="font-size:12px;"
+                                   value="{{ item.question }}" placeholder="¿Necesito experiencia previa?" maxlength="120">
+                        </div>
+                        <div class="col-md-5 form-group" style="padding-right:6px;">
+                            <label style="font-size:11px;">Respuesta</label>
+                            <textarea name="faqAnswer[]" class="form-control hc-faq-answer" style="font-size:12px;resize:none;overflow:hidden;" rows="3"
+                                      placeholder="Escribe la respuesta…" maxlength="400">{{ item.answer }}</textarea>
+                        </div>
+                        <div class="col-md-1 form-group" style="padding-top:22px;">
+                            <button type="button" class="btn btn-danger btn-xs hc-faq-remove" title="Eliminar fila">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <button type="button" id="hc-faq-add" class="btn btn-default btn-sm" style="margin-bottom:10px;">
+                    <i class="fa fa-plus"></i> Agregar pregunta
+                </button>
+
+                <div class="ln_solid"></div>
+
                 {# === CONTACTO === #}
                 <h5 class="hc-section-title">Contacto y redes sociales</h5>
                 <div class="row">
@@ -262,6 +431,246 @@
                 reader.readAsDataURL(file);
             });
         });
+        // Preview galería nueva (multi-file)
+        var galleryInput = document.getElementById('galleryFilesInput');
+        var galleryPreview = document.getElementById('hc-gallery-new-preview');
+        if (galleryInput && galleryPreview) {
+            galleryInput.addEventListener('change', function () {
+                galleryPreview.innerHTML = '';
+                Array.from(this.files).forEach(function (file) {
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        var img = document.createElement('img');
+                        img.src = e.target.result;
+                        galleryPreview.appendChild(img);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
+        }
+    })();
+    </script>
+
+    <script>
+    // === FAQ dinámica ===
+    (function () {
+        var faqIconsMap = {{ faqIcons|json_encode|raw }};
+        var faqIconKeys = Object.keys(faqIconsMap);
+
+        /* ---- Picker grid ---- */
+        function buildPickerGrid(currentVal) {
+            var html = '<div style="display:flex;flex-wrap:wrap;gap:4px;padding:8px;background:#fff;border:1px solid #ddd;border-radius:4px;width:260px;max-height:220px;overflow-y:auto;position:absolute;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.15);">';
+            faqIconKeys.forEach(function (cls) {
+                var active = cls === currentVal ? 'background:#f5ece9;border-color:#C17A6A;' : 'background:#fff;border-color:#eee;';
+                html += '<span class="hc-faq-pick-item" data-icon="' + cls + '" title="' + faqIconsMap[cls] + '" '
+                    + 'style="cursor:pointer;padding:5px;border:1px solid #eee;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;' + active + '">' 
+                    + '<i class="bi ' + cls + '" style="font-size:18px;color:#C17A6A;"></i></span>';
+            });
+            html += '</div>';
+            return html;
+        }
+
+        /* ---- HTML de una fila nueva ---- */
+        function newRowHtml(iconVal) {
+            iconVal = iconVal || 'bi-question-circle';
+            return '<div class="hc-faq-row row" style="margin-bottom:10px;align-items:flex-start;">'
+                + '<div class="col-md-1 form-group" style="padding-right:6px;">'
+                + '<label style="font-size:11px;">Ícono</label>'
+                + '<input type="hidden" name="faqIcon[]" class="hc-faq-icon-val" value="' + iconVal + '">'
+                + '<div class="hc-faq-icon-btn" title="Cambiar ícono" style="cursor:pointer;"><i class="bi ' + iconVal + '" style="font-size:22px;color:#C17A6A;"></i></div>'
+                + '<div class="hc-faq-icon-picker" style="display:none;position:relative;"></div>'
+                + '</div>'
+                + '<div class="col-md-5 form-group" style="padding-right:6px;">'
+                + '<label style="font-size:11px;">Pregunta</label>'
+                + '<input type="text" name="faqQuestion[]" class="form-control" style="font-size:12px;" placeholder="¿Necesito experiencia previa?" maxlength="120">'
+                + '</div>'
+                + '<div class="col-md-5 form-group" style="padding-right:6px;">'
+                + '<label style="font-size:11px;">Respuesta</label>'
+                + '<textarea name="faqAnswer[]" class="form-control hc-faq-answer" style="font-size:12px;resize:none;overflow:hidden;" rows="3" placeholder="Escribe la respuesta…" maxlength="400"></textarea>'
+                + '</div>'
+                + '<div class="col-md-1 form-group" style="padding-top:22px;">'
+                + '<button type="button" class="btn btn-danger btn-xs hc-faq-remove" title="Eliminar fila"><i class="fa fa-trash"></i></button>'
+                + '</div>'
+                + '</div>';
+        }
+
+        /* ---- Auto-resize textarea ---- */
+        function autoResize(ta) {
+            ta.style.height = 'auto';
+            ta.style.height = ta.scrollHeight + 'px';
+        }
+
+        /* ---- Cablear fila ---- */
+        function wireRow(row) {
+            // Picker
+            var btn     = row.querySelector('.hc-faq-icon-btn');
+            var picker  = row.querySelector('.hc-faq-icon-picker');
+            var hidden  = row.querySelector('.hc-faq-icon-val');
+
+            if (btn && picker && hidden) {
+                btn.style.cursor = 'pointer';
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var isOpen = picker.style.display !== 'none';
+                    // Cerrar todos los otros pickers abiertos
+                    document.querySelectorAll('.hc-faq-icon-picker').forEach(function (p) {
+                        p.style.display = 'none'; p.innerHTML = '';
+                    });
+                    if (!isOpen) {
+                        picker.innerHTML = buildPickerGrid(hidden.value);
+                        picker.style.display = 'block';
+                        picker.querySelectorAll('.hc-faq-pick-item').forEach(function (item) {
+                            item.addEventListener('click', function (e) {
+                                e.stopPropagation();
+                                var cls = item.dataset.icon;
+                                hidden.value = cls;
+                                btn.innerHTML = '<i class="bi ' + cls + '" style="font-size:22px;color:#C17A6A;"></i>';
+                                picker.style.display = 'none';
+                                picker.innerHTML = '';
+                            });
+                        });
+                    }
+                });
+            }
+
+            // Auto-resize textareas existentes
+            var ta = row.querySelector('.hc-faq-answer');
+            if (ta) {
+                autoResize(ta);
+                ta.addEventListener('input', function () { autoResize(this); });
+            }
+
+            // Eliminar fila
+            var removeBtn = row.querySelector('.hc-faq-remove');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function () { row.remove(); });
+            }
+        }
+
+        // Cerrar picker al click fuera
+        document.addEventListener('click', function () {
+            document.querySelectorAll('.hc-faq-icon-picker').forEach(function (p) {
+                p.style.display = 'none'; p.innerHTML = '';
+            });
+        });
+
+        // Cablear filas existentes
+        document.querySelectorAll('.hc-faq-row').forEach(wireRow);
+
+        // Agregar nueva fila
+        var addBtn = document.getElementById('hc-faq-add');
+        if (addBtn) {
+            addBtn.addEventListener('click', function () {
+                var tmp = document.createElement('div');
+                tmp.innerHTML = newRowHtml('bi-question-circle');
+                var row = tmp.firstElementChild;
+                document.getElementById('hc-faq-rows').appendChild(row);
+                wireRow(row);
+            });
+        }
+    })();
+    </script>
+
+    <script>
+    // === Features dinámicas ===
+    (function () {
+        var featIconsMap = {{ faqIcons|json_encode|raw }};
+        var featIconKeys = Object.keys(featIconsMap);
+
+        function buildFeatPickerGrid(currentVal) {
+            var html = '<div style="display:flex;flex-wrap:wrap;gap:4px;padding:8px;background:#fff;border:1px solid #ddd;border-radius:4px;width:260px;max-height:220px;overflow-y:auto;position:absolute;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.15);">';
+            featIconKeys.forEach(function (cls) {
+                var active = cls === currentVal ? 'background:#f5ece9;border-color:#C17A6A;' : 'background:#fff;border-color:#eee;';
+                html += '<span class="hc-feat-pick-item" data-icon="' + cls + '" title="' + featIconsMap[cls] + '" '
+                    + 'style="cursor:pointer;padding:5px;border:1px solid #eee;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;' + active + '">'
+                    + '<i class="bi ' + cls + '" style="font-size:18px;color:#C17A6A;"></i></span>';
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function newFeatRowHtml(iconVal) {
+            iconVal = iconVal || 'bi-check-circle';
+            return '<div class="hc-feat-row row" style="margin-bottom:10px;align-items:flex-start;">'
+                + '<div class="col-md-1 form-group" style="padding-right:6px;">'
+                + '<label style="font-size:11px;">Ícono</label>'
+                + '<input type="hidden" name="featureIcon[]" class="hc-feat-icon-val" value="' + iconVal + '">'
+                + '<div class="hc-feat-icon-btn" title="Cambiar ícono" style="cursor:pointer;"><i class="bi ' + iconVal + '" style="font-size:22px;color:#C17A6A;"></i></div>'
+                + '<div class="hc-feat-icon-picker" style="display:none;position:relative;"></div>'
+                + '</div>'
+                + '<div class="col-md-4 form-group" style="padding-right:6px;">'
+                + '<label style="font-size:11px;">Título</label>'
+                + '<input type="text" name="featureTitle[]" class="form-control" style="font-size:12px;" placeholder="Atención personalizada" maxlength="80">'
+                + '</div>'
+                + '<div class="col-md-6 form-group" style="padding-right:6px;">'
+                + '<label style="font-size:11px;">Descripción</label>'
+                + '<textarea name="featureText[]" class="form-control hc-feat-text" style="font-size:12px;resize:none;overflow:hidden;" rows="2" placeholder="Grupos reducidos para corregir y potenciar tu progreso." maxlength="200"></textarea>'
+                + '</div>'
+                + '<div class="col-md-1 form-group" style="padding-top:22px;">'
+                + '<button type="button" class="btn btn-danger btn-xs hc-feat-remove" title="Eliminar fila"><i class="fa fa-trash"></i></button>'
+                + '</div>'
+                + '</div>';
+        }
+
+        function autoResizeFeat(ta) {
+            ta.style.height = 'auto';
+            ta.style.height = ta.scrollHeight + 'px';
+        }
+
+        function wireFeatRow(row) {
+            var btn    = row.querySelector('.hc-feat-icon-btn');
+            var picker = row.querySelector('.hc-feat-icon-picker');
+            var hidden = row.querySelector('.hc-feat-icon-val');
+
+            if (btn && picker && hidden) {
+                btn.style.cursor = 'pointer';
+                btn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var isOpen = picker.style.display !== 'none';
+                    document.querySelectorAll('.hc-feat-icon-picker,.hc-faq-icon-picker').forEach(function (p) {
+                        p.style.display = 'none'; p.innerHTML = '';
+                    });
+                    if (!isOpen) {
+                        picker.innerHTML = buildFeatPickerGrid(hidden.value);
+                        picker.style.display = 'block';
+                        picker.querySelectorAll('.hc-feat-pick-item').forEach(function (item) {
+                            item.addEventListener('click', function (e) {
+                                e.stopPropagation();
+                                var cls = item.dataset.icon;
+                                hidden.value = cls;
+                                btn.innerHTML = '<i class="bi ' + cls + '" style="font-size:22px;color:#C17A6A;"></i>';
+                                picker.style.display = 'none';
+                                picker.innerHTML = '';
+                            });
+                        });
+                    }
+                });
+            }
+
+            var ta = row.querySelector('.hc-feat-text');
+            if (ta) {
+                autoResizeFeat(ta);
+                ta.addEventListener('input', function () { autoResizeFeat(this); });
+            }
+
+            var removeBtn = row.querySelector('.hc-feat-remove');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function () { row.remove(); });
+            }
+        }
+
+        document.querySelectorAll('.hc-feat-row').forEach(wireFeatRow);
+
+        var addBtn = document.getElementById('hc-feat-add');
+        if (addBtn) {
+            addBtn.addEventListener('click', function () {
+                var tmp = document.createElement('div');
+                tmp.innerHTML = newFeatRowHtml('bi-check-circle');
+                var row = tmp.firstElementChild;
+                document.getElementById('hc-feat-rows').appendChild(row);
+                wireFeatRow(row);
+            });
+        }
     })();
     </script>
 {% endblock %}

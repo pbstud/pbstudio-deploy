@@ -498,7 +498,7 @@ class StatsService
     {
         $period = CarbonPeriod::create($startDate, '14 days', Carbon::today());
         $startWeekly = $period->last();
-        $endWeekly = $startWeekly->copy()->addDays(13);
+        $endWeekly = $startWeekly->clone()->addDays(13);
 
         $total = $period->count();
         $indexMonth = (($total % 2) === 0) ? $total - 2 : $total - 1;
@@ -656,7 +656,7 @@ class StatsService
         if ($startDateRaw instanceof \DateTimeInterface) {
             $startDate = CarbonImmutable::instance($startDateRaw)->startOfDay();
         } elseif (is_string($startDateRaw) && '' !== trim($startDateRaw)) {
-            $startDate = CarbonImmutable::make($startDateRaw)?->startOfDay();
+            $startDate = CarbonImmutable::parse($startDateRaw)?->startOfDay();
         } else {
             $startDate = null;
         }

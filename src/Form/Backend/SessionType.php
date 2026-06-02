@@ -114,7 +114,7 @@ class SessionType extends AbstractType
             ;
         }
 
-        $branchOfficeModifier = static function (FormInterface $form, int $branchOfficeId = null) {
+        $branchOfficeModifier = static function (FormInterface $form, ?int $branchOfficeId = null) {
             $options = [
                 'label' => 'label.exercise_room',
                 'class' => ExerciseRoom::class,
@@ -140,7 +140,7 @@ class SessionType extends AbstractType
 
         $em = $this->em;
 
-        $formExerciseRoomModifier = static function (FormInterface $form, int $exerciseRoomId = null) use ($em) {
+        $formExerciseRoomModifier = static function (FormInterface $form, ?int $exerciseRoomId = null) use ($em) {
             /** @var ExerciseRoom $exerciseRoom */
             $exerciseRoom = null;
 

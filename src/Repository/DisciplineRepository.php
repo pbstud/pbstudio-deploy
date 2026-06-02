@@ -49,7 +49,7 @@ class DisciplineRepository extends ServiceEntityRepository
 
         $qb
             ->where('d.isActive = :is_active')
-            ->orderBy('d.name')
+            ->orderBy('d.id', 'ASC')
             ->setParameter('is_active', true)
         ;
 

@@ -39,6 +39,7 @@ class AppExtension extends AbstractExtension
             new TwigFunction('is_allowed_route', [AppExtensionRuntime::class, 'isAllowedRoute']),
             new TwigFunction('reservation_can_cancel', [AppExtensionRuntime::class, 'reservationCanCancel']),
             new TwigFunction('reservation_can_change', [AppExtensionRuntime::class, 'reservationCanChange']),
+            new TwigFunction('public_branch_offices', [AppExtensionRuntime::class, 'getPublicBranchOffices']),
         ];
     }
 }

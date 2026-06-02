@@ -202,7 +202,7 @@ class ResettingController extends AbstractController
         ]);
     }
 
-    private function handleActivePasswordRequest(Request $request, User $user = null): array|RedirectResponse|null
+    private function handleActivePasswordRequest(Request $request, ?User $user = null): array|RedirectResponse|null
     {
         $result = null;
         $retryTtl = $this->getParameter('resetting_retry_ttl');
@@ -220,7 +220,7 @@ class ResettingController extends AbstractController
      *
      * @return array|RedirectResponse|null
      */
-    private function validateNonExistUser(Request $request, User $user = null)
+    private function validateNonExistUser(Request $request, ?User $user = null)
     {
         $result = null;
 
@@ -287,7 +287,7 @@ class ResettingController extends AbstractController
         return $this->redirectToRoute('resetting_check_email', $params);
     }
 
-    private function validateResendCooldown(Request $request, User $user = null): array|RedirectResponse|null
+    private function validateResendCooldown(Request $request, ?User $user = null): array|RedirectResponse|null
     {
         $remaining = $this->getResendCooldownRemaining($user);
 
@@ -308,7 +308,7 @@ class ResettingController extends AbstractController
         ]);
     }
 
-    private function getResendCooldownRemaining(User $user = null): int
+    private function getResendCooldownRemaining(?User $user = null): int
     {
         if (!$user || !$user->getPasswordRequestedAt()) {
             return 0;

@@ -1,8 +1,59 @@
 <footer>
-    <div>
-         <div class="legales">
-            <p><a href="{{ path('page', { 'slug': 'aviso-de-privacidad' }) }}">Aviso de Privacidad</a></p>
-            <p>Derechos reservados &copy; P&amp;B {{ 'now'|date('Y') }}</p>
+    {# ── Bar principal ── #}
+    <div class="pbs-ft-bar">
+
+        <div class="pbs-ft-top-row">
+            {# Logo P&B #}
+            <a href="{{ path('homepage') }}" class="pbs-ft-logo" aria-label="Ir al inicio"
+               onclick="if(window.location.pathname==='/'||window.location.pathname===''){event.preventDefault();window.scrollTo({top:0,behavior:'smooth'});}">  
+                <div class="pbs-ft-logo-wordmark">
+                    <span class="pbs-ft-logo-pb">P</span>
+                    <span class="pbs-ft-logo-amp">&amp;</span>
+                    <span class="pbs-ft-logo-pb">B</span>
+                </div>
+                <div class="pbs-ft-logo-sub">Studio</div>
+            </a>
+
+            {# Social #}
+            <div class="pbs-ft-social">
+                <a href="https://www.instagram.com/pbstudiomx/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                    <i class="bi bi-instagram" aria-hidden="true"></i>
+                </a>
+                <a href="https://www.facebook.com/pbstudiomx" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                    <i class="bi bi-facebook" aria-hidden="true"></i>
+                </a>
+                <a href="{{ config_whatsapp_url()|trim }}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" class="pbs-ft-social-wa">
+                    <i class="bi bi-whatsapp" aria-hidden="true"></i>
+                    <span class="pbs-ft-social-phone">{{ config_whatsapp_phone() }}</span>
+                </a>
+            </div>
         </div>
+
+        <div class="pbs-ft-sep" aria-hidden="true"></div>
+
+        {# Acciones + contacto #}
+        {% set _branches = public_branch_offices() %}
+        <div class="pbs-ft-actions">
+            <nav class="pbs-ft-nav" aria-label="Footer">
+                {% if _branches is not empty %}
+                <a href="{{ path('reservation_calendar', {'slug': _branches[0].slug}) }}">Reservar</a>
+                {% else %}
+                <a href="{{ path('homepage') }}#horarios">Reservar</a>
+                {% endif %}
+                <a href="{{ path('homepage') }}#paquetes-destacados"
+                   onclick="if(window.location.pathname==='/'||window.location.pathname===''){event.preventDefault();var el=document.getElementById('paquetes-destacados');if(el){el.scrollIntoView({behavior:'smooth'});}}">Paquetes</a>
+                <a href="{{ path('contact') }}">Contacto</a>
+            </nav>
+        </div>
+
+    </div>
+
+    {# Copyright #}
+    <div class="pbs-ft-copy">
+        &copy; {{ 'now'|date('Y') }} P&amp;B Studio. Todos los derechos reservados.
+        &nbsp;·&nbsp;
+        <a href="{{ path('page', {'slug': 'terminos-y-condiciones'}) }}" style="color:inherit;text-decoration:none;">Términos</a>
+        &nbsp;·&nbsp;
+        <a href="{{ path('page', {'slug': 'aviso-de-privacidad'}) }}" style="color:inherit;text-decoration:none;">Privacidad</a>
     </div>
 </footer>

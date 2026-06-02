@@ -68,15 +68,9 @@
         </div>
 
         <div class="modal-actions class-detail-modal__actions">
-            <a href="#"
-               class="btn reserve-class-toggle"
-               data-remodal-action="close"
-               {% if classDescription.slug == 'clase-privada' %}
-               data-filter-type="i"
-               {% else %}
-               data-filter-discipline="{{ classDescription.name }}"
-               {% endif %}
-               >Reservar clase</a>
+            <a href="{{ path('reservation_calendar', {'slug': config_first_branch_slug()}) }}{% if classDescription.slug == 'clase-privada' %}?type=i{% else %}?discipline={{ classDescription.name|url_encode }}{% endif %}"
+               class="btn"
+               data-remodal-action="close">Reservar clase</a>
         </div>
     </div>
 </section>

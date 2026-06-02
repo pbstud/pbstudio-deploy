@@ -169,7 +169,7 @@ final class BackendBuilder
         }
     }
 
-    private function addMenu(string $name, string $icon, string $route = null, bool $secure = false, array $options = []): ?ItemInterface
+    private function addMenu(string $name, string $icon, ?string $route = null, bool $secure = false, array $options = []): ?ItemInterface
     {
         if ($secure && !$this->isAllowed($route)) {
             return null;
