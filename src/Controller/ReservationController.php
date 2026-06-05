@@ -125,6 +125,9 @@ class ReservationController extends AbstractController
             try {
                 $reservationService->reservate($user, $session, $placeNumber, null, $consumptionSource);
 
+                $sessionDate    = $session->getDateStart()?->format('d/m/Y') ?? '';
+                $disciplineName = $session->getDiscipline()?->getName() ?? 'clase';
+
                 $json = [
                     'targetUrl' => $this->generateUrl('reserved_sessions'),
                 ];

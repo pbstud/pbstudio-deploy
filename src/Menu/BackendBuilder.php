@@ -162,6 +162,7 @@ final class BackendBuilder
                     'backend_achievement_new',
                     'backend_achievement_edit',
                 ],
+                'backend_notification_theme' => [],
                 'backend_configuration' => [],
             ];
 

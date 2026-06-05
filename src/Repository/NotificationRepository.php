@@ -163,6 +163,19 @@ class NotificationRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    /**
+     * @return Notification[]
+     */
+    public function findAllByUser(User $user): array
+    {
+        return $this->createQueryBuilder('n')
+            ->where('n.user = :user')
+            ->setParameter('user', $user)
+            ->orderBy('n.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function markAllAsRead(User $user): int
     {
         return (int) $this->getEntityManager()->getConnection()->executeStatement(

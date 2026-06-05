@@ -78,8 +78,9 @@
                     {% if not app.debug %}data-stream-url="{{ path('api_notifications_stream') }}"{% endif %}
                     data-mark-read-url-template="{{ path('api_notifications_mark_read', { id: '__ID__' }) }}"
                     data-mark-all-url="{{ path('api_notifications_mark_all_read') }}"
+                    {% if app.debug %}data-notification-debug="1"{% endif %}
                 >
-                    <button type="button" class="pb-bell-btn" data-notification-bell
+                            <button type="button" class="pb-bell-btn" data-notification-bell
                             aria-label="Notificaciones" aria-expanded="false">
                         <i class="bi bi-bell pb-bell-icon-off" aria-hidden="true"></i>
                         <i class="bi bi-bell-fill pb-bell-icon-on" aria-hidden="true" hidden></i>
@@ -102,7 +103,7 @@
                             <button type="button" class="pb-tab" data-filter="unread">Sin leer <span class="pb-tab__count pb-tab__count--off" data-unread-pill-count>0</span></button>
                             <button type="button" class="pb-tab" data-filter="reserva">Reservas <span class="pb-tab__count pb-tab__count--off" data-filter-count="reserva" hidden>0</span></button>
                             <button type="button" class="pb-tab" data-filter="logro">Logros <span class="pb-tab__count pb-tab__count--off" data-filter-count="logro" hidden>0</span></button>
-                            <button type="button" class="pb-tab" data-filter="sistema">Sistema <span class="pb-tab__count pb-tab__count--off" data-filter-count="sistema" hidden>0</span></button>
+                            <button type="button" class="pb-tab" data-filter="paquetes">Paquetes <span class="pb-tab__count pb-tab__count--off" data-filter-count="paquetes" hidden>0</span></button>
                         </div>
                         <ul class="pb-list" data-notification-list>
                             <li class="pb-empty">
@@ -172,11 +173,11 @@
     x-transition:leave="transition ease-in duration-200"
     x-transition:leave-start="translate-x-0"
     x-transition:leave-end="translate-x-full"
-    class="fixed top-16 right-0 z-40 w-64 bg-white shadow-md rounded-b-lg flex flex-col"
+    class="fixed top-16 right-0 z-40 w-64 max-h-[calc(100vh-4rem)] bg-white shadow-md rounded-b-lg flex flex-col"
     id="mobile-nav"
 >
-    {# Links del menú #}
-    <nav class="px-2 py-2" aria-label="Menú">
+    {# Links del menú — scrollable cuando no caben #}
+    <nav class="px-2 py-2 overflow-y-auto flex-1 min-h-0" aria-label="Menú">
         <ul class="space-y-0.5">
 
             {# === Sidebar espeja lo que NO cabe en el header nav === #}
@@ -257,8 +258,8 @@
         </ul>
     </nav>
 
-    {# Footer: redes + logout #}
-    <div class="px-4 py-3 border-t border-linen">
+    {# Footer: redes + logout — fijo abajo, no se comprime #}
+    <div class="px-4 py-3 border-t border-linen flex-shrink-0">
         <div class="flex items-center gap-4">
             <a href="https://www.facebook.com/pbstudiomx/" target="_blank" rel="noopener noreferrer"
                aria-label="Facebook" class="text-muted hover:text-terracota transition-colors">

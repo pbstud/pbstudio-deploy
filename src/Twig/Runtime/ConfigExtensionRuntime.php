@@ -9,6 +9,7 @@ use App\Model\ConfigurationFileModel;
 use App\Repository\BranchOfficeRepository;
 use App\Repository\ConfigurationRepository;
 use App\Service\HomeContentService;
+use App\Service\NotificationThemeService;
 use Twig\Environment;
 use Twig\Extension\RuntimeExtensionInterface;
 
@@ -17,6 +18,7 @@ readonly class ConfigExtensionRuntime implements RuntimeExtensionInterface
     public function __construct(
         private ConfigurationRepository $configurationRepository,
         private HomeContentService $homeContentService,
+        private NotificationThemeService $notificationThemeService,
         private BranchOfficeRepository $branchOfficeRepository,
     )
     {
@@ -104,5 +106,16 @@ readonly class ConfigExtensionRuntime implements RuntimeExtensionInterface
         $branches = $this->branchOfficeRepository->getPublic();
 
         return $branches[0]?->getSlug() ?? '';
+    }
+
+    public function getNotificationTypeConfigJson(): string
+    {
+        $config = $this->configurationRepository->findOneBy(['module' => 'notification_theme']);
+        $stored = $config?->getData();
+        $storedTypes = is_array($stored['types'] ?? null) ? $stored['types'] : [];
+
+        $merged = $this->notificationThemeService->mergeWithDefaults($storedTypes);
+
+        return (string) json_encode($merged, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 }

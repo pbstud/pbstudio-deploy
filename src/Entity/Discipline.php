@@ -12,8 +12,12 @@ use Doctrine\ORM\Mapping as ORM;
 use Knp\DoctrineBehaviors\Contract\Entity\TimestampableInterface;
 use Knp\DoctrineBehaviors\Model\Timestampable\TimestampableTrait;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\Validator\Constraints as Assert;
+use Vich\UploaderBundle\Mapping\Annotation as Vich;
 
 #[ORM\Entity(repositoryClass: DisciplineRepository::class)]
+#[Vich\Uploadable]
 #[UniqueEntity('name')]
 class Discipline implements TimestampableInterface
 {
@@ -31,6 +35,17 @@ class Discipline implements TimestampableInterface
 
     #[ORM\Column(length: 100, unique: true)]
     private ?string $name = null;
+
+    #[Vich\UploadableField(mapping: 'disciplines', fileNameProperty: 'image')]
+    #[Assert\Image(
+        maxSize: '5M',
+        mimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+        mimeTypesMessage: 'Solo JPG, PNG o WebP.'
+    )]
+    private ?File $imageFile = null;
+
+    #[ORM\Column(length: 150, nullable: true)]
+    private ?string $image = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
@@ -97,6 +112,34 @@ class Discipline implements TimestampableInterface
     public function setDescription(?string $description): static
     {
         $this->description = $description;
+
+        return $this;
+    }
+
+    public function getImageFile(): ?File
+    {
+        return $this->imageFile;
+    }
+
+    public function setImageFile(?File $imageFile): static
+    {
+        $this->imageFile = $imageFile;
+
+        if ($imageFile !== null) {
+            $this->updatedAt = new \DateTimeImmutable();
+        }
+
+        return $this;
+    }
+
+    public function getImage(): ?string
+    {
+        return $this->image;
+    }
+
+    public function setImage(?string $image): static
+    {
+        $this->image = $image;
 
         return $this;
     }

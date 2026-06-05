@@ -20,12 +20,12 @@ final class Version20260528194118 extends AbstractMigration
     public function up(Schema $schema): void
     {
         // this up() migration is auto-generated, please modify it to your needs
-        $this->addSql('ALTER TABLE exercise_room ADD description LONGTEXT DEFAULT NULL, ADD image VARCHAR(150) DEFAULT NULL');
+        $this->addSql('ALTER TABLE discipline ADD image VARCHAR(150) DEFAULT NULL');
     }
 
     public function down(Schema $schema): void
     {
         // this down() migration is auto-generated, please modify it to your needs
-        $this->addSql('ALTER TABLE exercise_room DROP description, DROP image');
+        $this->addSql('ALTER TABLE discipline DROP image');
     }
 }

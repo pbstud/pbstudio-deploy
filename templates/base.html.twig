@@ -39,6 +39,10 @@
     <div class="processing"><img src="{{ asset('images/loader.gif') }}" alt="Procesando"></div>
 </div>
 
+<script>
+    window.PB_NOTIFICATION_TYPE_CONFIG = {{ config_notification_type_config_json()|raw }};
+</script>
+
 {# Toast Alpine — disponible en toda la app pública #}
 {% include 'components/_toast.html.twig' %}
 

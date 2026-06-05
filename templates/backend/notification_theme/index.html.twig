@@ -1,0 +1,441 @@
+{% extends 'backend/layout.html.twig' %}
+
+{% set page_section = 'Sistema' %}
+{% set page_title = 'Tema de Notificaciones' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        .nt-layout { display: grid; grid-template-columns: 380px 1fr; gap: 18px; }
+        .nt-list { max-height: calc(100vh - 260px); overflow: auto; padding-right: 6px; }
+        .nt-item { border: 1px solid #e5e5e5; border-radius: 8px; padding: 10px; margin-bottom: 8px; cursor: pointer; background: #fff; transition: box-shadow .2s ease, border-color .2s ease; }
+        .nt-item:hover { box-shadow: 0 3px 12px rgba(0,0,0,.08); }
+        .nt-item.is-active { border-color: #c17a6a; box-shadow: 0 0 0 1px rgba(193,122,106,.25); }
+        .nt-item__type { font-size: 11px; color: #7b7b7b; margin-bottom: 6px; font-family: monospace; }
+
+        .nt-preview { position: relative; border: 1px solid #e0e0e0; border-radius: 10px; background: #fff; overflow: hidden; }
+        .nt-preview__bar { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #9e9e9e; }
+        .nt-preview__body { display: flex; gap: 10px; padding: 12px 14px 12px 18px; }
+        .nt-preview__icon { font-size: 18px; line-height: 1; margin-top: 1px; color: #9e9e9e; }
+        .nt-preview__title { font-size: 13px; font-weight: 700; line-height: 1.2; color: #2c2c2c; display: block; }
+        .nt-preview__text { font-size: 12px; color: #555; display: block; margin-top: 2px; }
+        .nt-preview__close { margin-left: auto; color: #b0b0b0; font-size: 14px; }
+
+        .nt-side-preview { margin-top: 10px; }
+
+        .nt-editor-grid { display: grid; grid-template-columns: repeat(2, minmax(220px, 1fr)); gap: 12px 14px; }
+        .nt-editor-grid .form-group { margin-bottom: 0; }
+
+        .nt-textarea-wrap { position: relative; }
+        .nt-textarea {
+            width: 100%;
+            min-height: 36px;
+            max-height: 120px;
+            padding: 6px 10px;
+            border: 1px solid #d9dee4;
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.4;
+            resize: none;
+            overflow-y: hidden;
+            font-family: inherit;
+            transition: border-color .2s ease;
+        }
+        .nt-textarea:focus { border-color: #c17a6a; outline: none; box-shadow: 0 0 0 2px rgba(193,122,106,.15); }
+        .nt-char-count {
+            position: absolute;
+            right: 8px;
+            bottom: 4px;
+            font-size: 10px;
+            color: #999;
+            pointer-events: none;
+            background: rgba(255,255,255,.85);
+            padding: 0 3px;
+            border-radius: 3px;
+        }
+        .nt-char-count.is-near { color: #F57C00; }
+        .nt-char-count.is-full { color: #D32F2F; font-weight: 700; }
+
+        .nt-icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 44px;
+            height: 40px;
+            border: 1px solid #d9dee4;
+            border-radius: 6px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 20px;
+            color: #c17a6a;
+        }
+
+        .nt-icon-picker {
+            display: none;
+            position: absolute;
+            z-index: 9999;
+            margin-top: 6px;
+            width: 280px;
+            max-height: 220px;
+            overflow-y: auto;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: #fff;
+            box-shadow: 0 4px 12px rgba(0,0,0,.15);
+        }
+
+        .nt-icon-opt {
+            cursor: pointer;
+            padding: 5px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 4px 4px 0;
+            min-width: 30px;
+            min-height: 30px;
+            color: #c17a6a;
+        }
+
+        .nt-color-field {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nt-color-input {
+            width: 42px;
+            height: 42px;
+            padding: 2px;
+            border-radius: 6px;
+            border: 1px solid #d9dee4;
+            background: #fff;
+            cursor: pointer;
+        }
+
+        .nt-color-code {
+            font-family: monospace;
+            font-size: 12px;
+            color: #6f6f6f;
+        }
+
+        .nt-live-wrap { margin-top: 14px; background: #f8f8f8; border: 1px dashed #d5d5d5; border-radius: 10px; padding: 14px; }
+        .nt-live-title { font-size: 12px; font-weight: 700; color: #616161; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 8px; }
+
+        @media (max-width: 1200px) {
+            .nt-layout { grid-template-columns: 1fr; }
+            .nt-list { max-height: none; }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="">
+    <div class="page-title">
+        <div class="title_left">
+            <h3>{{ page_title }}</h3>
+        </div>
+    </div>
+
+    <div class="clearfix"></div>
+
+    <div class="row">
+        <div class="col-md-12 col-sm-12 col-xs-12">
+            <div class="x_panel">
+                <div class="x_title">
+                    <h2>Editor visual por tipo de notificacion</h2>
+                    <div class="clearfix"></div>
+                </div>
+
+                <div class="x_content">
+                    {% for msg in app.flashes('success') %}
+                        <div class="alert alert-success">{{ msg }}</div>
+                    {% endfor %}
+                    {% for msg in app.flashes('danger') %}
+                        <div class="alert alert-danger">{{ msg }}</div>
+                    {% endfor %}
+
+                    <div class="nt-layout" data-nt-root>
+                        <div>
+                            <p class="text-muted" style="font-size:12px; margin-bottom:10px;">
+                                Selecciona un tipo para editar icono, colores y textos. La previsualizacion se actualiza en tiempo real.
+                            </p>
+                            <div class="nt-list" data-nt-list>
+                                {% for type, cfg in types %}
+                                    <div class="nt-item{% if type == selectedType %} is-active{% endif %}" data-nt-item data-type="{{ type }}">
+                                        <div class="nt-item__type">{{ type }}</div>
+                                        <div class="nt-preview nt-side-preview" style="background: {{ cfg.backgroundColor }};">
+                                            <div class="nt-preview__bar" style="background: {{ cfg.barColor }};"></div>
+                                            <div class="nt-preview__body">
+                                                <span class="nt-preview__icon" style="color: {{ cfg.iconColor }};"><i class="bi {{ cfg.icon }}"></i></span>
+                                                <div>
+                                                    <span class="nt-preview__title" style="color: {{ cfg.titleColor }};">{{ cfg.previewTitle }}</span>
+                                                    <span class="nt-preview__text" style="color: {{ cfg.textColor }};">{{ cfg.previewBody }}</span>
+                                                </div>
+                                                <span class="nt-preview__close"><i class="bi bi-x"></i></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div>
+                            <form method="post" action="{{ path('backend_notification_theme') }}" data-nt-form>
+                                <input type="hidden" name="type" id="nt-type" value="{{ selectedType }}">
+
+                                {% set selected = types[selectedType] %}
+
+                                <div class="nt-editor-grid">
+                                    <div class="form-group">
+                                        <label>Icono (seleccion visual)</label>
+                                        <input type="hidden" name="icon" id="nt-icon" value="{{ selected.icon }}">
+                                        <div style="position:relative;">
+                                            <button type="button" class="nt-icon-btn" id="nt-icon-btn" title="Cambiar icono">
+                                                <i class="bi {{ selected.icon }}"></i>
+                                            </button>
+                                            <div class="nt-icon-picker" id="nt-icon-picker">
+                                                {% for cls, iconLabel in iconOptions %}
+                                                    <span class="nt-icon-opt" data-icon="{{ cls }}" title="{{ iconLabel }}">
+                                                        <i class="bi {{ cls }}"></i>
+                                                    </span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Titulo de vista previa</label>
+                                        <div class="nt-textarea-wrap">
+                                            <textarea class="nt-textarea" name="previewTitle" id="nt-previewTitle" rows="1" maxlength="60" data-max="60">{{ selected.previewTitle }}</textarea>
+                                            <span class="nt-char-count" data-counter="nt-previewTitle">0/60</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Texto de vista previa</label>
+                                        <div class="nt-textarea-wrap">
+                                            <textarea class="nt-textarea" name="previewBody" id="nt-previewBody" rows="1" maxlength="120" data-max="120">{{ selected.previewBody }}</textarea>
+                                            <span class="nt-char-count" data-counter="nt-previewBody">0/120</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Color barra</label>
+                                        <div class="nt-color-field">
+                                            <input type="color" class="nt-color-input" name="barColor" id="nt-barColor" value="{{ selected.barColor }}">
+                                            <span class="nt-color-code" id="nt-barColor-code">{{ selected.barColor }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Color icono</label>
+                                        <div class="nt-color-field">
+                                            <input type="color" class="nt-color-input" name="iconColor" id="nt-iconColor" value="{{ selected.iconColor }}">
+                                            <span class="nt-color-code" id="nt-iconColor-code">{{ selected.iconColor }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Color fondo</label>
+                                        <div class="nt-color-field">
+                                            <input type="color" class="nt-color-input" name="backgroundColor" id="nt-backgroundColor" value="{{ selected.backgroundColor }}">
+                                            <span class="nt-color-code" id="nt-backgroundColor-code">{{ selected.backgroundColor }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Color titulo</label>
+                                        <div class="nt-color-field">
+                                            <input type="color" class="nt-color-input" name="titleColor" id="nt-titleColor" value="{{ selected.titleColor }}">
+                                            <span class="nt-color-code" id="nt-titleColor-code">{{ selected.titleColor }}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>Color texto</label>
+                                        <div class="nt-color-field">
+                                            <input type="color" class="nt-color-input" name="textColor" id="nt-textColor" value="{{ selected.textColor }}">
+                                            <span class="nt-color-code" id="nt-textColor-code">{{ selected.textColor }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="nt-live-wrap">
+                                    <div class="nt-live-title">Vista previa en vivo</div>
+                                    <div class="nt-preview" id="nt-live-preview" style="background: {{ selected.backgroundColor }}; max-width: 420px;">
+                                        <div class="nt-preview__bar" id="nt-live-bar" style="background: {{ selected.barColor }};"></div>
+                                        <div class="nt-preview__body">
+                                            <span class="nt-preview__icon" id="nt-live-icon" style="color: {{ selected.iconColor }};"><i class="bi {{ selected.icon }}"></i></span>
+                                            <div>
+                                                <span class="nt-preview__title" id="nt-live-title" style="color: {{ selected.titleColor }};">{{ selected.previewTitle }}</span>
+                                                <span class="nt-preview__text" id="nt-live-text" style="color: {{ selected.textColor }};">{{ selected.previewBody }}</span>
+                                            </div>
+                                            <span class="nt-preview__close"><i class="bi bi-x"></i></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="ln_solid"></div>
+                                <div class="form-group">
+                                    <div class="pull-right">
+                                        <button type="submit" class="btn btn-primary">Guardar tipo</button>
+                                    </div>
+                                    <div class="clearfix"></div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        (function () {
+            var types = {{ types|json_encode|raw }};
+            var items = document.querySelectorAll('[data-nt-item]');
+            var form = document.querySelector('[data-nt-form]');
+            if (!form) {
+                return;
+            }
+
+            /* ── Auto-grow textarea ── */
+            function autoGrow(el) {
+                el.style.height = 'auto';
+                el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+            }
+
+            /* ── Character counter ── */
+            function updateCounter(el) {
+                var max = parseInt(el.getAttribute('data-max') || '0', 10);
+                var counterEl = el.parentElement.querySelector('.nt-char-count');
+                if (!counterEl || !max) { return; }
+                var len = el.value.length;
+                counterEl.textContent = len + '/' + max;
+                counterEl.classList.toggle('is-near', len >= max * 0.8 && len < max);
+                counterEl.classList.toggle('is-full', len >= max);
+            }
+
+            function syncTextarea(el) {
+                autoGrow(el);
+                updateCounter(el);
+            }
+
+            /* ── Initialize all textareas ── */
+            document.querySelectorAll('.nt-textarea').forEach(function (el) {
+                syncTextarea(el);
+                el.addEventListener('input', function () { syncTextarea(el); });
+            });
+
+            function setValue(id, value) {
+                var el = document.getElementById(id);
+                if (el) {
+                    el.value = value || '';
+                    if (el.classList.contains('nt-textarea')) { syncTextarea(el); }
+                }
+            }
+
+            function selectType(type) {
+                if (!types[type]) {
+                    return;
+                }
+
+                document.getElementById('nt-type').value = type;
+
+                var cfg = types[type];
+                setValue('nt-icon', cfg.icon);
+                setValue('nt-previewTitle', cfg.previewTitle);
+                setValue('nt-previewBody', cfg.previewBody);
+                setValue('nt-barColor', cfg.barColor);
+                setValue('nt-iconColor', cfg.iconColor);
+                setValue('nt-backgroundColor', cfg.backgroundColor);
+                setValue('nt-titleColor', cfg.titleColor);
+                setValue('nt-textColor', cfg.textColor);
+
+                items.forEach(function (item) {
+                    item.classList.toggle('is-active', item.getAttribute('data-type') === type);
+                });
+
+                updateLivePreview();
+            }
+
+            function updateLivePreview() {
+                var icon = document.getElementById('nt-icon').value.trim() || 'bi-bell';
+                var previewTitle = document.getElementById('nt-previewTitle').value.trim() || 'Nueva notificacion';
+                var previewBody = document.getElementById('nt-previewBody').value.trim() || 'Tienes una notificacion nueva.';
+                var barColor = document.getElementById('nt-barColor').value.trim() || '#9E9E9E';
+                var iconColor = document.getElementById('nt-iconColor').value.trim() || '#9E9E9E';
+                var bgColor = document.getElementById('nt-backgroundColor').value.trim() || '#FFFFFF';
+                var titleColor = document.getElementById('nt-titleColor').value.trim() || '#2C2C2C';
+                var textColor = document.getElementById('nt-textColor').value.trim() || '#555555';
+
+                document.getElementById('nt-live-preview').style.background = bgColor;
+                document.getElementById('nt-live-bar').style.background = barColor;
+                document.getElementById('nt-live-icon').style.color = iconColor;
+                document.getElementById('nt-live-icon').innerHTML = '<i class="bi ' + icon + '"></i>';
+                document.getElementById('nt-live-title').style.color = titleColor;
+                document.getElementById('nt-live-title').textContent = previewTitle;
+                document.getElementById('nt-live-text').style.color = textColor;
+                document.getElementById('nt-live-text').textContent = previewBody;
+
+                var iconBtn = document.getElementById('nt-icon-btn');
+                if (iconBtn) {
+                    iconBtn.innerHTML = '<i class="bi ' + icon + '"></i>';
+                }
+
+                ['barColor','iconColor','backgroundColor','titleColor','textColor'].forEach(function (key) {
+                    var input = document.getElementById('nt-' + key);
+                    var code = document.getElementById('nt-' + key + '-code');
+                    if (input && code) {
+                        code.textContent = input.value;
+                    }
+                });
+            }
+
+            var iconBtn = document.getElementById('nt-icon-btn');
+            var iconPicker = document.getElementById('nt-icon-picker');
+            if (iconBtn && iconPicker) {
+                iconBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    iconPicker.style.display = iconPicker.style.display === 'block' ? 'none' : 'block';
+                });
+
+                iconPicker.querySelectorAll('[data-icon]').forEach(function (el) {
+                    el.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        document.getElementById('nt-icon').value = el.getAttribute('data-icon') || 'bi-bell';
+                        iconPicker.style.display = 'none';
+                        updateLivePreview();
+                    });
+                });
+
+                document.addEventListener('click', function () {
+                    iconPicker.style.display = 'none';
+                });
+            }
+
+            items.forEach(function (item) {
+                item.addEventListener('click', function () {
+                    selectType(item.getAttribute('data-type'));
+                });
+            });
+
+            ['nt-previewTitle', 'nt-previewBody', 'nt-barColor', 'nt-iconColor', 'nt-backgroundColor', 'nt-titleColor', 'nt-textColor'].forEach(function (id) {
+                var el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('input', updateLivePreview);
+                }
+            });
+
+            updateLivePreview();
+        })();
+    </script>
+{% endblock %}

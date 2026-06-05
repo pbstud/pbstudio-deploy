@@ -96,6 +96,7 @@ main:
     backend_achievement: Logros
     backend_achievement_new: Nuevo Logro
     backend_achievement_edit: Editar Logro
+    backend_notification_theme: Tema de Notificaciones
     backend_configuration: Configuración
     backend_discipline: Disciplinas
     backend_discipline_edit: Editar Disciplina

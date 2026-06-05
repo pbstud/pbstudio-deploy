@@ -133,8 +133,9 @@ class HomeContentController extends AbstractController
         'bi-qr-code'                => 'QR / check-in',
     ];
 
-    private const FAQ_FILE      = 'var/data/faq_items.json';
+    private const FAQ_FILE       = 'var/data/faq_items.json';
     private const FEATURES_FILE  = 'var/data/feature_items.json';
+    private const HERO_FILE      = 'var/data/home_hero.json';
     public function __construct(
         private readonly HomeContentRepository $homeContentRepository,
         private readonly EntityManagerInterface $entityManager,
@@ -153,6 +154,7 @@ class HomeContentController extends AbstractController
 
         return $this->render('backend/home_content/edit.html.twig', [
             'homeContent'    => $homeContent,
+            'heroConfig'     => $this->readHeroConfig(),
             'defaults'       => $this->getDefaults(),
             'galleryImages'  => $this->getGalleryImages(),
             'faqItems'       => $this->readFaqItems(),
@@ -172,7 +174,12 @@ class HomeContentController extends AbstractController
         $raw = $request->request->all();
         $files = $request->files->all();
 
-        // Textos de cajas y contacto
+        // Textos del hero via JSON (sin migraciones)
+        $this->saveHeroConfig([
+            'heroTitle' => trim((string) ($raw['heroTitle'] ?? '')),
+            'heroText' => trim((string) ($raw['heroText'] ?? '')),
+        ]);
+
         $homeContent->setBox1Title(trim((string) ($raw['box1Title'] ?? '')));
         $homeContent->setBox1Description(trim((string) ($raw['box1Description'] ?? '')));
         $homeContent->setBox1Url(trim((string) ($raw['box1Url'] ?? '')));
@@ -375,6 +382,50 @@ class HomeContentController extends AbstractController
     }
 
     /**
+     * @return array{heroTitle: string, heroText: string}
+     */
+    private function readHeroConfig(): array
+    {
+        $path = $this->getParameter('kernel.project_dir') . '/' . self::HERO_FILE;
+        if (!is_file($path)) {
+            return [
+                'heroTitle' => HomeContentService::DEFAULT_HERO_TITLE,
+                'heroText' => HomeContentService::DEFAULT_HERO_TEXT,
+            ];
+        }
+
+        $data = json_decode((string) file_get_contents($path), true);
+        if (!is_array($data)) {
+            return [
+                'heroTitle' => HomeContentService::DEFAULT_HERO_TITLE,
+                'heroText' => HomeContentService::DEFAULT_HERO_TEXT,
+            ];
+        }
+
+        return [
+            'heroTitle' => trim((string) ($data['heroTitle'] ?? HomeContentService::DEFAULT_HERO_TITLE)),
+            'heroText' => trim((string) ($data['heroText'] ?? HomeContentService::DEFAULT_HERO_TEXT)),
+        ];
+    }
+
+    /**
+     * @param array{heroTitle: string, heroText: string} $config
+     */
+    private function saveHeroConfig(array $config): void
+    {
+        $path = $this->getParameter('kernel.project_dir') . '/' . self::HERO_FILE;
+        $dir  = dirname($path);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0775, true);
+        }
+
+        file_put_contents($path, json_encode([
+            'heroTitle' => $config['heroTitle'] !== '' ? $config['heroTitle'] : HomeContentService::DEFAULT_HERO_TITLE,
+            'heroText' => $config['heroText'] !== '' ? $config['heroText'] : HomeContentService::DEFAULT_HERO_TEXT,
+        ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    }
+
+    /**
      * @return array<string>
      */
     private function getGalleryImages(): array
@@ -394,6 +445,8 @@ class HomeContentController extends AbstractController
     private function getDefaults(): array
     {
         return [
+            'heroTitle'       => HomeContentService::DEFAULT_HERO_TITLE,
+            'heroText'        => HomeContentService::DEFAULT_HERO_TEXT,
             'box1Title'       => HomeContentService::DEFAULT_BOX1_TITLE,
             'box1Description' => HomeContentService::DEFAULT_BOX1_DESCRIPTION,
             'box1Url'         => HomeContentService::DEFAULT_BOX1_URL,
@@ -408,4 +461,5 @@ class HomeContentController extends AbstractController
             'contactWhatsapp' => HomeContentService::DEFAULT_CONTACT_WHATSAPP,
         ];
     }
+
 }

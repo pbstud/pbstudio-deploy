@@ -16,6 +16,9 @@ use App\Repository\HomeContentRepository;
 class HomeContentService
 {
     // Valores por defecto (igual que el template hardcodeado original)
+    public const DEFAULT_HERO_TITLE       = 'Transforma tu cuerpo sin entrenamientos agresivos.';
+    public const DEFAULT_HERO_TEXT        = 'Clases personalizadas en Reformer, Barra y entrenamiento funcional de bajo impacto para mujeres que buscan verse fuertes, definidas y sentirse increibles.';
+
     public const DEFAULT_BOX1_TITLE       = 'P&B Studio Online';
     public const DEFAULT_BOX1_DESCRIPTION = 'El ejercicio más completo que te acompaña a donde quiera que vayas';
     public const DEFAULT_BOX1_URL         = 'https://www.pbstudio.online';
@@ -52,10 +55,16 @@ class HomeContentService
     public function getTemplateData(): array
     {
         $hc = $this->homeContentRepository->findSingle();
+        $heroConfig = $this->readHeroConfig();
+
+        $bannerDesktop = $this->resolveBanner($hc?->getBannerDesktop());
+        $bannerMobile  = $this->resolveBanner($hc?->getBannerMobile());
 
         return [
-            'bannerDesktop' => $hc?->getBannerDesktop(),
-            'bannerMobile'  => $hc?->getBannerMobile(),
+            'bannerDesktop' => $bannerDesktop,
+            'bannerMobile'  => $bannerMobile,
+            'heroTitle'     => $heroConfig['heroTitle'] ?: self::DEFAULT_HERO_TITLE,
+            'heroText'      => $heroConfig['heroText'] ?: self::DEFAULT_HERO_TEXT,
 
             'box1Image'       => $hc?->getBox1Image(),
             'box1Title'       => $hc?->getBox1Title()       ?: self::DEFAULT_BOX1_TITLE,
@@ -74,5 +83,47 @@ class HomeContentService
             'contactInstagram' => $hc?->getContactInstagram() ?: self::DEFAULT_CONTACT_INSTAGRAM,
             'contactWhatsapp'  => $hc?->getContactWhatsapp()  ?: self::DEFAULT_CONTACT_WHATSAPP,
         ];
+    }
+
+    /**
+     * @return array{heroTitle: string, heroText: string}
+     */
+    private function readHeroConfig(): array
+    {
+        $path = dirname(__DIR__, 2) . '/var/data/home_hero.json';
+        if (!is_file($path)) {
+            return [
+                'heroTitle' => self::DEFAULT_HERO_TITLE,
+                'heroText' => self::DEFAULT_HERO_TEXT,
+            ];
+        }
+
+        $data = json_decode((string) file_get_contents($path), true);
+        if (!is_array($data)) {
+            return [
+                'heroTitle' => self::DEFAULT_HERO_TITLE,
+                'heroText' => self::DEFAULT_HERO_TEXT,
+            ];
+        }
+
+        return [
+            'heroTitle' => trim((string) ($data['heroTitle'] ?? self::DEFAULT_HERO_TITLE)),
+            'heroText' => trim((string) ($data['heroText'] ?? self::DEFAULT_HERO_TEXT)),
+        ];
+    }
+
+    private function resolveBanner(?string $fileName): ?string
+    {
+        if (!$fileName) {
+            return null;
+        }
+
+        $path = dirname(__DIR__, 2) . '/public/media/uploads/site/' . $fileName;
+        if (!is_file($path)) {
+            return null;
+        }
+
+        // Solo se verifica que el archivo exista; las dimensiones quedan a criterio del usuario.
+        return $fileName;
     }
 }

@@ -98,3 +98,8 @@ sections:
         label: 'Logros'
         actions:
             - { label: 'Listado y CRUD', route: 'backend_achievement' }
+
+    NotificationTheme:
+        label: 'Tema de notificaciones'
+        actions:
+            - { label: 'Configurar tipos', route: 'backend_notification_theme' }

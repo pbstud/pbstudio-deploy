@@ -84,11 +84,12 @@ final class Version20260525000000 extends AbstractMigration
         $this->addSql('ALTER TABLE achievement_badge CHANGE default_pts default_pts INT NOT NULL, CHANGE sort_order sort_order INT NOT NULL, CHANGE is_active is_active TINYINT(1) NOT NULL');
 
         // ── achievement_badge: rename unique index (only if old name exists) ─
-        if ($this->indexExists('achievement_badge', 'uniq_badge_key')) {
-            $this->addSql('ALTER TABLE achievement_badge RENAME INDEX uniq_badge_key TO UNIQ_5190D21355B8DFCF');
-        }
-        if ($this->indexExists('achievement_badge', 'UNIQ_BADGE_KEY')) {
-            $this->addSql('ALTER TABLE achievement_badge RENAME INDEX UNIQ_BADGE_KEY TO UNIQ_5190D21355B8DFCF');
+        if (!$this->indexExists('achievement_badge', 'UNIQ_5190D21355B8DFCF')) {
+            if ($this->indexExists('achievement_badge', 'uniq_badge_key')) {
+                $this->addSql('ALTER TABLE achievement_badge RENAME INDEX uniq_badge_key TO UNIQ_5190D21355B8DFCF');
+            } elseif ($this->indexExists('achievement_badge', 'UNIQ_BADGE_KEY')) {
+                $this->addSql('ALTER TABLE achievement_badge RENAME INDEX UNIQ_BADGE_KEY TO UNIQ_5190D21355B8DFCF');
+            }
         }
 
         // ── achievement_condition_catalog: drop manual index ─────────────────
@@ -103,15 +104,15 @@ final class Version20260525000000 extends AbstractMigration
 
         // ── transaction: drop manual index ───────────────────────────────────
         if ($this->indexExists('transaction', 'idx_transaction_package_has_restrictions')) {
-            $this->addSql('DROP INDEX idx_transaction_package_has_restrictions ON transaction');
+            $this->addSql('DROP INDEX idx_transaction_package_has_restrictions ON `transaction`');
         }
 
         // ── transaction: is_frozen NOT NULL ──────────────────────────────────
-        $this->addSql('ALTER TABLE transaction CHANGE is_frozen is_frozen TINYINT(1) NOT NULL');
+        $this->addSql('ALTER TABLE `transaction` CHANGE is_frozen is_frozen TINYINT(1) NOT NULL');
 
         // ── transaction: FK package_id ON DELETE SET NULL ─────────────────────
         if (!$this->foreignKeyExists('transaction', 'FK_723705D1F44CABFF')) {
-            $this->addSql('ALTER TABLE transaction ADD CONSTRAINT FK_723705D1F44CABFF FOREIGN KEY (package_id) REFERENCES package (id) ON DELETE SET NULL');
+            $this->addSql('ALTER TABLE `transaction` ADD CONSTRAINT FK_723705D1F44CABFF FOREIGN KEY (package_id) REFERENCES `package` (id) ON DELETE SET NULL');
         }
 
         // ── transaction_freeze_log: action NOT NULL ───────────────────────────
@@ -173,11 +174,11 @@ final class Version20260525000000 extends AbstractMigration
 
         // ── transaction ───────────────────────────────────────────────────────
         if ($this->foreignKeyExists('transaction', 'FK_723705D1F44CABFF')) {
-            $this->addSql('ALTER TABLE transaction DROP FOREIGN KEY FK_723705D1F44CABFF');
+            $this->addSql('ALTER TABLE `transaction` DROP FOREIGN KEY FK_723705D1F44CABFF');
         }
-        $this->addSql('ALTER TABLE transaction CHANGE is_frozen is_frozen TINYINT(1) DEFAULT 0');
+        $this->addSql('ALTER TABLE `transaction` CHANGE is_frozen is_frozen TINYINT(1) DEFAULT 0');
         if (!$this->indexExists('transaction', 'idx_transaction_package_has_restrictions')) {
-            $this->addSql('CREATE INDEX idx_transaction_package_has_restrictions ON transaction (package_has_restrictions)');
+            $this->addSql('CREATE INDEX idx_transaction_package_has_restrictions ON `transaction` (package_has_restrictions)');
         }
 
         // ── package ───────────────────────────────────────────────────────────

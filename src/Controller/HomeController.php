@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Repository\BranchOfficeRepository;
-use App\Repository\ExerciseRoomRepository;
+use App\Repository\DisciplineRepository;
 use App\Repository\SessionRepository;
 use App\Repository\StaffRepository;
 use App\Service\HomeContentService;
@@ -22,7 +22,7 @@ class HomeController extends AbstractController
         BranchOfficeRepository $branchOfficeRepository,
         HomeContentService $homeContentService,
         SessionRepository $sessionRepository,
-        ExerciseRoomRepository $exerciseRoomRepository,
+        DisciplineRepository $disciplineRepository,
     ): Response
     {
         $instructors = $staffRepository->getAllActiveInstructors();
@@ -40,14 +40,6 @@ class HomeController extends AbstractController
                 $galleryImages[] = '/media/uploads/gallery/' . $file->getFilename();
             }
         }
-
-        $uploadDir = $this->getParameter('kernel.project_dir') . '/public/media/uploads/exercise_rooms/';
-        $rooms = array_map(function($room) use ($uploadDir) {
-            if ($room->getImage() && !file_exists($uploadDir . $room->getImage())) {
-                $room->setImage(null);
-            }
-            return $room;
-        }, $exerciseRoomRepository->getActiveByPublicBranchOffice());
 
         // Cargar FAQ desde archivo JSON
         $faqFile = $this->getParameter('kernel.project_dir') . '/var/data/faq_items.json';
@@ -70,7 +62,7 @@ class HomeController extends AbstractController
             'branchOffices'     => $branchOfficeRepository->getPublic(),
             'homeContent'       => $homeContentService->getTemplateData(),
             'upcomingSessions'  => $sessionRepository->findNextUpcoming(3),
-            'rooms'             => $rooms,
+            'disciplines'       => $disciplineRepository->getAllActives(),
             'galleryImages'     => $galleryImages,
             'faqItems'          => $faqItems,
             'featureItems'      => $featureItems,

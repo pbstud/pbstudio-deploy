@@ -588,7 +588,17 @@ class ProfileController extends AbstractController
                 
                 $logger->info('[USER_CANCEL] Proceso completo');
 
-                return $this->json(['success' => true, 'notif' => true, 'message' => '¡Tu cancelación fue exitosa! Tu lugar quedó liberado correctamente.']);
+                return $this->json([
+                    'success' => true,
+                    'notif' => true,
+                    'message' => '¡Tu cancelación fue exitosa! Tu lugar quedó liberado correctamente.',
+                    // Indica al frontend que debe refrescar la página de Próximas Clases
+                    // (lista de reservaciones) para que el registro cancelado desaparezca.
+                    'targetUrl' => $this->generateUrl('reserved_sessions', [
+                        '_fragment' => 'section-content',
+                    ]),
+                    'refresh' => true,
+                ]);
             } catch (ReservationException $e) {
                 $json['error'] = $e->getMessage();
 

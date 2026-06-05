@@ -14,38 +14,29 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class NotificationsController extends AbstractController
 {
-    private const PAGE_SIZE = 20;
-
     public function __construct(
         private readonly NotificationRepository $notificationRepository,
         private readonly NotificationResolver $resolver,
     ) {}
 
     #[Route('/notificaciones', name: 'notifications', methods: ['GET'])]
-    public function index(Request $request): Response
+    public function index(): Response
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_REMEMBERED');
 
         /** @var User $user */
-        $user  = $this->getUser();
-        $page  = max(1, (int) $request->query->get('page', 1));
-        $total = $this->notificationRepository->countAll($user);
-
-        $totalPages = max(1, (int) ceil($total / self::PAGE_SIZE));
-        $page       = min($page, $totalPages);
-
-        $notifications = $this->notificationRepository->findByUser($user, $page, self::PAGE_SIZE);
+        $user = $this->getUser();
+        $notifications = $this->notificationRepository->findAllByUser($user);
+        $resolvedUrls = $this->resolver->resolveMany($notifications, $user);
 
         $targetUrls = [];
         foreach ($notifications as $n) {
-            $targetUrls[$n->getId()] = $this->resolver->resolve($n, $user)['targetUrl'];
+            $targetUrls[$n->getId()] = $resolvedUrls[$n->getId()]['targetUrl'] ?? null;
         }
 
         return $this->render('notifications/index.html.twig', [
             'notifications' => $notifications,
             'target_urls'   => $targetUrls,
-            'page'          => $page,
-            'total_pages'   => $totalPages,
             'unread_count'  => $this->notificationRepository->countUnread($user),
             'mark_read_url' => $this->generateUrl('api_notifications_mark_read', ['id' => '__ID__']),
         ]);

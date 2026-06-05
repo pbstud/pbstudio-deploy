@@ -90,10 +90,10 @@
             <form action="{{ path('backend_home_content') }}" method="post" enctype="multipart/form-data">
 
                 {# === BANNER === #}
-                <h5 class="hc-section-title">Banner principal</h5>
+                <h5 class="hc-section-title">Banner principal</h5 >
                 <div class="row">
                     <div class="col-md-6 form-group">
-                        <label>Imagen desktop <small class="text-muted">(recomendado ≥ 1440×600 px)</small></label>
+                        <label>Imagen desktop <small class="text-muted">(recomendado 1920×1080 px, mínimo 1600×900)</small></label>
                         {% if homeContent and homeContent.bannerDesktop %}
                             <img id="preview-bannerDesktop"
                                  src="{{ vich_uploader_asset(homeContent, 'bannerDesktopFile') }}"
@@ -115,7 +115,7 @@
                                data-preview="preview-bannerDesktop">
                     </div>
                     <div class="col-md-6 form-group">
-                        <label>Imagen mobile <small class="text-muted">(recomendado ≤ 700px ancho)</small></label>
+                        <label>Imagen mobile <small class="text-muted">(recomendado 800×400 px, formato horizontal)</small></label>
                         {% if homeContent and homeContent.bannerMobile %}
                             <img id="preview-bannerMobile"
                                  src="{{ vich_uploader_asset(homeContent, 'bannerMobileFile') }}"
@@ -135,6 +135,20 @@
                         {% endif %}
                         <input type="file" name="bannerMobileFile" class="form-control" accept="image/jpeg,image/png,image/webp"
                                data-preview="preview-bannerMobile">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-12 form-group">
+                        <label>Título del hero <small class="text-muted">(aparece sobre la foto/degradado)</small></label>
+                        <input type="text" name="heroTitle" class="form-control"
+                               value="{{ heroConfig.heroTitle ?: defaults.heroTitle }}"
+                               placeholder="{{ defaults.heroTitle }}" maxlength="190">
+                    </div>
+                    <div class="col-md-12 form-group">
+                        <label>Texto del hero <small class="text-muted">(párrafo debajo del título)</small></label>
+                        <textarea name="heroText" class="form-control" rows="3" style="resize:vertical;"
+                                  placeholder="{{ defaults.heroText }}" maxlength="600">{{ heroConfig.heroText ?: defaults.heroText }}</textarea>
                     </div>
                 </div>
 

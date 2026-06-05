@@ -12,7 +12,8 @@ vich_uploader:
             upload_destination: '%kernel.project_dir%/public/media/uploads/site'
             namer: Vich\UploaderBundle\Naming\SmartUniqueNamer
 
-        exercise_rooms:
-            uri_prefix: /media/uploads/exercise_rooms
-            upload_destination: '%kernel.project_dir%/public/media/uploads/exercise_rooms'
+
+        disciplines:
+            uri_prefix: /media/uploads/disciplines
+            upload_destination: '%kernel.project_dir%/public/media/uploads/disciplines'
             namer: Vich\UploaderBundle\Naming\SmartUniqueNamer

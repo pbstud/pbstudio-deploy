@@ -24,6 +24,9 @@ class ConfigExtension extends AbstractExtension
                 'is_safe' => ['html'],
                 'needs_environment' => true,
             ]),
+            new TwigFunction('config_notification_type_config_json', [ConfigExtensionRuntime::class, 'getNotificationTypeConfigJson'], [
+                'is_safe' => ['html'],
+            ]),
             new TwigFunction('config_whatsapp_url', [ConfigExtensionRuntime::class, 'getWhatsappUrl']),
             new TwigFunction('config_whatsapp_phone', [ConfigExtensionRuntime::class, 'getWhatsappPhone']),
             new TwigFunction('config_first_branch_slug', [ConfigExtensionRuntime::class, 'getFirstPublicBranchSlug']),

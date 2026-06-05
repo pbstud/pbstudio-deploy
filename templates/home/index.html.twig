@@ -18,28 +18,30 @@
     <picture>
         <source media="(max-width: 768px)"
                 srcset="{{ homeContent.bannerMobile ? '/media/uploads/site/' ~ homeContent.bannerMobile : asset('images/home/banner-mobile.jpg') }}">
-        <img src="{{ homeContent.bannerDesktop ? '/media/uploads/site/' ~ homeContent.bannerDesktop : asset('images/home/banner-desktop.jpg') }}"
-             alt="Estudio P&amp;B — Pilates Reformer"
-             class="absolute inset-0 w-full h-full object-cover object-center">
+           <img src="{{ homeContent.bannerDesktop ? '/media/uploads/site/' ~ homeContent.bannerDesktop : asset('images/home/banner-desktop.jpg') }}"
+               alt="Estudio P&amp;B — Pilates Reformer"
+               class="absolute inset-0 w-full h-full object-cover object-center">
     </picture>
 
-    {# Degradado horizontal: arena izquierda → transparente derecha #}
-    <div class="absolute inset-0" style="background: linear-gradient(to right, #F5F0EB 22%, rgba(245,240,235,0.9) 32%, rgba(245,240,235,0.65) 45%, rgba(245,240,235,0.32) 57%, rgba(245,240,235,0.08) 70%, transparent 80%);"></div>
-    {# Degradado vertical: arena en la franja del header (top 80px) → transparente #}
-    <div class="absolute inset-0" style="background: linear-gradient(to bottom, rgba(245,240,235,0.92) 0%, rgba(245,240,235,0.55) 8%, transparent 18%);"></div>
+    {# Franja superior sobre la foto para dar contraste al header transparente sin cambiar sus colores #}
+    <div class="absolute inset-x-0 top-0 h-32 md:h-36" style="background: linear-gradient(to bottom, rgba(245,240,235,0.86) 0%, rgba(245,240,235,0.72) 34%, rgba(245,240,235,0.40) 62%, rgba(245,240,235,0.00) 100%);"></div>
 
-    {# Copy — z-10 sobre el degradado, pt-16 para bajar del header sticky #}
-    <div class="relative z-10 max-w-7xl mx-auto px-6 md:px-12 lg:px-16 flex items-center" style="min-height: 100vh; padding-top: 5rem; padding-bottom: 4rem;">
-        <div class="max-w-lg">
-            <h2 class="font-display normal-case text-5xl md:text-6xl lg:text-7xl text-charcoal leading-[1.05] tracking-tight mb-5"
-                style="text-shadow: 0 1px 8px rgba(245,240,235,0.9), 0 2px 20px rgba(245,240,235,0.7);">
-                Transforma tu cuerpo<br>
-                sin entrenamientos<br>
-                agresivos.
+    {# Overlay horizontal blanco hacia la izquierda, con cambio principal en torno al 35% #}
+    <div class="absolute inset-0" style="background: linear-gradient(90deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.56) 18%, rgba(255,255,255,0.30) 35%, rgba(255,255,255,0.10) 48%, rgba(255,255,255,0.00) 64%);"></div>
+
+    {# Overlay oscuro desde abajo hacia arriba para sostener el título y texto en la base #}
+    <div class="absolute inset-0" style="background: linear-gradient(to top, rgba(19,22,27,0.96) 0%, rgba(19,22,27,0.88) 10%, rgba(19,22,27,0.72) 18%, rgba(19,22,27,0.46) 28%, rgba(19,22,27,0.18) 40%, rgba(19,22,27,0.00) 56%);"></div>
+
+    {# Copy — z-10 sobre la foto + overlay, anclado abajo para quedar dentro de la franja oscura #}
+    <div class="relative z-10 max-w-7xl mx-auto px-6 md:px-12 lg:px-16 flex items-end" style="min-height: 100vh; padding-top: 5rem; padding-bottom: 4rem;">
+        <div class="max-w-lg self-end">
+            <h2 class="font-display normal-case text-4xl md:text-5xl lg:text-6xl text-white leading-[1.05] tracking-tight mb-4"
+                style="text-shadow: 0 2px 10px rgba(0,0,0,0.45), 0 6px 24px rgba(0,0,0,0.32);">
+                {{ homeContent.heroTitle|default('Transforma tu cuerpo sin entrenamientos agresivos.')|nl2br }}
             </h2>
-            <p class="text-charcoal/80 text-base leading-relaxed mb-8 max-w-md" style="text-shadow: 0 0 3px rgba(245,240,235,1), 0 0 8px rgba(245,240,235,1), 0 0 16px rgba(245,240,235,1), 0 0 30px rgba(245,240,235,0.9), 0 0 50px rgba(245,240,235,0.7);">
-                Clases personalizadas en Reformer, Barra y entrenamiento funcional de bajo impacto
-                para mujeres que buscan verse fuertes, definidas y sentirse increíbles.
+            <p class="text-white/90 text-base leading-relaxed mb-8 max-w-md"
+               style="text-shadow: 0 2px 10px rgba(0,0,0,0.38), 0 6px 24px rgba(0,0,0,0.28);">
+                {{ homeContent.heroText|default('Clases personalizadas en Reformer, Barra y entrenamiento funcional de bajo impacto para mujeres que buscan verse fuertes, definidas y sentirse increíbles.') }}
             </p>
             <div class="flex flex-wrap gap-3 mb-6">
                 <a href="{{ path('reservation_calendar', {'slug': config_first_branch_slug()}) }}"
@@ -58,15 +60,15 @@
                 {% for branch in branchOffices %}
                 <a href="#mapa"
                    class="pbs-hero-branch-link flex items-center gap-1.5 text-sm"
-                   style="text-shadow: 0 0 3px rgba(245,240,235,1), 0 0 8px rgba(245,240,235,1), 0 0 16px rgba(245,240,235,1), 0 0 30px rgba(245,240,235,0.9), 0 0 50px rgba(245,240,235,0.7);"
+                   style="text-shadow: 0 2px 8px rgba(0,0,0,0.35);"
                    data-tab-idx="{{ loop.index0 }}"
                    aria-label="Ver {{ branch.name }} en el mapa">
                     <i class="bi bi-geo-alt text-terracota flex-shrink-0" aria-hidden="true"></i>
-                    <span class="text-charcoal font-medium">{{ branch.name }}</span>
+                    <span class="text-white font-medium">{{ branch.name }}</span>
                     {% if branch.plaza %}
-                        <span class="text-charcoal/70">· {{ branch.plaza }}</span>
+                        <span class="text-white/70">· {{ branch.plaza }}</span>
                     {% elseif branch.place %}
-                        <span class="text-charcoal/70">· {{ branch.place }}</span>
+                        <span class="text-white/70">· {{ branch.place }}</span>
                     {% endif %}
                 </a>
                 {% endfor %}
@@ -100,128 +102,128 @@
 
         <div class="text-center mb-12">
             <p class="text-xs font-medium tracking-widest uppercase text-terracota mb-3">Nuestras clases</p>
-            <h2 class="font-display normal-case text-3xl md:text-4xl text-charcoal">Elige tu práctica favorita</h2>
+            <h2 class="font-display normal-case text-3xl md:text-4xl text-charcoal">Elige tu práctica favorita en nuestras sucursales</h2>
         </div>
 
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5 md:gap-6">
+        {# ── CLASES PRESENCIALES ── #}
+        {% if disciplines is defined and disciplines is not empty %}
+        <div class="mb-14">
+            <div class="grid gap-5 md:gap-6 justify-center" style="grid-template-columns: repeat(auto-fit, minmax(180px, 220px));">
 
-            {# Tarjetas dinámicas: salones activos de sucursales públicas #}
-            {% for room in rooms %}
-                {% set disciplineName = room.discipline ? room.discipline.name : '' %}
-                {% set isGroup = room.type == 'g' %}
-                <div class="block">
-                    {% set calendarUrl = path('reservation_calendar', {'slug': room.branchOffice ? room.branchOffice.slug : firstBranchSlug}) ~ '?discipline=' ~ (disciplineName|url_encode) ~ '&type=' ~ room.type %}
-                    {% set fallbackIcons = [
-                                'bi-person-arms-up',
-                                'bi-person-standing',
-                                'bi-person-walking',
-                                'bi-heart-pulse',
-                                'bi-activity',
-                                'bi-wind',
-                                'bi-flower1',
-                                'bi-flower2',
-                                'bi-stars',
-                                'bi-sun',
-                                'bi-moon-stars',
-                                'bi-infinity',
-                                'bi-feather',
-                                'bi-droplet-half',
-                                'bi-peace'
-                            ] %}
-                            {% set iconIdx = (loop.index0 * 3 + random(0, fallbackIcons|length - 1)) % (fallbackIcons|length) %}
-                    <a href="{{ calendarUrl }}" class="group peer block no-underline">
-                    <div class="aspect-[3/4] overflow-hidden rounded-xl mb-4 bg-linen flex items-center justify-center relative">
-                        {% if room.image %}
-                            <img src="/media/uploads/exercise_rooms/{{ room.image }}"
-                                 alt="{{ room.name }}"
-                                 class="pbs-room-img w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                 style="opacity:0; transition: opacity .3s"
-                                 onload="clearTimeout(this._t); this.style.opacity='1';"
-                                 onerror="clearTimeout(this._t); this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                            <span style="display:none" class="w-full h-full absolute inset-0 flex items-center justify-center">
-                                <i class="bi {{ fallbackIcons[iconIdx] }} text-5xl text-terracota opacity-40 group-hover:opacity-70 transition-opacity" aria-hidden="true"></i>
+
+                {# Tarjetas dinámicas: disciplinas activas #}
+
+                {% set disciplineIcons = {
+                    'Reformer':        'bi-person-arms-up',
+                    'Barra':           'bi-person-standing',
+                    'Pilates':         'bi-activity',
+                    'Yoga':            'bi-flower2',
+                    'Funcional':       'bi-lightning',
+                    'Cardio':          'bi-heart-pulse',
+                    'Stretching':      'bi-peace',
+                    'Meditación':      'bi-moon-stars',
+                    'Pilates Reformer': 'bi-person-arms-up',
+                    'Pilates Mat':     'bi-activity',
+                    'Barra':           'bi-person-standing',
+                    'Dual':            'bi-people',
+                    'Strong Mom':      'bi-heart',
+                    '_default':        'bi-stars',
+                } %}
+                {% set fallbackIcons = [
+                    'bi-person-arms-up', 'bi-person-standing', 'bi-person-walking',
+                    'bi-heart-pulse', 'bi-activity', 'bi-wind',
+                    'bi-flower1', 'bi-flower2', 'bi-stars',
+                    'bi-sun', 'bi-moon-stars', 'bi-infinity',
+                    'bi-feather', 'bi-droplet-half', 'bi-peace'
+                ] %}
+                {% for discipline in disciplines %}
+                    {% set slug = discipline.name|lower|replace({' ': '-', 'ñ': 'n', 'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u'}) %}
+                    {% set iconIdx = (loop.index0 * 3 + random(0, fallbackIcons|length - 1)) % (fallbackIcons|length) %}
+                    {% set icon = disciplineIcons[discipline.name]|default(fallbackIcons[iconIdx]) %}
+                    <div class="block">
+                        <a href="{{ path('reservation_calendar', {'slug': firstBranchSlug}) ~ '?discipline=' ~ (discipline.name|url_encode) }}" class="group peer block no-underline">
+                        <div class="aspect-[3/4] overflow-hidden rounded-xl mb-4 bg-linen flex items-center justify-center relative">
+                            {% if discipline.image %}
+                                <img src="/media/uploads/disciplines/{{ discipline.image }}"
+                                     alt="{{ discipline.name }}"
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <span style="display:none" class="w-full h-full absolute inset-0 flex items-center justify-center">
+                                    <i class="bi {{ icon }} text-5xl text-terracota opacity-40" aria-hidden="true"></i>
+                                </span>
+                            {% else %}
+                                <i class="bi {{ icon }} text-6xl text-terracota opacity-40 group-hover:opacity-70 transition-opacity" aria-hidden="true"></i>
+                            {% endif %}
+                            <span class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-charcoal/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+                                <i class="bi bi-calendar-check text-white" style="font-size:2rem;"></i>
+                                <span class="text-white text-xs font-bold tracking-widest uppercase">Ver horarios</span>
                             </span>
+                        </div>
+                        </a>
+                        <p class="text-xs font-bold tracking-widest uppercase text-charcoal mb-1 group-hover:text-terracota transition-colors">{{ discipline.name }}</p>
+                        {% if discipline.description %}
+                            <p class="text-xs text-muted leading-relaxed">{{ discipline.description }}</p>
                         {% else %}
-                            <i class="bi {{ fallbackIcons[iconIdx] }} text-5xl text-terracota opacity-40 group-hover:opacity-70 transition-opacity" aria-hidden="true"></i>
+                            <p class="text-xs text-muted leading-relaxed">{{ discipline.name }}</p>
                         {% endif %}
-                        <span class="absolute top-2 left-2 flex items-center gap-1 bg-charcoal/70 text-linen text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full backdrop-blur-sm">
-                            <i class="bi {{ isGroup ? 'bi-people-fill' : 'bi-person-fill' }} text-[8px]" aria-hidden="true"></i>
-                            {{ isGroup ? 'Grupal' : 'Individual' }}
-                        </span>
-                        {# Hover overlay opción C #}
-                        <span class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-charcoal/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
-                            <i class="bi bi-calendar-check text-white" style="font-size:2rem;"></i>
-                            <span class="text-white text-xs font-bold tracking-widest uppercase">Ver horarios</span>
-                        </span>
+                        <a href="#" data-class-slug="{{ slug }}" class="pbs-class-info-btn text-xs font-semibold text-charcoal hover:text-terracota transition-colors no-underline">Más información →</a>
                     </div>
-                    </a>
-                    <p class="text-xs font-bold tracking-widest uppercase text-charcoal mb-1 peer-hover:text-terracota transition-colors">{{ room.name }}</p>
-                    {% if room.description %}
-                        <p class="text-xs text-muted leading-relaxed">{{ room.description }}</p>
-                    {% else %}
-                        <p class="text-xs text-muted leading-relaxed">{{ disciplineName }}</p>
-                    {% endif %}
-                    {% if branchOffices|length > 1 and room.branchOffice %}
-                        <p class="text-[10px] text-terracota font-medium mb-3 leading-relaxed">
-                            <i class="bi bi-geo-alt-fill text-[9px]" aria-hidden="true"></i> {{ room.branchOffice.name }}
-                        </p>
-                    {% else %}
-                        <div class="mb-3"></div>
-                    {% endif %}
-                    <a href="#" data-class-slug="{{ disciplineName|lower|replace({' ': '-'}) }}" class="pbs-class-info-btn text-xs font-semibold text-charcoal hover:text-terracota transition-colors no-underline">Más información →</a>
-                </div>
-            {% endfor %}
-            <script>
-            (function(){
-                var TIMEOUT = 5000;
-                document.querySelectorAll('.pbs-room-img').forEach(function(img){
-                    if (img.complete && img.naturalWidth > 0) { img.style.opacity = '1'; return; }
-                    img._t = setTimeout(function(){
-                        if (!img.complete || img.naturalWidth === 0) {
-                            img.style.display = 'none';
-                            var fb = img.nextElementSibling;
-                            if (fb) fb.style.display = 'flex';
-                        }
-                    }, TIMEOUT);
-                });
-            })();
-            </script>
+                {% endfor %}
 
-            {# Box1: programa especial (dinámico desde backend) #}
-            {% if homeContent.box1Title %}
-            <a href="{{ homeContent.box1Url }}" class="group block no-underline" target="_blank" rel="noopener noreferrer">
-                <div class="aspect-[3/4] overflow-hidden rounded-xl mb-4 bg-linen relative overflow-hidden">
-                    <img src="{{ homeContent.box1Image ? '/media/uploads/site/' ~ homeContent.box1Image : asset('images/home/pilates.jpg') }}"
-                         alt="{{ homeContent.box1Title }}"
-                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                    <span class="absolute top-2 left-2 bg-terracota text-white text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full">Online</span>
-                </div>
-                <p class="text-xs font-bold tracking-widest uppercase text-charcoal mb-1 group-hover:text-terracota transition-colors">{{ homeContent.box1Title }}</p>
-                <p class="text-xs text-muted mb-3 leading-relaxed">{{ homeContent.box1Description }}</p>
-                <span class="text-xs font-semibold text-charcoal group-hover:text-terracota transition-colors">{{ homeContent.box1LinkLabel }} →</span>
-            </a>
-            {% endif %}
-
-            {# Box2: programa especial (dinámico desde backend) #}
-            {% if homeContent.box2Title %}
-            <a href="{{ homeContent.box2Url }}" class="group block no-underline" target="_blank" rel="noopener noreferrer">
-                <div class="aspect-[3/4] overflow-hidden rounded-xl mb-4 bg-linen relative overflow-hidden">
-                    <img src="{{ homeContent.box2Image ? '/media/uploads/site/' ~ homeContent.box2Image : asset('images/home/barra.jpg') }}"
-                         alt="{{ homeContent.box2Title }}"
-                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                    <span class="absolute top-2 left-2 bg-terracota text-white text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full">Online</span>
-                </div>
-                <p class="text-xs font-bold tracking-widest uppercase text-charcoal mb-1 group-hover:text-terracota transition-colors">{{ homeContent.box2Title }}</p>
-                <p class="text-xs text-muted mb-3 leading-relaxed">{{ homeContent.box2Description }}</p>
-                <span class="text-xs font-semibold text-charcoal group-hover:text-terracota transition-colors">{{ homeContent.box2LinkLabel }} →</span>
-            </a>
-            {% endif %}
-
+            </div>
         </div>
+        {% endif %}
+
+        {# ── CLASES ONLINE ── #}
+        {% if (homeContent.box1Title) or (homeContent.box2Title) %}
+        <div>
+            <div class="text-center mb-8">
+                <h2 class="font-display normal-case text-3xl md:text-4xl text-charcoal">Entrena desde donde estes con nuestras Clases Online</h2>
+            </div>
+
+            <div class="grid gap-5 md:gap-6 justify-center" style="grid-template-columns: repeat(auto-fit, minmax(180px, 220px));">
+
+
+
+                {# Box1: programa especial (dinámico desde backend) #}
+                {% if homeContent.box1Title %}
+                <a href="{{ homeContent.box1Url }}" class="group block no-underline" target="_blank" rel="noopener noreferrer">
+                    <div class="aspect-[3/4] overflow-hidden rounded-xl mb-4 bg-linen relative overflow-hidden">
+                        <img src="{{ homeContent.box1Image ? '/media/uploads/site/' ~ homeContent.box1Image : asset('images/home/pilates.jpg') }}"
+                             alt="{{ homeContent.box1Title }}"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        <span class="absolute top-2 left-2 bg-terracota text-white text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full">Online</span>
+                    </div>
+                    <p class="text-xs font-bold tracking-widest uppercase text-charcoal mb-1 group-hover:text-terracota transition-colors">{{ homeContent.box1Title }}</p>
+                    <p class="text-xs text-muted mb-3 leading-relaxed">{{ homeContent.box1Description }}</p>
+                    <span class="text-xs font-semibold text-charcoal group-hover:text-terracota transition-colors">{{ homeContent.box1LinkLabel }} →</span>
+                </a>
+                {% endif %}
+
+                {# Box2: programa especial (dinámico desde backend) #}
+                {% if homeContent.box2Title %}
+                <a href="{{ homeContent.box2Url }}" class="group block no-underline" target="_blank" rel="noopener noreferrer">
+                    <div class="aspect-[3/4] overflow-hidden rounded-xl mb-4 bg-linen relative overflow-hidden">
+                        <img src="{{ homeContent.box2Image ? '/media/uploads/site/' ~ homeContent.box2Image : asset('images/home/barra.jpg') }}"
+                             alt="{{ homeContent.box2Title }}"
+                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        <span class="absolute top-2 left-2 bg-terracota text-white text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full">Online</span>
+                    </div>
+                    <p class="text-xs font-bold tracking-widest uppercase text-charcoal mb-1 group-hover:text-terracota transition-colors">{{ homeContent.box2Title }}</p>
+                    <p class="text-xs text-muted mb-3 leading-relaxed">{{ homeContent.box2Description }}</p>
+                    <span class="text-xs font-semibold text-charcoal group-hover:text-terracota transition-colors">{{ homeContent.box2LinkLabel }} →</span>
+                </a>
+                {% endif %}
+
+            </div>
+        </div>
+        {% endif %}
+
     </div>
 </section>
 
 {# ── PAQUETES ─────────────────────────────────────────────────────────────── #}
+
 <section class="bg-linen py-20" id="paquetes-destacados">
     <div class="max-w-7xl mx-auto px-6">
 
@@ -701,111 +703,36 @@
 {# ── SCHEDULE + SUCURSALES ────────────────────────────────────────────────── #}
 <section class="pbs-cta-section" id="horarios">
 
-    {# Izquierda: próximas clases disponibles (dinámico desde backend) #}
-    <div class="pbs-sched-col">
-        {% set schedDate = upcomingSessions is not empty ? upcomingSessions[0].session.dateTimeStart : date('now', 'America/Mexico_City') %}
-        <div class="pbs-sched-header">
-            <p class="pbs-sched-eyebrow">Próximas clases</p>
-            <span class="pbs-sched-date">{{ schedDate|format_date(pattern='EEE d MMM', locale='es_MX', timezone='America/Mexico_City') }}</span>
-        </div>
-
-        {% if upcomingSessions is defined and upcomingSessions is not empty %}
-        <div class="pbs-sched-list">
-            {% for item in upcomingSessions %}
-            {% set session = item.session %}
-            {% set remaining = item.remaining %}
-            {% set isFull = session.status == constant('App\\Entity\\Session::STATUS_FULL') or remaining == 0 %}
-            <a href="{{ path('reservation_confirm', {'id': session.id}) }}"
-               data-remodal
-               data-url="{{ path('reservation_confirm', {'id': session.id}) }}"
-               class="pbs-sched-item"
-               aria-label="Reservar {{ session.discipline.name }} — {{ session.dateTimeStart|date('g:i A', 'America/Mexico_City') }}">
-                <div class="pbs-sched-time">
-                    <div class="pbs-t">{{ session.dateTimeStart|date('g:i', 'America/Mexico_City') }}</div>
-                    <div class="pbs-d">{{ session.dateTimeStart|date('A', 'America/Mexico_City') }}</div>
-                </div>
-                <div class="pbs-sched-sep"></div>
-                <div class="pbs-sched-info">
-                    <div class="pbs-sc-name">{{ session.discipline.name }}</div>
-                    <div class="pbs-sc-meta">
-                        {% if session.instructor.profile %}
-                        <span><i class="bi bi-person" aria-hidden="true"></i> {{ session.instructor.profile.firstname }}</span>
-                        {% endif %}
-                        <span><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ session.exerciseRoom.branchOffice.name }}</span>
-                    </div>
-                    {% if session.information %}
-                    <div class="pbs-sc-tags">
-                        <span class="pbs-sc-tag">{{ session.information }}</span>
-                    </div>
-                    {% endif %}
-                </div>
-                <div class="pbs-sched-spots">
-                    {% if isFull %}
-                        <div class="pbs-sp-last">Llena</div>
-                    {% elseif remaining <= 2 %}
-                        <div class="pbs-sp-num">{{ remaining }}</div>
-                        <div class="pbs-sp-last">¡Últimos!</div>
-                    {% else %}
-                        <div class="pbs-sp-num">{{ remaining }}</div>
-                        <div class="pbs-sp-lbl">lugares</div>
-                    {% endif %}
-                </div>
-            </a>
-            {% endfor %}
-        </div>
-
-        {% if upcomingSessions|length == 1 %}
-        <div class="pbs-sched-hint">
-            <i class="bi bi-calendar3" aria-hidden="true"></i>
-            <div>
-                <p class="pbs-sched-hint-title">Esta es la única clase con disponibilidad.</p>
-                <p class="pbs-sched-hint-sub">Las demás están llenas. Consulta el calendario para unirte a la lista de espera.</p>
-            </div>
-        </div>
-        {% endif %}
-
-        {% else %}
-        <div class="flex flex-col items-center justify-center text-center py-8 px-4 gap-3 flex-1"
-             x-data x-init="$el.classList.add('animate__animated','animate__fadeIn')" style="animation-duration:.6s;">
-            <i class="bi bi-moon-stars text-5xl text-terracota animate__animated animate__bounce"
-               style="animation-duration:1.6s;animation-delay:.4s;animation-iteration-count:2;"
-               aria-hidden="true"></i>
-            <p class="text-charcoal font-semibold text-sm leading-snug mt-1">
-                Aún no hay sesiones próximas en agenda.
-            </p>
-            <p class="text-muted text-xs leading-relaxed">
-                Pronto se abrirán nuevas clases.<br>¡Mantente al pendiente del calendario!
-            </p>
-            {% if branchOffices is defined and branchOffices is not empty %}
-            <a href="{{ path('reservation_calendar', {'slug': branchOffices[0].slug}) }}"
-               class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold border px-4 py-2 rounded-full transition-all duration-200"
-               style="color:#C17A6A;border-color:rgba(193,122,106,0.4);" 
-               onmouseenter="this.style.background='#C17A6A';this.style.color='#fff';this.style.borderColor='#C17A6A';"
-               onmouseleave="this.style.background='';this.style.color='#C17A6A';this.style.borderColor='rgba(193,122,106,0.4)';">
-                Explorar el calendario <i class="bi bi-arrow-right" aria-hidden="true"></i>
-            </a>
-            {% else %}
-            <a href="{{ path('reservation_calendar', {'slug': 'santa-fe'}) }}"
-               class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold border px-4 py-2 rounded-full transition-all duration-200"
-               style="color:#C17A6A;border-color:rgba(193,122,106,0.4);"
-               onmouseenter="this.style.background='#C17A6A';this.style.color='#fff';this.style.borderColor='#C17A6A';"
-               onmouseleave="this.style.background='';this.style.color='#C17A6A';this.style.borderColor='rgba(193,122,106,0.4)';">
-                Explorar el calendario <i class="bi bi-arrow-right" aria-hidden="true"></i>
-            </a>
-            {% endif %}
-        </div>
-        {% endif %}
-
-        {% if upcomingSessions is defined and upcomingSessions is not empty %}
+    {# Izquierda: contenido de conversión (temporal) #}
+    <div class="pbs-sched-col pbs-cta-copy">
+        <h3 class="pbs-cta-copy-title">Tu mejor version empieza aqui</h3>
+        <p class="pbs-cta-copy-sub">Entrena con acompanamiento cercano y espacios pensados para que avances a tu ritmo.</p>
+        <ul class="pbs-cta-copy-points" aria-label="Acciones rápidas">
+            <li>
+                <i class="bi bi-calendar2-check" aria-hidden="true"></i>
+                <span>Reserva tu clase aqui</span>
+            </li>
+            <li>
+                <i class="bi bi-whatsapp" aria-hidden="true"></i>
+                <span>Escribenos por WhatsApp</span>
+            </li>
+            <li>
+                <i class="bi bi-geo-alt" aria-hidden="true"></i>
+                <span>Visitanos en nuestra sucursal</span>
+            </li>
+        </ul>
         {% if branchOffices is defined and branchOffices is not empty %}
-        <a href="{{ path('reservation_calendar', {'slug': branchOffices[0].slug}) }}" class="pbs-sched-more">
-            Ver horario completo <i class="bi bi-arrow-right" aria-hidden="true"></i>
+        <a href="{{ path('reservation_calendar', {'slug': branchOffices[0].slug}) }}"
+           class="inline-flex items-center gap-2 px-6 py-3 bg-charcoal text-white text-sm font-semibold rounded-full hover:bg-charcoal/90 transition-colors pbs-cta-copy-btn">
+            Reservar clase
+            <i class="bi bi-arrow-right" aria-hidden="true"></i>
         </a>
         {% else %}
-        <a href="#" class="pbs-sched-more">
-            Ver horario completo <i class="bi bi-arrow-right" aria-hidden="true"></i>
+        <a href="{{ path('reservation_calendar', {'slug': 'santa-fe'}) }}"
+           class="inline-flex items-center gap-2 px-6 py-3 bg-charcoal text-white text-sm font-semibold rounded-full hover:bg-charcoal/90 transition-colors pbs-cta-copy-btn">
+            Reservar clase
+            <i class="bi bi-arrow-right" aria-hidden="true"></i>
         </a>
-        {% endif %}
         {% endif %}
     </div>
 
@@ -856,17 +783,19 @@
             {% set _firstSrc = '' %}
         {% endif %}
         <div class="pbs-map-card{% if branchOffices|length == 1 %} pbs-map-single{% endif %}">
-            <iframe id="pbs-branch-map" class="pbs-map-leaflet"
-                    src="{{ _firstSrc }}"
-                    allowfullscreen
-                    referrerpolicy="no-referrer-when-downgrade"
-                    {% if not _firstSrc %}style="display:none"{% endif %}>
-            </iframe>
-            <div id="pbs-branch-nomap" class="pbs-map-leaflet pbs-map-no-addr"{% if _firstSrc %} style="display:none"{% endif %}>
-                <i class="bi bi-geo-alt" aria-hidden="true"></i>
-                <p>No hay dirección disponible</p>
+            <div class="pbs-map-layout">
+                <iframe id="pbs-branch-map" class="pbs-map-leaflet"
+                        src="{{ _firstSrc }}"
+                        allowfullscreen
+                        referrerpolicy="no-referrer-when-downgrade"
+                        {% if not _firstSrc %}style="display:none"{% endif %}>
+                </iframe>
+                <div id="pbs-branch-nomap" class="pbs-map-leaflet pbs-map-no-addr"{% if _firstSrc %} style="display:none"{% endif %}>
+                    <i class="bi bi-geo-alt" aria-hidden="true"></i>
+                    <p>No hay dirección disponible</p>
+                </div>
             </div>
-            <div class="pbs-map-body">
+            <div class="pbs-map-side pbs-map-side-below">
                 <div class="pbs-map-name">
                     <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
                     <span id="pbs-branch-name">{{ first.name }}</span>

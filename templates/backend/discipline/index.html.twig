@@ -17,6 +17,7 @@
     <tr>
         <th>{{ knp_pagination_sortable(pagination, 'label.id'|trans, 'd.id') }}</th>
         <th>{{ knp_pagination_sortable(pagination, 'label.name'|trans, 'd.name') }}</th>
+        <th>Imagen</th>
         <th>{{ knp_pagination_sortable(pagination, 'label.active'|trans, 'd.isActive') }}</th>
         <th>{{ knp_pagination_sortable(pagination, 'label.created_at'|trans, 'd.createdAt') }}</th>
         <th>Acción</th>
@@ -31,6 +32,13 @@
         <tr>
             <td>{{ discipline.id }}</td>
             <td>{{ discipline.name }}</td>
+            <td>
+                {% if discipline.image %}
+                    <img src="/media/uploads/disciplines/{{ discipline.image }}" alt="{{ discipline.name }}" style="max-width:80px;max-height:50px;border-radius:4px;">
+                {% else %}
+                    <span class="text-muted">—</span>
+                {% endif %}
+            </td>
             <td>
                 {% if discipline.isActive %}
                     <span class="label label-primary">Sí</span>

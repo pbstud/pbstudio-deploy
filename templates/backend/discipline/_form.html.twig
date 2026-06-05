@@ -1,12 +1,10 @@
 {{ form_start(form, {'attr': {'id': 'form-discipline'}}) }}
     <div class="row">
-        {{ form_row(form.name, {'row_attr': {'class': 'col-md-6'}}) }}
+        {{ form_row(form.name, {'row_attr': {'class': 'col-md-6 col-sm-6 col-xs-12'}}) }}
+        {{ form_row(form.description, {'row_attr': {'class': 'col-md-6 col-sm-6 col-xs-12'}}) }}
     </div>
     <div class="row">
-        {{ form_row(form.description, {'row_attr': {'class': 'col-md-6'}}) }}
-    </div>
-
-    <div class="row">
+        {{ form_row(form.imageFile, {'row_attr': {'class': 'col-md-6'}}) }}
         {{ form_row(form.isActive, {'row_attr': {'class': 'col-md-6'}}) }}
     </div>
 
@@ -14,3 +12,17 @@
 
     {{ include('backend/default/_btn_save.html.twig') }}
 {{ form_end(form) }}
+
+<script>
+(function () {
+    function autoResize(ta) {
+        ta.style.height = 'auto';
+        ta.style.height = ta.scrollHeight + 'px';
+    }
+
+    document.querySelectorAll('.hc-auto-resize').forEach(function (ta) {
+        autoResize(ta);
+        ta.addEventListener('input', function () { autoResize(this); });
+    });
+})();
+</script>

@@ -23,19 +23,23 @@
                         <p class="notifications-empty text-base">No tienes notificaciones aun.</p>
                     </div>
                 {% else %}
-                    {%- set unread_filters = { unread: 0, reserva: 0, logro: 0, sistema: 0 } -%}
+                    {%- set unread_filters = { unread: 0, reserva: 0, logro: 0, paquetes: 0 } -%}
                     {%- for n in notifications -%}
                         {%- set ntype = (n.type|default('')|lower) -%}
                         {%- set category = 'sistema' -%}
                         {%- if ntype starts with 'achievement_' -%}
                             {%- set category = 'logro' -%}
-                        {%- elseif ntype starts with 'reservation_'
-                            or ntype starts with 'waitlist_'
-                            or ntype starts with 'class_'
-                            or ntype starts with 'session_'
-                            or ntype starts with 'package_'
+                        {%- elseif ntype starts with 'package_'
                             or ntype starts with 'payment_'
                             or ntype starts with 'checkout_'
+                            or ntype starts with 'transaction_' -%}
+                            {%- set category = 'paquetes' -%}
+                        {%- elseif ntype starts with 'reservation_'
+                            or ntype starts with 'waiting_list_'
+                            or ntype starts with 'waitlist_'
+                            or ntype starts with 'lista_espera_'
+                            or ntype starts with 'class_'
+                            or ntype starts with 'session_'
                             or ntype starts with 'rating_' -%}
                             {%- set category = 'reserva' -%}
                         {%- endif -%}
@@ -70,7 +74,7 @@
                             <button type="button" class="fullpage__tab" data-page-filter="unread">Sin leer <span class="tab-count" data-page-count="unread">{{ unread_filters.unread }}</span></button>
                             <button type="button" class="fullpage__tab" data-page-filter="reserva">Reservas <span class="tab-count" data-page-count="reserva">{{ unread_filters.reserva }}</span></button>
                             <button type="button" class="fullpage__tab" data-page-filter="logro">Logros <span class="tab-count" data-page-count="logro">{{ unread_filters.logro }}</span></button>
-                            <button type="button" class="fullpage__tab" data-page-filter="sistema">Sistema <span class="tab-count" data-page-count="sistema">{{ unread_filters.sistema }}</span></button>
+                            <button type="button" class="fullpage__tab" data-page-filter="paquetes">Paquetes <span class="tab-count" data-page-count="paquetes">{{ unread_filters.paquetes }}</span></button>
                         </div>
 
                         <div class="notifications-controls-row">
@@ -123,13 +127,17 @@
                                         {%- set category = 'sistema' -%}
                                         {%- if ntype starts with 'achievement_' -%}
                                             {%- set category = 'logro' -%}
-                                        {%- elseif ntype starts with 'reservation_'
-                                            or ntype starts with 'waitlist_'
-                                            or ntype starts with 'class_'
-                                            or ntype starts with 'session_'
-                                            or ntype starts with 'package_'
+                                        {%- elseif ntype starts with 'package_'
                                             or ntype starts with 'payment_'
                                             or ntype starts with 'checkout_'
+                                            or ntype starts with 'transaction_' -%}
+                                            {%- set category = 'paquetes' -%}
+                                        {%- elseif ntype starts with 'reservation_'
+                                            or ntype starts with 'waiting_list_'
+                                            or ntype starts with 'waitlist_'
+                                            or ntype starts with 'lista_espera_'
+                                            or ntype starts with 'class_'
+                                            or ntype starts with 'session_'
                                             or ntype starts with 'rating_' -%}
                                             {%- set category = 'reserva' -%}
                                         {%- endif -%}
@@ -148,11 +156,18 @@
                                                     class="notifications-page-item{% if n.readAt is null %} is-unread{% else %} is-read{% endif %} is-priority-{{ n.priority }}"
                                                     data-notification-page-item
                                                     data-id="{{ n.id }}"
+                                                    data-notification-type="{{ n.type|default('_default') }}"
                                                     data-category="{{ category }}"
                                                     data-is-unread="{% if n.readAt is null %}1{% else %}0{% endif %}"
+                                                    data-achievement-icon="{{ n.payload.badge_icon|default('') }}"
                                                     data-mark-read-url="{{ mark_read_url|replace({'__ID__': n.id}) }}"
                                                     data-target-url="{{ target_urls[n.id] ?? '' }}"
                                                 >
+                                                    <span class="notifications-page-item__type-row">
+                                                        <span class="notifications-page-item__icon" data-notification-type-icon>
+                                                            <i class="bi bi-bell"></i>
+                                                        </span>
+                                                    </span>
                                                     <span class="notifications-page-item__header">
                                                         <span class="notifications-page-item__title">{{ n.title }}</span>
                                                         <span class="notifications-page-item__time" data-created-at="{{ n.createdAt|date('c') }}" data-absolute-time="{{ n.createdAt|date('d/m/Y H:i') }}">{{ n.createdAt|date('d/m/Y H:i') }}</span>
@@ -166,36 +181,6 @@
                             {% endfor %}
                         </ul>
                     </div>
-
-                    {% if total_pages > 1 %}
-                        <div class="sessions-used-history-footer border-t border-linen py-4" data-server-pagination>
-                            <div class="sessions-used-pagination">
-                                <ul class="pagination">
-                                    <li class="{% if page <= 1 %}disabled{% endif %}">
-                                        <a href="{% if page > 1 %}{{ path('notifications', { page: page - 1 }) }}{% else %}#{% endif %}">&laquo;</a>
-                                    </li>
-                                    {% set win_start = max(1, page - 2) %}
-                                    {% set win_end   = min(total_pages, page + 2) %}
-                                    {% if win_start > 1 %}
-                                        <li><a href="{{ path('notifications', { page: 1 }) }}">1</a></li>
-                                        {% if win_start > 2 %}<li class="pagination-ellipsis"><span>...</span></li>{% endif %}
-                                    {% endif %}
-                                    {% for p in win_start..win_end %}
-                                        <li class="{% if p == page %}active{% endif %}">
-                                            <a href="{{ path('notifications', { page: p }) }}">{{ p }}</a>
-                                        </li>
-                                    {% endfor %}
-                                    {% if win_end < total_pages %}
-                                        {% if win_end < total_pages - 1 %}<li class="pagination-ellipsis"><span>...</span></li>{% endif %}
-                                        <li><a href="{{ path('notifications', { page: total_pages }) }}">{{ total_pages }}</a></li>
-                                    {% endif %}
-                                    <li class="{% if page >= total_pages %}disabled{% endif %}">
-                                        <a href="{% if page < total_pages %}{{ path('notifications', { page: page + 1 }) }}{% else %}#{% endif %}">&raquo;</a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    {% endif %}
 
                     <div class="sessions-used-history-footer border-t border-linen py-4" data-filter-pagination hidden>
                         <div class="sessions-used-pagination"></div>
@@ -250,11 +235,30 @@
         var activePageFilter = 'all';
         var currentFilterPage = 1;
         var FILTER_PAGE_SIZE = 20;
-        var serverPaginationWrap = document.querySelector('[data-server-pagination]');
         var filterPaginationWrap = document.querySelector('[data-filter-pagination]');
+        var itemLabelMap = new WeakMap();
 
         function getAllFilterItems() {
             return Array.from(document.querySelectorAll('[data-notif-item]'));
+        }
+
+        function rebuildItemLabelMap() {
+            itemLabelMap = new WeakMap();
+            if (!pageList) { return; }
+
+            var currentLabel = null;
+            Array.from(pageList.children).forEach(function (node) {
+                if (!node || !node.hasAttribute) { return; }
+
+                if (node.hasAttribute('data-notif-group-label')) {
+                    currentLabel = node;
+                    return;
+                }
+
+                if (node.hasAttribute('data-notif-item')) {
+                    itemLabelMap.set(node, currentLabel);
+                }
+            });
         }
 
         function matchesFilter(btn) {
@@ -367,8 +371,152 @@
             });
         }
 
+        function normalizeType(type) {
+            var key = String(type || '').toLowerCase().trim();
+            var aliases = {
+                reserva_confirmada: 'reservation_confirmed',
+                reserva_modificada: 'reservation_changed',
+                reserva_cancelada: 'reservation_cancelled',
+                lista_espera_entrada: 'waiting_list_confirmed',
+                lista_espera_salida: 'waiting_list_removed',
+                lista_espera_turno: 'waiting_list_denied',
+                pago_confirmado: 'payment_confirmed',
+            };
+
+            if (!key) {
+                return '_default';
+            }
+
+            return aliases[key] || key;
+        }
+
+        function getTypeConfig(type) {
+            var map = window.PB_NOTIFICATION_TYPE_CONFIG || {};
+            var key = normalizeType(type);
+            return map[key] || map._default || {
+                icon: 'bi-bell',
+                label: 'Notificacion',
+                barColor: '#9E9E9E',
+                iconColor: '#9E9E9E',
+                backgroundColor: '#FFFFFF',
+                titleColor: '#2C2C2C',
+                textColor: '#555555',
+            };
+        }
+
+        function hasThemeConfigLoaded() {
+            var map = window.PB_NOTIFICATION_TYPE_CONFIG;
+            return !!(map && typeof map === 'object' && Object.keys(map).length > 0);
+        }
+
+        function applyTypeThemeWhenReady(attempt) {
+            var currentAttempt = Number(attempt || 0);
+
+            if (hasThemeConfigLoaded()) {
+                applyTypeThemeToPageItems();
+                return;
+            }
+
+            if (currentAttempt >= 12) {
+                // Evita bucles infinitos: aplica fallback si la config no estuvo disponible.
+                applyTypeThemeToPageItems();
+                return;
+            }
+
+            setTimeout(function () {
+                applyTypeThemeWhenReady(currentAttempt + 1);
+            }, 120);
+        }
+
+        function softenHexColor(hex, mixWithWhiteRatio) {
+            var fallback = '#FFFFFF';
+            var value = String(hex || '').trim();
+            if (!/^#[0-9a-fA-F]{6}$/.test(value)) {
+                return fallback;
+            }
+
+            var ratio = Number(mixWithWhiteRatio);
+            if (isNaN(ratio)) { ratio = 0.86; }
+            ratio = Math.max(0, Math.min(0.95, ratio));
+
+            var r = parseInt(value.slice(1, 3), 16);
+            var g = parseInt(value.slice(3, 5), 16);
+            var b = parseInt(value.slice(5, 7), 16);
+
+            var mix = function (channel) {
+                return Math.round(channel + (255 - channel) * ratio);
+            };
+
+            return 'rgb(' + mix(r) + ', ' + mix(g) + ', ' + mix(b) + ')';
+        }
+
+        function getUnreadBackgroundColor(cfg) {
+            var source = (cfg && (cfg.barColor || cfg.iconColor || cfg.backgroundColor)) || '#C17A6A';
+
+            if (!/^#[0-9a-fA-F]{6}$/.test(String(source || '').trim())) {
+                source = '#C17A6A';
+            }
+
+            // Tinte suave para mantener contraste sin oscurecer.
+            return softenHexColor(source, 0.88);
+        }
+
+        function applyTypeThemeToPageItems() {
+            document.querySelectorAll('[data-notification-page-item]').forEach(function (btn) {
+                var type = btn.dataset.notificationType || '_default';
+                var cfg = getTypeConfig(type);
+                var isSelected = btn.classList.contains('is-selected');
+
+                var iconWrap = btn.querySelector('[data-notification-type-icon]');
+                var title = btn.querySelector('.notifications-page-item__title');
+                var body = btn.querySelector('.notifications-page-item__body');
+                var accent = (cfg && (cfg.barColor || cfg.iconColor || cfg.backgroundColor)) || '#C17A6A';
+
+                btn.style.borderLeftColor = cfg.barColor || '#9E9E9E';
+                if (isSelected) {
+                    btn.style.backgroundColor = softenHexColor(accent, 0.76);
+                    btn.style.boxShadow = '0 0 0 1px ' + softenHexColor(accent, 0.58);
+                } else if (btn.dataset.isUnread === '1') {
+                    btn.style.backgroundColor = getUnreadBackgroundColor(cfg);
+                    btn.style.boxShadow = '';
+                } else {
+                    btn.style.backgroundColor = '#FFFFFF';
+                    btn.style.boxShadow = '';
+                }
+
+                if (iconWrap) {
+                    iconWrap.style.backgroundColor = cfg.backgroundColor || '#FFFFFF';
+                    iconWrap.style.color = cfg.iconColor || '#9E9E9E';
+                    iconWrap.style.borderColor = cfg.barColor || '#9E9E9E';
+                    var achievementIcon = (btn.dataset.achievementIcon || '').trim();
+                    var isAchievement = String(type || '').toLowerCase().indexOf('achievement_') === 0;
+
+                    if (isAchievement && achievementIcon) {
+                        iconWrap.textContent = achievementIcon;
+                    } else {
+                        var iconEl = iconWrap.querySelector('i');
+                        if (!iconEl) {
+                            iconWrap.innerHTML = '<i class="bi"></i>';
+                            iconEl = iconWrap.querySelector('i');
+                        }
+                        if (iconEl) {
+                            iconEl.className = 'bi ' + (cfg.icon || 'bi-bell');
+                        }
+                    }
+                }
+
+                if (title) {
+                    title.style.color = cfg.titleColor || '#2C2C2C';
+                }
+
+                if (body) {
+                    body.style.color = cfg.textColor || '#555555';
+                }
+            });
+        }
+
         function updatePageFilterBadges() {
-            var counters = { unread: 0, reserva: 0, logro: 0, sistema: 0 };
+            var counters = { unread: 0, reserva: 0, logro: 0, paquetes: 0 };
             document.querySelectorAll('[data-notification-page-item]').forEach(function (btn) {
                 if (btn.dataset.isUnread !== '1') { return; }
                 counters.unread++;
@@ -391,17 +539,6 @@
             var allItems = getAllFilterItems();
             var labels = Array.from(pageList.querySelectorAll('[data-notif-group-label]'));
 
-            if (activePageFilter === 'all') {
-                labels.forEach(function (label) { label.style.display = ''; });
-                allItems.forEach(function (node) { node.style.display = ''; });
-                if (filterEmpty) { filterEmpty.hidden = true; }
-                currentFilterPage = 1;
-                if (serverPaginationWrap) { serverPaginationWrap.hidden = false; }
-                if (filterPaginationWrap) { filterPaginationWrap.hidden = true; }
-                return;
-            }
-
-            if (serverPaginationWrap) { serverPaginationWrap.hidden = true; }
             labels.forEach(function (label) { label.style.display = 'none'; });
 
             var filtered = allItems.filter(function (node) {
@@ -417,7 +554,15 @@
 
             var start = (currentFilterPage - 1) * FILTER_PAGE_SIZE;
             var visibleItems = filtered.slice(start, start + FILTER_PAGE_SIZE);
-            visibleItems.forEach(function (node) { node.style.display = ''; });
+            var shownLabels = new Set();
+            visibleItems.forEach(function (node) {
+                node.style.display = '';
+                var label = itemLabelMap.get(node);
+                if (label && !shownLabels.has(label)) {
+                    label.style.display = '';
+                    shownLabels.add(label);
+                }
+            });
 
             if (filterEmpty) { filterEmpty.hidden = filtered.length > 0; }
             renderFilterPagination(totalPages, currentFilterPage);
@@ -501,6 +646,8 @@
                 selectedIds.delete(id);
                 if (btn) { btn.classList.remove('is-selected'); }
             }
+
+            applyTypeThemeToPageItems();
         }
 
         document.querySelectorAll('[data-notif-checkbox]').forEach(function (cb) {
@@ -584,6 +731,7 @@
             updateMarkAllBtn(unreadCount);
             updatePageFilterBadges();
             applyPageFilter();
+            applyTypeThemeToPageItems();
 
             if (action === 'delete') {
                 var count = ids.length;
@@ -633,6 +781,7 @@
         }
 
         updateToolbar();
+        rebuildItemLabelMap();
 
         /* ── Interaccion individual: long press = seleccion, click = accion ── */
         document.querySelectorAll('[data-notification-page-item]').forEach(function (btn) {
@@ -716,6 +865,7 @@
                         updateMarkAllBtn(unreadCount);
                         updatePageFilterBadges();
                         applyPageFilter();
+                        applyTypeThemeToPageItems();
                     }
                     if (targetUrl) { window.location.href = targetUrl; }
                 }).catch(function () {
@@ -725,9 +875,14 @@
         });
 
         updateRelativeTimes();
+        applyTypeThemeWhenReady(0);
         updatePageFilterBadges();
         applyPageFilter();
         bindTabsRowDrag();
+
+        document.addEventListener('DOMContentLoaded', function () {
+            applyTypeThemeWhenReady(0);
+        });
     }());
     </script>
 {% endblock %}
