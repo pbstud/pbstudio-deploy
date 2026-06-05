@@ -194,6 +194,7 @@
     (function () {
         var unreadCount  = {{ unread_count|default(0) }};
         var bulkUrl      = '{{ path('api_notifications_bulk') }}';
+        var unreadCountUrl = '{{ path('api_notifications_unread_count') }}';
         var selectedIds  = new Set();
         var selectionMode = false;
 
@@ -218,6 +219,54 @@
 
         function updateMarkAllBtn(count) {
             // Boton removido en la pagina central por redundancia con acciones bulk.
+        }
+
+        function syncUnreadStorageFromServer(fallbackCount) {
+            var fallback = parseInt(fallbackCount, 10);
+            if (isNaN(fallback)) { fallback = 0; }
+
+            if (!unreadCountUrl || !window.fetch) {
+                updateHeaderBadge(fallback);
+                return;
+            }
+
+            fetch(unreadCountUrl, { headers: { 'Accept': 'application/json' } })
+                .then(function (res) {
+                    if (!res.ok) { throw new Error('unread-count-failed'); }
+                    return res.json();
+                })
+                .then(function (payload) {
+                    var count = parseInt(payload && payload.count, 10);
+                    if (isNaN(count)) { count = fallback; }
+                    unreadCount = count;
+                    updateHeaderBadge(count);
+                })
+                .catch(function () {
+                    updateHeaderBadge(fallback);
+                });
+        }
+
+        function markNotificationsAsSeen(ids) {
+            if (!Array.isArray(ids) || ids.length === 0) {
+                return;
+            }
+
+            try {
+                var key = 'pb_polled_toast_registry_v1';
+                var raw = sessionStorage.getItem(key);
+                var registry = raw ? JSON.parse(raw) : {};
+                if (!registry || typeof registry !== 'object') {
+                    registry = {};
+                }
+
+                var now = Date.now();
+                ids.forEach(function (id) {
+                    if (id === null || typeof id === 'undefined') { return; }
+                    registry[String(id)] = now;
+                });
+
+                sessionStorage.setItem(key, JSON.stringify(registry));
+            } catch (e) {}
         }
 
         /* ── Toolbar ───────────────────────────────────────────────────────── */
@@ -566,6 +615,7 @@
 
             if (filterEmpty) { filterEmpty.hidden = filtered.length > 0; }
             renderFilterPagination(totalPages, currentFilterPage);
+            keepOnlyVisibleSelection();
         }
 
         if (filterPaginationWrap) {
@@ -650,6 +700,31 @@
             applyTypeThemeToPageItems();
         }
 
+        function getVisiblePageCheckboxes() {
+            return Array.from(document.querySelectorAll('[data-notif-item]')).reduce(function (acc, li) {
+                if (li.style.display === 'none') { return acc; }
+
+                var cb = li.querySelector('[data-notif-checkbox]');
+                if (cb) { acc.push(cb); }
+                return acc;
+            }, []);
+        }
+
+        function keepOnlyVisibleSelection() {
+            var visibleIds = new Set(getVisiblePageCheckboxes().map(function (cb) {
+                return parseInt(cb.dataset.id, 10);
+            }));
+
+            selectedIds.forEach(function (id) {
+                if (!visibleIds.has(id)) {
+                    var cb = document.querySelector('[data-notif-checkbox][data-id="' + id + '"]');
+                    if (cb) { setCheckbox(cb, false); }
+                }
+            });
+
+            updateToolbar();
+        }
+
         document.querySelectorAll('[data-notif-checkbox]').forEach(function (cb) {
             cb.addEventListener('change', function () {
                 setCheckbox(cb, cb.checked);
@@ -663,7 +738,7 @@
 
         if (btnSelectAll) {
             btnSelectAll.addEventListener('click', function () {
-                document.querySelectorAll('[data-notif-checkbox]').forEach(function (cb) {
+                getVisiblePageCheckboxes().forEach(function (cb) {
                     setCheckbox(cb, true);
                 });
                 updateToolbar();
@@ -672,7 +747,7 @@
 
         if (btnSelectInvert) {
             btnSelectInvert.addEventListener('click', function () {
-                document.querySelectorAll('[data-notif-checkbox]').forEach(function (cb) {
+                getVisiblePageCheckboxes().forEach(function (cb) {
                     setCheckbox(cb, !cb.checked);
                 });
                 updateToolbar();
@@ -732,6 +807,12 @@
             updatePageFilterBadges();
             applyPageFilter();
             applyTypeThemeToPageItems();
+
+            if (action === 'read' || action === 'delete') {
+                markNotificationsAsSeen(ids);
+            }
+
+            syncUnreadStorageFromServer(unreadCount);
 
             if (action === 'delete') {
                 var count = ids.length;
@@ -862,6 +943,8 @@
                         if (titleEl) { titleEl.style.fontWeight = '400'; }
                         unreadCount = Math.max(0, unreadCount - 1);
                         updateHeaderBadge(unreadCount);
+                        markNotificationsAsSeen([id]);
+                        syncUnreadStorageFromServer(unreadCount);
                         updateMarkAllBtn(unreadCount);
                         updatePageFilterBadges();
                         applyPageFilter();
