@@ -676,15 +676,17 @@
             selectionMode = false;
             hideSelectionUI();
             document.querySelectorAll('[data-notif-checkbox]').forEach(function (cb) {
-                setCheckbox(cb, false);
+                setCheckbox(cb, false, { deferRepaint: true });
             });
             selectedIds.clear();
+            applyTypeThemeToPageItems();
             if (toolbarCount) { toolbarCount.textContent = ''; }
             if (controlsLeft) { controlsLeft.classList.remove('show-count'); }
         }
 
         /* ── Seleccion individual ──────────────────────────────────────────── */
-        function setCheckbox(cb, checked) {
+        function setCheckbox(cb, checked, options) {
+            var opts = options || {};
             var id  = parseInt(cb.dataset.id, 10);
             var li  = document.querySelector('[data-notif-li="' + id + '"]');
             var btn = li ? li.querySelector('[data-notification-page-item]') : null;
@@ -697,7 +699,9 @@
                 if (btn) { btn.classList.remove('is-selected'); }
             }
 
-            applyTypeThemeToPageItems();
+            if (!opts.deferRepaint) {
+                applyTypeThemeToPageItems();
+            }
         }
 
         function getVisiblePageCheckboxes() {
@@ -714,14 +718,21 @@
             var visibleIds = new Set(getVisiblePageCheckboxes().map(function (cb) {
                 return parseInt(cb.dataset.id, 10);
             }));
+            var changed = false;
 
             selectedIds.forEach(function (id) {
                 if (!visibleIds.has(id)) {
                     var cb = document.querySelector('[data-notif-checkbox][data-id="' + id + '"]');
-                    if (cb) { setCheckbox(cb, false); }
+                    if (cb) {
+                        setCheckbox(cb, false, { deferRepaint: true });
+                        changed = true;
+                    }
                 }
             });
 
+            if (changed) {
+                applyTypeThemeToPageItems();
+            }
             updateToolbar();
         }
 
@@ -739,8 +750,9 @@
         if (btnSelectAll) {
             btnSelectAll.addEventListener('click', function () {
                 getVisiblePageCheckboxes().forEach(function (cb) {
-                    setCheckbox(cb, true);
+                    setCheckbox(cb, true, { deferRepaint: true });
                 });
+                applyTypeThemeToPageItems();
                 updateToolbar();
             });
         }
@@ -748,8 +760,9 @@
         if (btnSelectInvert) {
             btnSelectInvert.addEventListener('click', function () {
                 getVisiblePageCheckboxes().forEach(function (cb) {
-                    setCheckbox(cb, !cb.checked);
+                    setCheckbox(cb, !cb.checked, { deferRepaint: true });
                 });
+                applyTypeThemeToPageItems();
                 updateToolbar();
             });
         }
@@ -757,9 +770,10 @@
         /* ── Cancelar seleccion ────────────────────────────────────────────── */
         function clearSelection() {
             document.querySelectorAll('[data-notif-checkbox]').forEach(function (cb) {
-                setCheckbox(cb, false);
+                setCheckbox(cb, false, { deferRepaint: true });
             });
             selectedIds.clear();
+            applyTypeThemeToPageItems();
             updateToolbar();
         }
 
