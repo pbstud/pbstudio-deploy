@@ -195,6 +195,7 @@
         var unreadCount  = {{ unread_count|default(0) }};
         var bulkUrl      = '{{ path('api_notifications_bulk') }}';
         var unreadCountUrl = '{{ path('api_notifications_unread_count') }}';
+        var pageMarkReadUrlTemplate = '{{ path('api_notifications_mark_read', {'id': '__ID__'}) }}';
         var selectedIds  = new Set();
         var selectionMode = false;
 
@@ -311,9 +312,36 @@
         }
 
         function matchesFilter(btn) {
+            if (!btn) { return false; }
             if (activePageFilter === 'all') { return true; }
-            if (activePageFilter === 'unread') { return btn.dataset.isUnread === '1'; }
+            if (activePageFilter === 'unread') {
+                return (btn.dataset.isUnread || (btn.classList.contains('is-unread') ? '1' : '0')) === '1';
+            }
             return (btn.dataset.category || 'sistema') === activePageFilter;
+        }
+
+        function hydrateNotificationButtonDataset(btn, node) {
+            if (!btn) { return; }
+
+            var li = node || btn.closest('[data-notif-item]');
+            var liId = li ? li.getAttribute('data-notif-li') : '';
+            var liCategory = li ? (li.getAttribute('data-category') || '') : '';
+
+            if (!btn.dataset.id && liId) {
+                btn.dataset.id = String(liId);
+            }
+
+            if (!btn.dataset.category && liCategory) {
+                btn.dataset.category = liCategory;
+            }
+
+            if (btn.dataset.isUnread !== '0' && btn.dataset.isUnread !== '1') {
+                btn.dataset.isUnread = btn.classList.contains('is-unread') ? '1' : '0';
+            }
+
+            if (!btn.dataset.markReadUrl && btn.dataset.id) {
+                btn.dataset.markReadUrl = pageMarkReadUrlTemplate.replace('__ID__', String(btn.dataset.id));
+            }
         }
 
         function renderFilterPagination(totalPages, page) {
@@ -566,7 +594,11 @@
 
         function updatePageFilterBadges() {
             var counters = { unread: 0, reserva: 0, logro: 0, paquetes: 0 };
-            document.querySelectorAll('[data-notification-page-item]').forEach(function (btn) {
+            document.querySelectorAll('[data-notif-item]').forEach(function (node) {
+                var btn = node.querySelector('[data-notification-page-item]');
+                if (!btn) { return; }
+
+                hydrateNotificationButtonDataset(btn, node);
                 if (btn.dataset.isUnread !== '1') { return; }
                 counters.unread++;
                 var category = btn.dataset.category || 'sistema';
@@ -592,6 +624,7 @@
 
             var filtered = allItems.filter(function (node) {
                 var btn = node.querySelector('[data-notification-page-item]');
+                hydrateNotificationButtonDataset(btn, node);
                 return !!btn && matchesFilter(btn);
             });
 
@@ -880,6 +913,8 @@
 
         /* ── Interaccion individual: long press = seleccion, click = accion ── */
         document.querySelectorAll('[data-notification-page-item]').forEach(function (btn) {
+            hydrateNotificationButtonDataset(btn);
+
             var pressTimer     = null;
             var pressStartX    = 0;
             var pressStartY    = 0;
@@ -934,9 +969,24 @@
                 }
 
                 // Modo normal: marcar leida y navegar
-                var id        = btn.dataset.id;
+                hydrateNotificationButtonDataset(btn);
+
+                var id        = btn.dataset.id || '';
                 var markUrl   = btn.dataset.markReadUrl;
                 var targetUrl = btn.dataset.targetUrl || null;
+
+                if (!id) {
+                    var li = btn.closest('[data-notif-item]');
+                    id = li ? (li.getAttribute('data-notif-li') || '') : '';
+                    if (id) {
+                        btn.dataset.id = String(id);
+                    }
+                }
+
+                if (!markUrl && id) {
+                    markUrl = pageMarkReadUrlTemplate.replace('__ID__', String(id));
+                    btn.dataset.markReadUrl = markUrl;
+                }
 
                 if (!id) { return; }
 
