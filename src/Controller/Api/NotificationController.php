@@ -51,7 +51,18 @@ class NotificationController extends AbstractController
             'targetUrl' => $resolvedUrls[$n->getId()]['targetUrl'] ?? null,
         ], $items);
 
-        return $this->json(['data' => $data, 'page' => $page, 'limit' => $limit]);
+        $total       = $this->notificationRepository->countAll($user);
+        $unreadTotal = $this->notificationRepository->countUnread($user);
+        $unreadByCategory = $this->notificationRepository->countUnreadByCategory($user);
+
+        return $this->json([
+            'data'        => $data,
+            'page'        => $page,
+            'limit'       => $limit,
+            'total'       => $total,
+            'unreadTotal' => $unreadTotal,
+            'unreadByCategory' => $unreadByCategory,
+        ]);
     }
 
     #[Route('/stream', name: 'stream', methods: ['GET'])]
@@ -125,6 +136,7 @@ class NotificationController extends AbstractController
 
         return $this->json([
             'count' => $this->notificationRepository->countUnread($user),
+            'unreadByCategory' => $this->notificationRepository->countUnreadByCategory($user),
         ]);
     }
 

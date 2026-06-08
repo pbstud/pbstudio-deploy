@@ -1,14 +1,5 @@
-<div x-data="{ navOpen: false, scrolled: (window.scrollY > 20) }"
-     x-init="
-         scrolled = (window.scrollY > 20);
-         // Detectar si el hero cubre el header al restaurar posición (back/forward)
-         if (document.readyState === 'complete') {
-             scrolled = (window.scrollY > 20);
-         } else {
-             window.addEventListener('load', function(){ scrolled = (window.scrollY > 20); });
-         }
-     "
-     @scroll.window="scrolled = (window.scrollY > 20)"
+<div x-data="header"
+     @scroll.window="onScroll()"
      @keydown.escape.window="navOpen = false">
 
 {# HEADER BAR #}
@@ -75,7 +66,10 @@
                     data-notification-center
                     data-list-url="{{ path('api_notifications_list') }}"
                     data-unread-url="{{ path('api_notifications_unread_count') }}"
-                    {% if not app.debug %}data-stream-url="{{ path('api_notifications_stream') }}"{% endif %}
+                    {# SSE deshabilitado: el CDN de producción corta las conexiones text/event-stream
+                       (ERR_HTTP2_PROTOCOL_ERROR) y deja workers PHP-FPM colgados. El polling de 3s
+                       cubre la funcionalidad. Para reactivar, restaurar data-stream-url y configurar
+                       en el CDN un bypass sin buffering/compresión para /api/notifications/stream. #}
                     data-mark-read-url-template="{{ path('api_notifications_mark_read', { id: '__ID__' }) }}"
                     data-mark-all-url="{{ path('api_notifications_mark_all_read') }}"
                     {% if app.debug %}data-notification-debug="1"{% endif %}
@@ -135,7 +129,7 @@
             {# Hamburger #}
             <button
                 type="button"
-                @click="navOpen = !navOpen; if(navOpen && window.NotificationCenter) NotificationCenter.closePanel()"
+                @click="toggleNav()"
                 :aria-expanded="navOpen.toString()"
                 :aria-label="navOpen ? 'Cerrar menú' : 'Abrir menú'"
                 class="p-2 rounded-md text-charcoal hover:text-terracota hover:bg-sand transition-colors"

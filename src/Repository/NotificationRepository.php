@@ -36,6 +36,64 @@ class NotificationRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    /**
+     * @return array{reserva:int, logro:int, paquetes:int}
+     */
+    public function countUnreadByCategory(User $user): array
+    {
+        $rows = $this->getEntityManager()->getConnection()->fetchAllAssociative(
+            'SELECT type, COUNT(1) AS total
+             FROM notification
+             WHERE user_id = :userId
+               AND read_at IS NULL
+             GROUP BY type',
+            ['userId' => $user->getId()]
+        );
+
+        $counters = [
+            'reserva' => 0,
+            'logro' => 0,
+            'paquetes' => 0,
+        ];
+
+        foreach ($rows as $row) {
+            $type = strtolower((string) ($row['type'] ?? ''));
+            $total = (int) ($row['total'] ?? 0);
+            if ('' === $type || $total <= 0) {
+                continue;
+            }
+
+            if (str_starts_with($type, 'achievement_')) {
+                $counters['logro'] += $total;
+                continue;
+            }
+
+            if (
+                str_starts_with($type, 'package_')
+                || str_starts_with($type, 'payment_')
+                || str_starts_with($type, 'checkout_')
+                || str_starts_with($type, 'transaction_')
+            ) {
+                $counters['paquetes'] += $total;
+                continue;
+            }
+
+            if (
+                str_starts_with($type, 'reservation_')
+                || str_starts_with($type, 'waiting_list_')
+                || str_starts_with($type, 'waitlist_')
+                || str_starts_with($type, 'lista_espera_')
+                || str_starts_with($type, 'class_')
+                || str_starts_with($type, 'session_')
+                || str_starts_with($type, 'rating_')
+            ) {
+                $counters['reserva'] += $total;
+            }
+        }
+
+        return $counters;
+    }
+
     public function existsUnreadByType(User $user, string $type): bool
     {
         $count = (int) $this->createQueryBuilder('n')
