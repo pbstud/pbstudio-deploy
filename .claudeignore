@@ -1,0 +1,32 @@
+# Dependencias (enormes, generadas)
+node_modules/
+vendor/
+
+# Cache, logs y artefactos de build
+var/
+public/build/
+public/bundles/
+
+# Backups, volcados y paquetes de despliegue
+backups/
+seed_dashboard/data/
+*.tar.gz
+*.sql
+
+# Lock files y caches (ruido en búsquedas)
+composer.lock
+package-lock.json
+yarn.lock
+.phpunit.result.cache
+
+# Subidas y binarios estáticos
+public/media/uploads/
+public/images/
+assets/images/
+
+# Scripts y archivos temporales de operaciones locales
+tmp*
+*_back.sql
+
+# Git interno
+.git/

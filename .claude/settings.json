@@ -1,0 +1,37 @@
+{
+  "model": "claude-sonnet-4-6",
+  "statusLine": {
+    "type": "command",
+    "command": "node .claude/statusline.js"
+  },
+  "permissions": {
+    "ask": [
+      "Bash"
+    ],
+    "deny": [
+      "Read(./node_modules/**)",
+      "Read(./vendor/**)",
+      "Read(./var/**)",
+      "Read(./public/build/**)",
+      "Read(./backups/**)",
+      "Read(./seed_dashboard/data/**)",
+      "Read(./public/media/uploads/**)",
+      "Read(./public/images/**)",
+      "Read(./assets/images/**)",
+      "Read(./*.tar.gz)",
+      "Read(./composer.lock)",
+      "Read(./package-lock.json)",
+      "Read(./yarn.lock)",
+      "Glob(./node_modules/**)",
+      "Glob(./vendor/**)",
+      "Glob(./var/**)",
+      "Glob(./public/build/**)",
+      "Glob(./backups/**)",
+      "Grep(./node_modules/**)",
+      "Grep(./vendor/**)",
+      "Grep(./var/**)",
+      "Grep(./public/build/**)",
+      "Grep(./backups/**)"
+    ]
+  }
+}
