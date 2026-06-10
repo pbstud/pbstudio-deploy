@@ -389,14 +389,60 @@ class SessionRepository extends ServiceEntityRepository
     public function getCalendar(CarbonPeriod $period, BranchOffice $branchOffice): array
     {
         $results = $this->getQueryBuilderInPeriod($period, $branchOffice)->getQuery()->getResult();
+
+        if ([] === $results) {
+            return [];
+        }
+
+        $sessionIds = array_values(array_filter(
+            array_map(static fn (Session $s): ?int => $s->getId(), $results),
+            static fn (?int $id): bool => null !== $id,
+        ));
+
+        $reservationTotals = [] !== $sessionIds
+            ? $this->getActiveReservationTotalsBySessionIds($sessionIds)
+            : [];
+
         $grouped = [];
 
-        /** @var Session $result */
         foreach ($results as $result) {
+            $id        = (int) $result->getId();
+            // availableCapacity ya descuenta los lugares deshabilitados (placesNotAvailable)
+            $capacity  = max(0, (int) $result->getAvailableCapacity());
+            $reserved  = (int) ($reservationTotals[$id] ?? 0);
+            $remaining = max(0, $capacity - $reserved);
+
+            // Actualizar dinámicamente con el valor real: lugares disponibles - reservas
+            $result->setAvailableCapacity($remaining);
+
+            // Si no quedan lugares, marcar como llena
+            if ($remaining <= 0 && $result->isOpen()) {
+                $result->setStatus(Session::STATUS_FULL);
+            }
+
             $grouped[$result->getDateStart()->format('Y-m-d')][] = $result;
         }
 
         return $grouped;
+    }
+
+    /**
+     * Retorna solo las fechas (Y-m-d) que tienen sesiones en el período.
+     * No modifica entidades, a diferencia de getCalendar().
+     * Útil para los puntos del mini-calendario sin tocar el identity map de Doctrine.
+     *
+     * @return string[]
+     */
+    public function getCalendarDatesInMonth(CarbonPeriod $period, BranchOffice $branchOffice): array
+    {
+        $results = $this->getQueryBuilderInPeriod($period, $branchOffice)->getQuery()->getResult();
+
+        $dates = [];
+        foreach ($results as $result) {
+            $dates[$result->getDateStart()->format('Y-m-d')] = true;
+        }
+
+        return array_keys($dates);
     }
 
     public function hasSessionsInPeriod(CarbonPeriod $period, BranchOffice $branchOffice): bool

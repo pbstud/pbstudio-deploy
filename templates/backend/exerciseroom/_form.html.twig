@@ -18,18 +18,6 @@
         {{ form_row(form.isActive, {'row_attr': {'class': 'col-md-6'}}) }}
     </div>
 
-    <div class="row">
-        {{ form_row(form.description, {'row_attr': {'class': 'col-md-6'}, 'attr': {'id': 'room_description_textarea', 'rows': 3, 'style': 'overflow-y:auto; resize:none;'}}) }}
-        <div class="col-md-6">
-            {{ form_label(form.imageFile) }}
-            {{ form_widget(form.imageFile) }}
-            {{ form_errors(form.imageFile) }}
-            <style>
-                #{{ form.imageFile.vars.id }}_image img { max-width: 200px; max-height: 150px; object-fit: cover; border-radius: 4px; margin-top: 6px; }
-            </style>
-        </div>
-    </div>
-
     {% if show_seat_editor|default(false) %}
         <div class="ln_solid"></div>
         <h3 id="seat-layout-editor" style="margin-top: 0;">Disposición de Asientos del Salón</h3>

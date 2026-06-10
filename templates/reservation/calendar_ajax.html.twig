@@ -1,1 +1,5 @@
-{{ include('reservation/_calendar_week.html.twig') }}
+{% if isDailyView %}
+    {{ include('reservation/_calendar_day_list.html.twig') }}
+{% else %}
+    {{ include('reservation/_calendar_week_v2.html.twig') }}
+{% endif %}

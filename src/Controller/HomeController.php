@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Backend\ClassContentController as ClassContentBackend;
 use App\Repository\BranchOfficeRepository;
 use App\Repository\DisciplineRepository;
 use App\Repository\SessionRepository;
 use App\Repository\StaffRepository;
+use App\Service\ClassContentService;
 use App\Service\HomeContentService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,6 +25,7 @@ class HomeController extends AbstractController
         HomeContentService $homeContentService,
         SessionRepository $sessionRepository,
         DisciplineRepository $disciplineRepository,
+        ClassContentService $classContentService,
     ): Response
     {
         $instructors = $staffRepository->getAllActiveInstructors();
@@ -57,12 +60,51 @@ class HomeController extends AbstractController
             $featureItems = is_array($decoded) ? $decoded : [];
         }
 
+        $disciplines   = $disciplineRepository->getAllActives();
+        $panelContent  = $classContentService->getAllPanelData();
+        $infoBoxes     = $classContentService->getInfoBoxes();
+
+        // Construye el mapa de datos del panel por slug, mezclando ClassContent + datos de disciplina
+        $panelDataMap = [];
+        foreach ($disciplines as $discipline) {
+            $slug        = ClassContentBackend::disciplineSlug((string) $discipline);
+            $content     = $panelContent[$slug] ?? [];
+            $disciplineImage = $discipline->getImage()
+                ? '/media/uploads/disciplines/' . $discipline->getImage()
+                : null;
+
+            $panelImage = ($content['panelImage'] ?? '') !== ''
+                ? '/media/uploads/class-panels/' . $content['panelImage']
+                : $disciplineImage;
+
+            $panelDataMap[$slug] = [
+                'name'             => (string) $discipline,
+                'description'      => $discipline->getDescription() ?? '',
+                'queEs'            => $content['queEs']            ?? '',
+                'queEsIcon'        => $content['queEsIcon']        ?: 'bi-info-circle',
+                'queEsLabel'       => $content['queEsLabel']       ?: '¿Qué es?',
+                'benefits'         => $content['benefits']         ?? [],
+                'benefitsIcon'     => $content['benefitsIcon']     ?: 'bi-check-square',
+                'benefitsLabel'    => $content['benefitsLabel']    ?: 'Beneficios',
+                'paraQuienEs'      => $content['paraQuienEs']      ?? '',
+                'paraQuienEsIcon'  => $content['paraQuienEsIcon']  ?: 'bi-people',
+                'paraQuienEsLabel' => $content['paraQuienEsLabel'] ?: '¿Para quién es?',
+                'duration'         => $content['duration']         ?? '',
+                'durationIcon'     => $content['durationIcon']     ?: 'bi-clock',
+                'durationLabel'    => $content['durationLabel']    ?: 'Duración',
+                'sections'         => $content['sections']         ?? [],
+                'image'            => $panelImage,
+            ];
+        }
+
         return $this->render('home/index.html.twig', [
             'instructors'       => $instructors,
             'branchOffices'     => $branchOfficeRepository->getPublic(),
             'homeContent'       => $homeContentService->getTemplateData(),
             'upcomingSessions'  => $sessionRepository->findNextUpcoming(3),
-            'disciplines'       => $disciplineRepository->getAllActives(),
+            'disciplines'       => $disciplines,
+            'panelDataMap'      => $panelDataMap,
+            'panelInfoBoxes'    => $infoBoxes,
             'galleryImages'     => $galleryImages,
             'faqItems'          => $faqItems,
             'featureItems'      => $featureItems,

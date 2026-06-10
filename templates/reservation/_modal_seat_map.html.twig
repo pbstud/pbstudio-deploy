@@ -1,0 +1,47 @@
+{#
+  Partial centralizado para el mapa de asientos.
+  Elimina el bloque <style> duplicado en session, cancel y change_session.
+
+  Parámetros:
+    mode          (string)  'select' = clickable (reserva/cambio) | 'view' = solo vista (cancelar)
+    slot_to_seat  (array)   mapa slot → número de asiento (puede estar vacío)
+    capacity      (int)     número total de lugares (fallback secuencial)
+    session       (Session) entidad de sesión
+    reservations  (array)   { placeNumber: Reservation } — reservas de todos los usuarios
+    user_places   (array)   números de lugar que ocupa el usuario actual
+#}
+
+<div id="place_container"
+     class="rcv2-seat-map{{ slot_to_seat is not empty ? ' rcv2-seat-map--grid' : '' }}">
+
+    {% if slot_to_seat is not empty %}
+        {% for slot in 1..36 %}
+            {% if slot_to_seat[slot] is defined %}
+                {% set place            = slot_to_seat[slot] %}
+                {% set place_na         = place in (session.placesNotAvailable ?? []) %}
+                {% set is_user_place    = place in user_places %}
+                {% set is_other_reserved = reservations[place] is defined and not is_user_place %}
+                {% set is_interactive   = (mode == 'select') and not is_other_reserved and not place_na and not is_user_place %}
+                {% set html_el          = is_interactive ? 'a' : 'span' %}
+                <{{ html_el }}
+                    class="place{{ is_user_place ? ' active user-reserved' : '' }}{{ is_other_reserved ? ' engaged' : '' }}{{ place_na ? ' not-available' : '' }}"
+                    data-place="{{ place }}"
+                ><p>{{ place }}</p></{{ html_el }}>
+            {% else %}
+                <span class="seat-slot-empty"></span>
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        {% for place in 1..capacity %}
+            {% set place_na          = place in (session.placesNotAvailable ?? []) %}
+            {% set is_user_place     = place in user_places %}
+            {% set is_other_reserved = reservations[place] is defined and not is_user_place %}
+            {% set is_interactive    = (mode == 'select') and not is_other_reserved and not place_na and not is_user_place %}
+            {% set html_el           = is_interactive ? 'a' : 'span' %}
+            <{{ html_el }}
+                class="place{{ is_user_place ? ' active user-reserved' : '' }}{{ is_other_reserved ? ' engaged' : '' }}{{ place_na ? ' not-available' : '' }}"
+                data-place="{{ place }}"
+            ><p>{{ place }}</p></{{ html_el }}>
+        {% endfor %}
+    {% endif %}
+</div>

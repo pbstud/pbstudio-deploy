@@ -7,7 +7,7 @@ namespace App\Service;
 use App\Repository\PostRepository;
 
 /**
- * Resuelve el contenido editable de la pagina /clases.
+ * Resuelve el contenido editable de la pagina /clases y del panel lateral del home.
  *
  * Lee el Post con slug "clases-contenido" (tipo static) desde la BD.
  * El campo `content` almacena un JSON con la estructura:
@@ -15,42 +15,27 @@ use App\Repository\PostRepository;
  * {
  *   "header": { "title": "...", "subtitle": "..." },
  *   "classes": {
- *     "pilates-reformer":  { <campos> },
- *     "beastformer":       { <campos> },
- *     "dual-pilates":      { <campos> },
- *     "clase-privada":     { <campos> }
+ *     "<discipline-slug>":  {
+ *       "queEs":       "...",
+ *       "paraQuienEs": "...",
+ *       "duration":    "...",
+ *       "panelImage":  "...",  // filename opcional, override de imagen de disciplina
+ *       "benefits":    ["...", "..."],
+ *       "sections":    [{ "title": "...", "items": ["..."] }]  // secciones adicionales
+ *     }
  *   }
  * }
- *
- * Si el Post no existe o el JSON es invalido, los metodos devuelven null / el fallback sin cambios.
  */
 class ClassContentService
 {
     public const POST_SLUG = 'clases-contenido';
 
-    /** Slugs canonicos editables (orden de aparicion en el editor). */
-    public const KNOWN_SLUGS = [
-        'pilates-reformer',
-        'beastformer',
-        'dual-pilates',
-        'clase-privada',
-    ];
-
-    public const SCALAR_FIELDS = ['audience', 'duration', 'intensity', 'focus', 'summary', 'description'];
-    public const ARRAY_FIELDS  = ['bestFor', 'keyPostures', 'guidedFlow', 'benefits', 'tips'];
-    public const ARRAY_SECTION_TITLE_FIELDS = [
-        'bestFor' => 'bestForTitle',
-        'keyPostures' => 'keyPosturesTitle',
-        'guidedFlow' => 'guidedFlowTitle',
-        'benefits' => 'benefitsTitle',
-        'tips' => 'tipsTitle',
-    ];
-    public const ARRAY_SECTION_TITLE_DEFAULTS = [
-        'bestFor' => 'Ideal para ti si...',
-        'keyPostures' => 'Posturas y guias clave',
-        'guidedFlow' => 'Como se estructura la clase',
-        'benefits' => 'Beneficios esperados',
-        'tips' => 'Recomendaciones previas',
+    public const SCALAR_FIELDS = [
+        'queEs', 'paraQuienEs', 'duration', 'panelImage',
+        'queEsIcon', 'queEsLabel',
+        'benefitsIcon', 'benefitsLabel',
+        'paraQuienEsIcon', 'paraQuienEsLabel',
+        'durationIcon', 'durationLabel',
     ];
 
     private const MAX_SCALAR_LENGTH = 400;
@@ -87,10 +72,82 @@ class ClassContentService
     }
 
     /**
-     * Combina el contenido de la BD con el fallback hardcoded para una clase concreta.
+     * Devuelve las dos cajas de información del panel (globales, mismas para todas las clases).
      *
-     * @param array<string, mixed> $fallback     Datos del CLASS_CONTENT_MAP del controller.
-     * @param string               $contentSlug  Slug canonico de la clase.
+     * @return list<array{icon: string, title: string, text: string}>
+     */
+    public function getInfoBoxes(): array
+    {
+        $defaults = [
+            ['icon' => 'bi-people-fill',    'title' => 'Clase Grupal',    'text' => 'Grupos reducidos para garantizar atención personalizada.'],
+            ['icon' => 'bi-calendar-check', 'title' => 'Reserva tu clase', 'text' => 'Consulta horarios disponibles y reserva en línea.'],
+        ];
+
+        $payload = $this->loadPayload();
+        if (null === $payload) {
+            return $defaults;
+        }
+
+        $result = [];
+        foreach (['infoBox1', 'infoBox2'] as $i => $key) {
+            $box = $payload[$key] ?? null;
+            $def = $defaults[$i];
+
+            if (is_array($box)) {
+                $result[] = [
+                    'icon'  => trim((string) ($box['icon']  ?? $def['icon'])),
+                    'title' => trim((string) ($box['title'] ?? $def['title'])),
+                    'text'  => trim((string) ($box['text']  ?? $def['text'])),
+                ];
+            } else {
+                $result[] = $def;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Devuelve los datos del panel para todas las clases, indexados por slug.
+     * Usado por HomeController para embeber en el template como objeto JS.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function getAllPanelData(): array
+    {
+        $payload = $this->loadPayload();
+        if (null === $payload || !isset($payload['classes']) || !is_array($payload['classes'])) {
+            return [];
+        }
+
+        $result = [];
+
+        foreach ($payload['classes'] as $slug => $classData) {
+            if (!is_array($classData)) {
+                continue;
+            }
+
+            $entry = [];
+
+            foreach (self::SCALAR_FIELDS as $field) {
+                $val = $classData[$field] ?? null;
+                $entry[$field] = is_string($val) ? trim($val) : '';
+            }
+
+            $entry['benefits'] = $this->normalizeBenefits($classData['benefits'] ?? null);
+            $entry['sections'] = $this->normalizeSections($classData['sections'] ?? null);
+
+            $result[(string) $slug] = $entry;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Combina el contenido de la BD con el fallback para la pagina /clases.
+     *
+     * @param array<string, mixed> $fallback
+     * @param string               $contentSlug
      *
      * @return array<string, mixed>
      */
@@ -98,13 +155,11 @@ class ClassContentService
     {
         $payload = $this->loadPayload();
         if (null === $payload) {
-            $fallback['sections'] = $this->buildLegacySections($fallback);
             return $fallback;
         }
 
         $classData = ($payload['classes'] ?? [])[$contentSlug] ?? null;
         if (!is_array($classData)) {
-            $fallback['sections'] = $this->buildLegacySections($fallback);
             return $fallback;
         }
 
@@ -120,59 +175,66 @@ class ClassContentService
             }
         }
 
-        $sections = $this->normalizeSections($classData['sections'] ?? null);
-
-        if ([] === $sections) {
-            foreach (self::ARRAY_SECTION_TITLE_FIELDS as $titleField) {
-                $val = $classData[$titleField] ?? null;
-                if (is_string($val)) {
-                    $val = trim($val);
-                    if ('' !== $val && mb_strlen($val) <= self::MAX_SCALAR_LENGTH) {
-                        $merged[$titleField] = $val;
-                    }
-                }
-            }
-
-            foreach (self::ARRAY_FIELDS as $field) {
-                $items = $classData[$field] ?? null;
-                if (is_array($items)) {
-                    $clean = array_values(array_filter(
-                        array_map(static fn ($v) => is_string($v) ? trim($v) : '', $items),
-                        static fn ($v) => '' !== $v,
-                    ));
-                    if (count($clean) > 0) {
-                        $merged[$field] = $clean;
-                    }
-                }
-            }
-
-            $sections = $this->buildLegacySections($merged);
+        $benefits = $this->normalizeBenefits($classData['benefits'] ?? null);
+        if ([] !== $benefits) {
+            $merged['benefits'] = $benefits;
         }
 
-        $merged['sections'] = $sections;
+        $sections = $this->normalizeSections($classData['sections'] ?? null);
+        if ([] !== $sections) {
+            $merged['sections'] = $sections;
+        }
 
         return $merged;
     }
 
     /**
+     * Normaliza sections para el editor (sin forzar sección vacía — el usuario las agrega con el botón).
+     *
      * @param array<string, mixed> $classData
      *
-     * @return array<int, array{title: string, items: array<int, string>}>
+     * @return array<int, array{icon: string, title: string, text: string}>
      */
     public function normalizeSectionsForEditor(array $classData): array
     {
-        $sections = $this->normalizeSections($classData['sections'] ?? null);
-        if ([] !== $sections) {
-            return $sections;
+        return $this->normalizeSections($classData['sections'] ?? null);
+    }
+
+    /**
+     * Normaliza benefits para el editor (garantiza al menos una línea vacía).
+     *
+     * @param array<string, mixed> $classData
+     *
+     * @return list<string>
+     */
+    public function normalizeBenefitsForEditor(array $classData): array
+    {
+        $benefits = $this->normalizeBenefits($classData['benefits'] ?? null);
+
+        return [] !== $benefits ? $benefits : [''];
+    }
+
+    /**
+     * @param mixed $rawBenefits
+     *
+     * @return list<string>
+     */
+    public function normalizeBenefits(mixed $rawBenefits): array
+    {
+        if (!is_array($rawBenefits)) {
+            return [];
         }
 
-        return $this->buildLegacySections($classData);
+        return array_values(array_filter(
+            array_map(static fn ($v) => is_string($v) ? trim($v) : '', $rawBenefits),
+            static fn ($v) => '' !== $v,
+        ));
     }
 
     /**
      * @param mixed $rawSections
      *
-     * @return array<int, array{title: string, items: array<int, string>}>
+     * @return array<int, array{icon: string, title: string, text: string}>
      */
     private function normalizeSections(mixed $rawSections): array
     {
@@ -192,20 +254,26 @@ class ClassContentService
                 $title = mb_substr($title, 0, self::MAX_SCALAR_LENGTH);
             }
 
-            $itemsRaw = $section['items'] ?? [];
-            if (!is_array($itemsRaw)) {
-                $itemsRaw = [];
+            $icon = trim((string) ($section['icon'] ?? ''));
+
+            $text = trim((string) ($section['text'] ?? ''));
+            if (mb_strlen($text) > self::MAX_SCALAR_LENGTH) {
+                $text = mb_substr($text, 0, self::MAX_SCALAR_LENGTH);
             }
 
-            $items = array_values(array_filter(
-                array_map(static fn ($v) => is_string($v) ? trim($v) : '', $itemsRaw),
-                static fn ($v) => '' !== $v,
-            ));
+            // Migración: si viene en formato antiguo (items[]) y no hay text, unir con salto de línea
+            if ('' === $text && isset($section['items']) && is_array($section['items'])) {
+                $text = implode("\n", array_values(array_filter(
+                    array_map(static fn ($v) => is_string($v) ? trim($v) : '', $section['items']),
+                    static fn ($v) => '' !== $v,
+                )));
+            }
 
-            if ('' !== $title || count($items) > 0) {
+            if ('' !== $title || '' !== $text) {
                 $sections[] = [
+                    'icon'  => $icon,
                     'title' => $title,
-                    'items' => $items,
+                    'text'  => $text,
                 ];
             }
         }
@@ -214,46 +282,7 @@ class ClassContentService
     }
 
     /**
-     * @param array<string, mixed> $source
-     *
-     * @return array<int, array{title: string, items: array<int, string>}>
-     */
-    private function buildLegacySections(array $source): array
-    {
-        $sections = [];
-
-        foreach (self::ARRAY_FIELDS as $field) {
-            $titleField = self::ARRAY_SECTION_TITLE_FIELDS[$field] ?? null;
-            $title = '';
-            if (null !== $titleField && isset($source[$titleField]) && is_string($source[$titleField])) {
-                $title = trim($source[$titleField]);
-            }
-            if ('' === $title) {
-                $title = self::ARRAY_SECTION_TITLE_DEFAULTS[$field] ?? 'Seccion';
-            }
-
-            $itemsRaw = $source[$field] ?? [];
-            if (!is_array($itemsRaw)) {
-                $itemsRaw = [];
-            }
-
-            $items = array_values(array_filter(
-                array_map(static fn ($v) => is_string($v) ? trim($v) : '', $itemsRaw),
-                static fn ($v) => '' !== $v,
-            ));
-
-            $sections[] = [
-                'title' => $title,
-                'items' => $items,
-            ];
-        }
-
-        return $sections;
-    }
-
-    /**
      * Carga el payload completo de la BD para el editor del backend.
-     * Retorna array vacio si no existe aun.
      *
      * @return array<string, mixed>
      */

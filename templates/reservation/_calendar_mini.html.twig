@@ -1,0 +1,74 @@
+{#
+  Mini-calendario mensual — componente Alpine pbMiniCalendar.
+  Variables requeridas: activeDate (Carbon), sessionDatesInMonth (array), branchOffice.
+#}
+<div
+    x-data="pbMiniCalendar"
+    data-active="{{ activeDate.format('Y-m-d') }}"
+    data-sessions="{{ sessionDatesInMonth|json_encode|e('html_attr') }}"
+    data-url="{{ path('reservation_calendar', {'slug': branchOffice.slug}) }}"
+    class="rcv2-mini-cal"
+    aria-label="Seleccionar fecha"
+>
+    {# ── Encabezado: mes/año + flechas ── #}
+    <div class="rcv2-mini-cal__header">
+        <button
+            class="rcv2-mini-cal__nav"
+            type="button"
+            @click="prevMonth()"
+            aria-label="Mes anterior"
+        ><i class="bi bi-chevron-left" aria-hidden="true"></i></button>
+
+        <span class="rcv2-mini-cal__month" x-text="monthLabel">...</span>
+
+        <button
+            class="rcv2-mini-cal__nav"
+            type="button"
+            @click="nextMonth()"
+            aria-label="Mes siguiente"
+        ><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+    </div>
+
+    {# ── Cabecera días de la semana ── #}
+    <div class="rcv2-mini-cal__weekdays" aria-hidden="true">
+        <span>L</span><span>M</span><span>X</span>
+        <span>J</span><span>V</span><span>S</span><span>D</span>
+    </div>
+
+    {# ── Grilla de días ── #}
+    <div class="rcv2-mini-cal__grid" role="grid">
+        <template x-for="day in calendarDays" :key="day.date">
+            <div
+                class="rcv2-mini-cal__cell"
+                role="gridcell"
+                :class="{
+                    'rcv2-mini-cal__cell--other':    !day.current,
+                    'rcv2-mini-cal__cell--past':     isPast(day.date),
+                    'rcv2-mini-cal__cell--today':    isToday(day.date),
+                    'rcv2-mini-cal__cell--active':   isActive(day.date)
+                }"
+            >
+                <button
+                    type="button"
+                    class="rcv2-mini-cal__day-btn"
+                    :disabled="isPast(day.date)"
+                    :aria-label="day.date"
+                    :aria-pressed="isActive(day.date)"
+                    @click="selectDate(day.date)"
+                    x-text="day.day"
+                ></button>
+                <span
+                    class="rcv2-mini-cal__dot"
+                    x-show="hasSession(day.date) && !isPast(day.date)"
+                    aria-hidden="true"
+                ></span>
+            </div>
+        </template>
+    </div>
+
+    {# ── Leyenda ── #}
+    <div class="rcv2-mini-cal__legend">
+        <span class="rcv2-mini-cal__dot rcv2-mini-cal__dot--legend" aria-hidden="true"></span>
+        <span class="rcv2-mini-cal__legend-text">Días con clases programadas</span>
+    </div>
+</div>

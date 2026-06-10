@@ -1,0 +1,142 @@
+{#
+  Vista semanal del calendario v2 — mismas cards horizontales que la vista diaria.
+  Variables requeridas: sessions, period, branchOffice, weekPrev, weekNext,
+                        userReservedSessionIds, emptyDayText.
+#}
+<div class="rcv2-sessions">
+
+    {# ── Encabezado: rango de fechas + navegación semanal ── #}
+    <div class="rcv2-sessions__header rcv2-sessions__header--week">
+        <div class="rcv2-sessions__week-nav" id="calendar-container-nav">
+            {% if weekPrev %}
+                <a
+                    href="{{ path('reservation_calendar', {
+                        'slug': branchOffice.slug,
+                        'weekno': weekPrev.weekOfYear,
+                        'year': weekPrev.yearIso
+                    }) }}"
+                    id="lwprev"
+                    class="rcv2-week-nav-btn"
+                    title="{{ branchOffice.name }} | Semana {{ weekPrev.weekOfYear }} {{ weekPrev.yearIso }}"
+                >
+                    <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                    <span>Semana anterior</span>
+                </a>
+            {% endif %}
+
+            <h2 class="rcv2-sessions__date">
+                {{ period.start.day }}&nbsp;–&nbsp;{{ period.end.day }} de {{ period.end.monthName }}
+            </h2>
+
+            {% if weekNext %}
+                <a
+                    href="{{ path('reservation_calendar', {
+                        'slug': branchOffice.slug,
+                        'weekno': weekNext.weekOfYear,
+                        'year': weekNext.yearIso
+                    }) }}"
+                    id="lwnext"
+                    class="rcv2-week-nav-btn"
+                    title="{{ branchOffice.name }} | Semana {{ weekNext.weekOfYear }} {{ weekNext.yearIso }}"
+                >
+                    <span>Siguiente semana</span>
+                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                </a>
+            {% endif %}
+        </div>
+        <p class="rcv2-sessions__tz">Todas las horas están en horario de la ubicación</p>
+    </div>
+
+    {# ── Días de la semana con sus sesiones ── #}
+    {% set today_str = "now"|date("Y-m-d") %}
+    {% set week_has_sessions = false %}
+
+    {% for day in period %}
+        {% if day.format('Y-m-d') >= today_str %}
+            {% set daySessions = sessions[day.toDateString] ?? [] %}
+            {% if daySessions is not empty %}
+                {% set week_has_sessions = true %}
+                <div class="rcv2-week-day">
+                    <h3 class="rcv2-week-day__header">
+                        <span class="rcv2-week-day__name">{{ day.dayName|capitalize }}</span>
+                        <span class="rcv2-week-day__date">{{ day.day }} de {{ day.monthName }}</span>
+                    </h3>
+
+                    <div class="rcv2-sessions__list">
+                        {% for session in daySessions %}
+                            {% set reserved_count = (userReservedSessionIds ?? {})[session.id] ?? 0 %}
+                            {% set is_reserved = reserved_count > 0 %}
+                            {% set is_full = session.full %}
+                            <div
+                                class="rcv2-session-card{{ is_full ? ' rcv2-session-card--full' : '' }}{{ is_reserved ? ' rcv2-session-card--reserved' : '' }}"
+                                data-event
+                                data-discipline-id="{{ session.discipline.id }}"
+                                data-instructor-id="{{ session.instructor ? session.instructor.id : '' }}"
+                                data-type="{{ session.type }}"
+                            >
+                                <div class="rcv2-session-card__time">
+                                    <span class="rcv2-session-card__hour">{{ session.timeStart|date('g:i A') }}</span>
+                                </div>
+                                <div class="rcv2-session-card__info">
+                                    <span class="rcv2-session-card__discipline">{{ session.discipline }}</span>
+                                    <span class="rcv2-session-card__instructor">
+                                        {{ session.instructor ? session.instructor.profile.firstname : '—' }}
+                                    </span>
+                                </div>
+                                <div class="rcv2-session-card__type">
+                                    <span class="rcv2-session-card__type-label">{{ session.type|PackageSessionType }}</span>
+                                </div>
+                                <div class="rcv2-session-card__cta">
+                                    {% if is_reserved %}
+                                        <a href="#" data-url="{{ path('reservation_confirm', {'id': session.id}) }}" class="rcv2-btn rcv2-btn--reserved" data-remodal>
+                                            <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+                                            Reservada{% if reserved_count > 1 %} ({{ reserved_count }}){% endif %}
+                                        </a>
+                                    {% elseif is_full %}
+                                        <a href="#" data-url="{{ path('reservation_confirm', {'id': session.id}) }}" class="rcv2-btn rcv2-btn--waitlist" data-remodal>
+                                            Lista de espera
+                                        </a>
+                                    {% else %}
+                                        <a href="#" data-url="{{ path('reservation_confirm', {'id': session.id}) }}" class="rcv2-btn rcv2-btn--reserve" data-remodal>
+                                            Reservar
+                                        </a>
+                                    {% endif %}
+                                    {% if is_full %}
+                                        <span class="rcv2-session-card__spots rcv2-session-card__spots--full">Clase llena</span>
+                                    {% elseif session.availableCapacity is defined and session.availableCapacity is not null %}
+                                        <span class="rcv2-session-card__spots">
+                                            {{ session.availableCapacity }}
+                                            {{ session.availableCapacity == 1 ? 'lugar disponible' : 'lugares disponibles' }}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+
+    {% if not week_has_sessions %}
+        <div class="rcv2-sessions__empty">
+            <i class="bi bi-calendar-x rcv2-sessions__empty-icon" aria-hidden="true"></i>
+            <p>{{ emptyDayText is defined and emptyDayText != '' ? emptyDayText : 'No hay clases disponibles esta semana.' }}</p>
+        </div>
+    {% endif %}
+
+    {# ── Barra inferior ── #}
+    <div class="rcv2-sessions__footer">
+        <div class="rcv2-sessions__footer-note">
+            <i class="bi bi-info-circle" aria-hidden="true"></i>
+            <p>
+                Puedes cancelar hasta 12&nbsp;h antes sin penalización. Entre 12&nbsp;h y 2&nbsp;h antes solo puedes cambiar la reserva (una vez por clase).
+                ¿Dudas?
+                <a href="{{ config_whatsapp_url()|trim }}" target="_blank" rel="noopener noreferrer" class="rcv2-link-terracota">
+                    Escríbenos por WhatsApp
+                </a>
+            </p>
+        </div>
+    </div>
+
+</div>

@@ -111,8 +111,8 @@ class SessionAutoClosingCommand extends AbstractCommand
     private function dispatchUpcomingSessionReminders(): void
     {
         $now  = new \DateTimeImmutable();
-        $from = $now->modify('+105 minutes'); // 1h45m
-        $to   = $now->modify('+135 minutes'); // 2h15m
+        $from = $now; // desde ahora
+        $to   = $now->modify('+135 minutes'); // hasta 2h15m
 
         $sessions = $this->sessionRepository->getSessionsStartingBetween($from, $to);
         $this->msgInfo(sprintf('[reminder]  Sesiones con inicio en ~2h: %d', count($sessions)));
@@ -129,6 +129,8 @@ class SessionAutoClosingCommand extends AbstractCommand
                 $resourceKey = sprintf('session_reminder_%d_u%d', (int) $session->getId(), (int) $user->getId());
 
                 if ($this->notificationRepository->existsByResourceKey($user, 'session_reminder', $resourceKey)) {
+                    $this->msgInfo(sprintf('[reminder]  SKIP duplicado: sesión %d, usuario %d, resource_key=%s',
+                        (int) $session->getId(), (int) $user->getId(), $resourceKey));
                     continue;
                 }
 

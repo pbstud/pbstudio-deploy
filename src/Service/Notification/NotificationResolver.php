@@ -79,7 +79,7 @@ final readonly class NotificationResolver
             // Pagos y paquetes
             'payment_confirmed'        => $this->fallbackTo(route: 'sessions_available'),
             'transaction_expired'      => $this->fallbackTo(route: 'transaction'),
-            'transaction_expiring_soon' => $this->informational(),
+            'transaction_expiring_soon' => $this->fallbackTo(route: 'transaction'),
 
             // Logros
             'achievement_unlocked',
@@ -184,7 +184,7 @@ final readonly class NotificationResolver
             'session_updated'          => $this->fallbackTo(route: 'reserved_sessions'),
             'payment_confirmed'        => $this->fallbackTo(route: 'sessions_available'),
             'transaction_expired'      => $this->fallbackTo(route: 'transaction'),
-            'transaction_expiring_soon' => $this->informational(),
+            'transaction_expiring_soon' => $this->fallbackTo(route: 'transaction'),
             'achievement_unlocked',
             'achievement_unlocked_special' => $this->fallbackTo(
                 route: 'profile',

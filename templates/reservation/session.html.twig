@@ -1,178 +1,167 @@
-<section class="pop_box">
-    <div class="row clearfix">
-        <a data-remodal-action="close" class="nav-toggle close"><span class="iconMenu"></span></a>
+<section class="pop_box rcv2-modal">
 
-        <div class="center">
-            {% if not userReservations and session.open %}
-                <h3>¡Tu clase te espera!</h3>
-                <small>Selecciona un lugar</small>
-            {% elseif userReservations %}
-                <h3>¡Ya estás suscrito a esta clase!</h3>
-                <small>Tu lugar seleccionado</small>
-            {% elseif on_waitinglist %}
-                <h3>¡Ya estás en la lista de espera!</h3>
-                <small>
-                    Si se libera un lugar, te lo asignaremos automáticamente para esta clase.
-                </small>
-            {% elseif waiting_list_closed %}
-                <h3>¡Ya no hay lugares disponibles!</h3>
-                <small>
-                    Esta clase ya está llena y la lista de espera cierra 2 horas antes del inicio.
-                </small>
-            {% elseif show_waitinglist %}
-                <h3>¡Ya no hay lugares disponibles!</h3>
-                <small>
-                    Pero no te preocupes, regístrate en la lista de espera y si se libera un lugar se te asignará a ti automáticamente.
-                </small>
-            {% elseif msg_no_classes_available %}
-                <h3>¡Ya no hay lugares disponibles!</h3>
-                <small>
-                    No cuentas con clases disponibles para registrarte en la lista de espera.
-                </small>
-            {% endif %}
-        </div>
+    {# Botón cerrar #}
+    <a data-remodal-action="close" class="rcv2-modal__close" aria-label="Cerrar">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+    </a>
 
-        <div class="clearfix class_pop {{ session.type|PackageSessionType|lower }}">
-            <div class="grid-1-6 right reserve-{{ grid_class }}">
-                {% if slot_to_seat is not empty %}
-                    {# Render 6x6 grid respecting the saved seat layout (slot_to_seat: slot -> seat number) #}
-                    <style>
-                        /*
-                         * Override .pop_box .class_pop .grid-1-6:first-child div { max-width:180px }
-                         * The ID selector wins on specificity (1-0-0 vs 0-4-0).
-                         */
-                        #place_container.seat-map-grid {
-                            display: grid;
-                            grid-template-columns: repeat(6, 40px);
-                            gap: 4px;
-                            max-width: none;      /* remove 180px cap */
-                            width: max-content;   /* shrink-wrap to actual grid size */
-                            margin: 0 auto;
-                        }
-                        /*
-                         * Override .place:nth-child(8n/9n/10n) { display:inline-block }
-                         * which breaks CSS grid item flow.
-                         */
-                        #place_container.seat-map-grid .place,
-                        #place_container.seat-map-grid .seat-slot-empty {
-                            display: block !important;
-                            margin-top: 0 !important;
-                            margin-right: 0 !important;
-                        }
-                        #place_container.seat-map-grid .seat-slot-empty {
-                            width: 40px;
-                            height: 40px;
-                        }
-                    </style>
+    {# ── CUERPO: dos columnas ── #}
+    <div class="rcv2-modal__body">
+
+        {# ── Columna izquierda: estado + mapa de asientos ── #}
+        <div class="rcv2-modal__col rcv2-modal__col--left">
+
+            {# Encabezado según estado #}
+            <div class="rcv2-modal__state">
+                {% if not userReservations and session.open %}
+                    <p class="rcv2-modal__state-title">¡Tu clase te espera!</p>
+                    <p class="rcv2-modal__state-sub">Selecciona un lugar</p>
+                {% elseif userReservations %}
+                    <p class="rcv2-modal__state-title">¡Ya estás suscrito a esta clase!</p>
+                    <p class="rcv2-modal__state-sub">Tu lugar seleccionado</p>
+                {% elseif on_waitinglist %}
+                    <p class="rcv2-modal__state-title">¡Ya estás en lista de espera!</p>
+                    <p class="rcv2-modal__state-sub">Si se libera un lugar, te lo asignaremos automáticamente.</p>
+                {% elseif waiting_list_closed %}
+                    <p class="rcv2-modal__state-title">¡Ya no hay lugares disponibles!</p>
+                    <p class="rcv2-modal__state-sub">Esta clase está llena y la lista de espera cerró 2 horas antes del inicio.</p>
+                {% elseif show_waitinglist %}
+                    <p class="rcv2-modal__state-title">¡Ya no hay lugares disponibles!</p>
+                    <p class="rcv2-modal__state-sub">Regístrate en lista de espera y te avisamos si se libera un lugar.</p>
+                {% elseif msg_no_classes_available %}
+                    <p class="rcv2-modal__state-title">¡Ya no hay lugares disponibles!</p>
+                    <p class="rcv2-modal__state-sub">No cuentas con clases disponibles para la lista de espera.</p>
+                {% endif %}
+            </div>
+
+            {# Mapa de asientos #}
+            {% if session.open or userReservations %}
+                <div class="rcv2-modal__seats">
                     <div class="classroom-layout">
-                    <div class="seat-map-frame">
-                    <div id="place_container" class="seat-map-grid">
-                        {% for slot in 1..36 %}
-                            {% if slot_to_seat[slot] is defined %}
-                                {% set place = slot_to_seat[slot] %}
-                                {% set place_not_available = place in (session.placesNotAvailable ?? []) %}
-                                {% set user_reserved_place = place in userReservations %}
-                                {% set is_reserved = reservations[place] is defined %}
-                                {% set html_element = is_reserved or place_not_available ? 'span' : 'a' %}
-                                {% set class_active = user_reserved_place ? 'active' : '' %}
-                                {% set class_engaged = is_reserved and not user_reserved_place ? 'engaged' : '' %}
-                                {% set class_not_available = place_not_available ? 'not-available' : '' %}
-                                <{{ html_element }} class="place {{ class_active }} {{ class_engaged }} {{ class_not_available }}" data-place="{{ place }}">
-                                    <p>{{ place }}</p>
-                                </{{ html_element }}>
-                            {% else %}
-                                <span class="seat-slot-empty"></span>
-                            {% endif %}
-                        {% endfor %}
+                        <div class="seat-map-frame">
+                            {{ include('reservation/_modal_seat_map.html.twig', {
+                                mode:         'select',
+                                slot_to_seat: slot_to_seat,
+                                capacity:     capacity,
+                                session:      session,
+                                reservations: reservations,
+                                user_places:  userReservations
+                            }) }}
+                        </div>
                     </div>
-                    </div>{# /seat-map-frame #}
-                    </div>{# /classroom-layout #}
-                {% else %}
-                    {# Fallback: no layout saved, show sequential list #}
-                    <div id="place_container">
-                        {% for place in 1..capacity %}
-                            {% set place_not_available = place in (session.placesNotAvailable ?? []) %}
-                            {% set user_reserved_place = place in userReservations %}
-                            {% set is_reserved = reservations[place] is defined %}
-                            {% set html_element = is_reserved or place_not_available ? 'span' : 'a' %}
-                            {% set class_active = user_reserved_place ? 'active' : '' %}
-                            {% set class_engaged = is_reserved and not user_reserved_place ? 'engaged' : '' %}
-                            {% set class_not_available = place_not_available ? 'not-available' : '' %}
-                            <{{ html_element }} class="place {{ class_active }} {{ class_engaged }} {{ class_not_available }}" data-place="{{ place }}">
-                                <p>{{ place }}</p>
-                            </{{ html_element }}>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
-
-            <div class="grid-1-6 right reserve-{{ grid_class }}">
-                <div class="class {{ discipline|replace({' ': '-'})|lower }}">
-                    <span class="icon-{{  session.individual ? 'individual' : 'group' }}"></span>
-                    <h6>{{ discipline }}</h6>
-                    <p>{{ session.timeStart|date('h:i a') }}</p>
-                    <p><strong>{{ session.instructor.profile.firstname }}</strong></p>
                 </div>
-                <p>
-                    <small><b>Día:</b> {{ session.dateStart|date('d/m/y') }}</small>
-                </p>
-                {% set branch_label = session.branchOffice.name %}
-                {% if session.branchOffice.plaza %}
-                    {% set branch_label = branch_label ~ ' - ' ~ session.branchOffice.plaza %}
-                {% elseif session.branchOffice.zone %}
-                    {% set branch_label = branch_label ~ ' - ' ~ session.branchOffice.zone %}
-                {% endif %}
-                <p>
-                    <small><b>Sucursal:</b> {{ branch_label }}</small>
-                </p>
-            </div>
+            {% endif %}
+
         </div>
 
-        {% if session.open %}
-            {% if consumption_options.unlimitedDailyLimitNotice %}
-                <div class="consumption-source-box">
-                    <small><strong>Aviso:</strong> {{ consumption_options.unlimitedDailyLimitNotice }}</small>
-                </div>
-            {% elseif consumption_options.forcedPackageNotice %}
-                <div class="consumption-source-box">
-                    <small><strong>Aviso:</strong> {{ consumption_options.forcedPackageNotice }}</small>
-                </div>
-            {% endif %}
+        {# ── Columna derecha: resumen de clase + CTA ── #}
+        <div class="rcv2-modal__col rcv2-modal__col--right">
 
-            {% if consumption_options.availableTransactions|length > 1 %}
-                <div class="consumption-source-box">
-                    <label for="consumption_source_selector"><strong>¿Con qué paquete deseas reservar?</strong></label>
-                    <select id="consumption_source_selector" class="consumption-source-selector">
-                        {% for option in consumption_options.availableTransactions %}
-                            <option value="{{ option.value }}">{{ option.label }}</option>
-                        {% endfor %}
-                    </select>
-                    <small>Elige cómo deseas consumir tu reserva.</small>
+            {# Resumen de la clase #}
+            <div class="rcv2-modal__summary">
+                <div class="rcv2-modal__summary-header">
+                    <i class="bi bi-{{ session.individual ? 'person' : 'people' }} rcv2-modal__summary-icon" aria-hidden="true"></i>
+                    <span class="rcv2-modal__summary-type">{{ session.type|PackageSessionType }}</span>
                 </div>
-            {% endif %}
-
-            <div class="modal-actions">
-                <a href="#" class="btn btn-confirm btn-submit">Confirmar reservación</a>
+                <p class="rcv2-modal__summary-name">{{ discipline }}</p>
+                <dl class="rcv2-modal__summary-details">
+                    <div class="rcv2-modal__summary-row">
+                        <dt><i class="bi bi-clock" aria-hidden="true"></i></dt>
+                        <dd>{{ session.timeStart|date('h:i a') }}</dd>
+                    </div>
+                    <div class="rcv2-modal__summary-row">
+                        <dt><i class="bi bi-calendar3" aria-hidden="true"></i></dt>
+                        <dd>{{ session.dateStart|date('d/m/Y') }}</dd>
+                    </div>
+                    <div class="rcv2-modal__summary-row">
+                        <dt><i class="bi bi-person" aria-hidden="true"></i></dt>
+                        <dd>{{ session.instructor.profile.firstname }}</dd>
+                    </div>
+                    <div class="rcv2-modal__summary-row">
+                        <dt><i class="bi bi-geo-alt" aria-hidden="true"></i></dt>
+                        <dd>
+                            {% set branch_label = session.branchOffice.name %}
+                            {% if session.branchOffice.plaza %}
+                                {% set branch_label = branch_label ~ ' — ' ~ session.branchOffice.plaza %}
+                            {% elseif session.branchOffice.zone %}
+                                {% set branch_label = branch_label ~ ' — ' ~ session.branchOffice.zone %}
+                            {% endif %}
+                            {{ branch_label }}
+                        </dd>
+                    </div>
+                </dl>
             </div>
 
-            <form id="frmReservation" action="{{ path('reservation_confirm', { 'id': session.id }) }}" method="post" class="m-fjx">
-                <input type="hidden" name="place_number" value="" />
-                <input type="hidden" name="consumption_source" value="auto" />
-            </form>
-        {% elseif not userReservations and show_waitinglist and not on_waitinglist %}
-            <div class="modal-actions">
-                <a href="#" class="btn btn-waitinglist btn-submit">Suscribirme a la lista de espera</a>
+            {# Aviso de consumo (si aplica) #}
+            {% if session.open %}
+                {% if consumption_options.unlimitedDailyLimitNotice %}
+                    <div class="rcv2-modal__info-box">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                        <p><strong>Aviso:</strong> {{ consumption_options.unlimitedDailyLimitNotice }}</p>
+                    </div>
+                {% elseif consumption_options.forcedPackageNotice %}
+                    <div class="rcv2-modal__info-box">
+                        <i class="bi bi-info-circle" aria-hidden="true"></i>
+                        <p><strong>Aviso:</strong> {{ consumption_options.forcedPackageNotice }}</p>
+                    </div>
+                {% endif %}
+
+                {% if consumption_options.availableTransactions|length > 1 %}
+                    <div class="rcv2-modal__consumption">
+                        <label for="consumption_source_selector" class="rcv2-modal__consumption-label">
+                            ¿Con qué paquete deseas reservar?
+                        </label>
+                        <select id="consumption_source_selector" class="rcv2-select rcv2-modal__consumption-select">
+                            {% for option in consumption_options.availableTransactions %}
+                                <option value="{{ option.value }}">{{ option.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                {% endif %}
+            {% endif %}
+
+            {# CTA según estado #}
+            <div class="rcv2-modal__actions">
+                {% if session.open %}
+                    <a href="#" class="rcv2-btn-modal rcv2-btn-modal--primary btn-confirm btn-submit">
+                        Confirmar reservación
+                    </a>
+                {% elseif not userReservations and show_waitinglist and not on_waitinglist %}
+                    <a href="#" class="rcv2-btn-modal rcv2-btn-modal--secondary btn-waitinglist btn-submit">
+                        Suscribirme a lista de espera
+                    </a>
+                {% elseif msg_no_classes_available %}
+                    <p class="rcv2-modal__note">
+                        No cuentas con clases disponibles. Adquiere más para poder registrarte en lista de espera.
+                    </p>
+                {% endif %}
             </div>
 
-            <form id="frmWaitingList" action="{{ path('reservation_waitinglist', { 'id': session.id }) }}" method="post" class="m-fjx">
-                <input type="hidden" name="_token" value="{{ csrf_token('reservation_waitinglist_' ~ session.id) }}" />
-            </form>
-        {% elseif msg_no_classes_available %}
-            <p class="modal-note">¡No cuentas con clases disponibles! Pero no te preocupes, adquiere más clases para poder registrarte en la lista de espera de esta clase.</p>
-        {% endif %}
+        </div>
     </div>
+
+    {# ── FOOTER: nota de política ── #}
+    <div class="rcv2-modal__footer">
+        <i class="bi bi-info-circle" aria-hidden="true"></i>
+        <p>Puedes cancelar hasta 12&nbsp;h antes sin penalización. Entre 12&nbsp;h y 2&nbsp;h antes solo puedes cambiar la reserva (una vez por clase).</p>
+    </div>
+
+    {# ── Formularios ocultos — IDs/actions intocables ── #}
+    {% if session.open %}
+        <form id="frmReservation"
+              action="{{ path('reservation_confirm', {'id': session.id}) }}"
+              method="post" class="m-fjx">
+            <input type="hidden" name="place_number" value="" />
+            <input type="hidden" name="consumption_source" value="auto" />
+        </form>
+    {% elseif not userReservations and show_waitinglist and not on_waitinglist %}
+        <form id="frmWaitingList"
+              action="{{ path('reservation_waitinglist', {'id': session.id}) }}"
+              method="post" class="m-fjx">
+            <input type="hidden" name="_token" value="{{ csrf_token('reservation_waitinglist_' ~ session.id) }}" />
+        </form>
+    {% endif %}
+
 </section>
 
-<script>
-    reservationInit();
-</script>
+<script>reservationInit();</script>

@@ -1,14 +1,16 @@
-<section class="pop_box">
-    <div class="row clearfix">
-        <a data-remodal-action="close" class="nav-toggle close"><span class="iconMenu"></span></a>
-        <div class="center">
-            <h3>¡Tu registro ha sido exitoso!</h3>
-            <small>Si se libera un lugar, te lo asignaremos automáticamente y te notificaremos por correo electrónico.</small>
+<section class="pop_box rcv2-modal rcv2-modal--success">
+    <a data-remodal-action="close" class="rcv2-modal__close" aria-label="Cerrar">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+    </a>
+    <div class="rcv2-success">
+        <div class="rcv2-success__icon">
+            <i class="bi bi-hourglass-split" aria-hidden="true"></i>
         </div>
-
-        <div class="modal-actions">
-            <a href="{{ path('profile_waiting_list') }}" class="btn secondary">Ver lista de espera</a>
-            <a href="{{ path('reservation_calendar') }}" class="btn">Reservar clase</a>
+        <p class="rcv2-success__title">¡Tu registro fue exitoso!</p>
+        <p class="rcv2-success__sub">Si se libera un lugar, te lo asignaremos automáticamente y te notificaremos por correo electrónico.</p>
+        <div class="rcv2-success__actions">
+            <a href="{{ path('profile_waiting_list') }}" class="rcv2-btn-modal rcv2-btn-modal--outline">Ver lista de espera</a>
+            <a href="{{ path('reservation_calendar') }}" class="rcv2-btn-modal rcv2-btn-modal--primary">Reservar otra clase</a>
         </div>
     </div>
 </section>

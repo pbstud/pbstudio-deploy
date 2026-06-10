@@ -4,21 +4,10 @@
 {% set page_title   = 'Contenido · Página de Clases' %}
 {% set return_to    = path('backend_page') %}
 
-{% set slug_labels = {
-    'pilates-reformer': 'Pilates Reformer',
-    'beastformer':      'BeastFormer',
-    'dual-pilates':     'Dual Pilates',
-    'clase-privada':    'Clase Privada'
-} %}
-
-{% set field_labels = {
-    'audience':    'Audiencia',
-    'duration':    'Duración',
-    'intensity':   'Intensidad',
-    'focus':       'Enfoque principal',
-    'summary':     'Resumen (tarjeta)',
-    'description': 'Descripción (modal)'
-} %}
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+{% endblock %}
 
 {% block content %}
 <div class="">
@@ -43,7 +32,7 @@
                         {% if post %}
                             &nbsp;<small class="text-success"><i class="fa fa-check-circle"></i> Guardado en BD{% if post.updatedAt %} · {{ post.updatedAt|date('d/m/Y H:i') }}{% endif %}</small>
                         {% else %}
-                            &nbsp;<small class="text-warning"><i class="fa fa-exclamation-triangle"></i> Sin datos guardados — ejecuta <code>php bin/console app:class-content:seed</code> o guarda el formulario</small>
+                            &nbsp;<small class="text-warning"><i class="fa fa-exclamation-triangle"></i> Sin datos guardados — guarda el formulario para crear el registro en BD</small>
                         {% endif %}
                     </h2>
                     <div class="clearfix"></div>
@@ -57,16 +46,14 @@
                         </div>
                     {% endfor %}
 
-                    {% if data is empty %}
-                        <div class="alert alert-info">
-                            <i class="fa fa-info-circle"></i>
-                            No hay contenido guardado aún. El formulario muestra campos vacíos.
-                            Guarda para crear el registro en BD, o ejecuta
-                            <code>php bin/console app:class-content:seed</code> para cargar los textos predeterminados.
+                    {% if disciplines is empty %}
+                        <div class="alert alert-warning">
+                            <i class="fa fa-exclamation-triangle"></i>
+                            No hay disciplinas activas. Activa al menos una disciplina para editar su contenido.
                         </div>
-                    {% endif %}
+                    {% else %}
 
-                    <form method="POST" action="{{ path('backend_class_content') }}" class="form-horizontal form-label-left">
+                    <form method="POST" action="{{ path('backend_class_content') }}" enctype="multipart/form-data" class="form-horizontal form-label-left">
 
                         {# ── ENCABEZADO DE PÁGINA ──────────────────────────────── #}
                         <div class="panel panel-default" style="margin-bottom:20px;">
@@ -98,131 +85,308 @@
                             </div>
                         </div>
 
-                        {# ── TABS POR CLASE ────────────────────────────────────── #}
-                        <ul class="nav nav-tabs" role="tablist" style="margin-bottom:0; border-bottom: 2px solid #ddd;">
-                            {% for slug in slugs %}
+                        {# ── CAJAS DE INFORMACIÓN (panel lateral home) ────────── #}
+                        <div class="panel panel-default" style="margin-bottom:20px;">
+                            <div class="panel-heading">
+                                <strong><i class="fa fa-th-large"></i> Cajas de información del panel lateral</strong>
+                                <small class="text-muted" style="margin-left:8px;">Aparecen en la parte inferior del panel "Más información" del home</small>
+                            </div>
+                            <div class="panel-body">
+                                <div class="row">
+                                    {% for boxKey, boxLabel in {'infoBox1': 'Caja 1', 'infoBox2': 'Caja 2'} %}
+                                    <div class="col-md-6">
+                                        <fieldset style="border:1px solid #e0e0e0; border-radius:6px; padding:14px 16px 10px; margin-bottom:10px;">
+                                            <legend style="font-size:12px; font-weight:700; color:#5C5048; padding:0 8px; width:auto;">{{ boxLabel }}</legend>
+                                            <div class="form-group" style="margin-bottom:10px;">
+                                                <label class="control-label col-md-3" style="font-size:12px;">Ícono</label>
+                                                <div class="col-md-9">
+                                                    <input type="hidden" name="{{ boxKey }}[icon]" class="cc-infobox-icon-val" value="{{ data[boxKey].icon ?? 'bi-star' }}">
+                                                    <div class="cc-infobox-icon-btn" title="Cambiar ícono" style="cursor:pointer;display:inline-block;">
+                                                        <i class="bi {{ data[boxKey].icon ?? 'bi-star' }}" style="font-size:28px;color:#C17A6A;"></i>
+                                                    </div>
+                                                    <div class="cc-infobox-icon-picker" style="display:none;position:relative;margin-top:6px;"></div>
+                                                    <span class="help-block" style="font-size:11px;display:block;">Haz clic en el ícono para cambiarlo.</span>
+                                                </div>
+                                            </div>
+                                            <div class="form-group" style="margin-bottom:10px;">
+                                                <label class="control-label col-md-3" style="font-size:12px;">Título</label>
+                                                <div class="col-md-9">
+                                                    <input type="text"
+                                                           name="{{ boxKey }}[title]"
+                                                           class="form-control"
+                                                           maxlength="80"
+                                                           placeholder="Título de la caja"
+                                                           value="{{ data[boxKey].title ?? '' }}">
+                                                </div>
+                                            </div>
+                                            <div class="form-group" style="margin-bottom:6px;">
+                                                <label class="control-label col-md-3" style="font-size:12px;">Texto</label>
+                                                <div class="col-md-9">
+                                                    <textarea name="{{ boxKey }}[text]"
+                                                              class="form-control"
+                                                              rows="2"
+                                                              maxlength="200"
+                                                              placeholder="Descripción breve…">{{ data[boxKey].text ?? '' }}</textarea>
+                                                </div>
+                                            </div>
+                                        </fieldset>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        {# ── TABS POR DISCIPLINA ───────────────────────────────── #}
+                        <ul class="nav nav-tabs" role="tablist" style="margin-bottom:0; border-bottom:2px solid #ddd;">
+                            {% for discipline in disciplines %}
+                                {% set slug = discipline.name|lower|replace({' ': '-', 'ñ': 'n', 'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u', 'ü': 'u'}) %}
                                 <li role="presentation"{% if loop.first %} class="active"{% endif %}>
                                     <a href="#tab-{{ slug }}" role="tab" data-toggle="tab" style="font-weight:600;">
-                                        {{ slug_labels[slug] ?? slug }}
+                                        {{ discipline.name }}
                                     </a>
                                 </li>
                             {% endfor %}
                         </ul>
 
                         <div class="tab-content" style="border:1px solid #ddd; border-top:none; padding:24px 20px 10px; margin-bottom:20px; background:#fff;">
-                            {% for slug in slugs %}
+                            {% for discipline in disciplines %}
+                                {% set slug = discipline.name|lower|replace({' ': '-', 'ñ': 'n', 'á': 'a', 'é': 'e', 'í': 'i', 'ó': 'o', 'ú': 'u', 'ü': 'u'}) %}
                                 {% set classData = data.classes[slug] ?? {} %}
                                 <div id="tab-{{ slug }}" class="tab-pane{% if loop.first %} active{% endif %}">
 
-                                    <p class="text-muted" style="margin-top:0; margin-bottom:16px; font-size:12px;">
-                                        <i class="fa fa-info-circle"></i>
-                                        Slug en URL: <code>/clases/{{ slug }}</code>
-                                    </p>
-
-                                    {# ── Campos de texto ── #}
-                                    {% for field in scalarFields %}
-                                        <div class="form-group">
-                                            <label class="control-label col-md-2 col-sm-3">
-                                                {{ field_labels[field] ?? field }}
-                                            </label>
-                                            <div class="col-md-8 col-sm-9">
-                                                {% if field in ['summary', 'description'] %}
-                                                    <textarea name="classes[{{ slug }}][{{ field }}]"
-                                                              class="form-control"
-                                                              rows="{{ field == 'description' ? 4 : 2 }}"
-                                                              maxlength="400">{{ classData[field] ?? '' }}</textarea>
-                                                    <span class="help-block" style="font-size:11px;">
-                                                        {% if field == 'summary' %}Aparece en la tarjeta de la grilla de clases.{% endif %}
-                                                        {% if field == 'description' %}Aparece en el modal de detalle al hacer clic en la clase.{% endif %}
-                                                    </span>
-                                                {% else %}
-                                                    <input type="text"
-                                                           name="classes[{{ slug }}][{{ field }}]"
-                                                           class="form-control"
-                                                           maxlength="120"
-                                                           value="{{ classData[field] ?? '' }}">
-                                                {% endif %}
+                                    {# ── ¿QUÉ ES? ── #}
+                                    <div class="form-group cc-fixed-section">
+                                        <div class="col-md-3 col-sm-3" style="padding-top:4px;">
+                                            <input type="hidden"
+                                                   name="classes[{{ slug }}][queEsIcon]"
+                                                   class="cc-section-icon-val"
+                                                   value="{{ classData.queEsIcon ?? 'bi-info-circle' }}">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-addon cc-section-icon-btn"
+                                                      title="Cambiar ícono"
+                                                      style="cursor:pointer;width:36px;text-align:center;padding:4px 6px;">
+                                                    <i class="bi {{ classData.queEsIcon ?? 'bi-info-circle' }}" style="font-size:16px;color:#C17A6A;"></i>
+                                                </span>
+                                                <input type="text"
+                                                       name="classes[{{ slug }}][queEsLabel]"
+                                                       class="form-control"
+                                                       maxlength="60"
+                                                       placeholder="¿Qué es?"
+                                                       value="{{ classData.queEsLabel ?? '¿Qué es?' }}">
                                             </div>
+                                            <div class="cc-section-icon-picker" style="display:none;position:relative;margin-top:4px;"></div>
                                         </div>
-                                    {% endfor %}
+                                        <div class="col-md-7 col-sm-9">
+                                            <textarea name="classes[{{ slug }}][queEs]"
+                                                      class="form-control"
+                                                      rows="3"
+                                                      maxlength="400"
+                                                      placeholder="Describe en qué consiste esta clase…">{{ classData.queEs ?? '' }}</textarea>
+                                            <span class="help-block" style="font-size:11px;">Se muestra en el panel lateral del home al hacer clic en "Más información".</span>
+                                        </div>
+                                    </div>
 
-                                    <div class="ln_solid"></div>
-
-                                    {# ── Secciones dinámicas (subtítulo + puntos) ── #}
-                                    <div class="form-group">
-                                        <label class="control-label col-md-2 col-sm-3" style="padding-top:0;">
-                                            Secciones del modal
-                                        </label>
-                                        <div class="col-md-8 col-sm-9">
-                                            {% set classSections = classData.sections ?? [] %}
-                                            <div class="cc-sections" id="{{ slug }}-sections" data-next-index="{{ classSections|length }}">
-                                                {% for sectionIndex, section in classSections %}
-                                                    {% set sectionItems = section.items ?? [] %}
-                                                    <div class="panel panel-default cc-section" data-section-index="{{ sectionIndex }}" style="margin-bottom:10px;">
-                                                        <div class="panel-body" style="padding:10px;">
-                                                            <div class="input-group" style="margin-bottom:8px;">
-                                                                <span class="input-group-addon" style="min-width:88px; text-align:left;">Subtítulo</span>
-                                                                <input type="text"
-                                                                       name="classes[{{ slug }}][sections][{{ sectionIndex }}][title]"
-                                                                       class="form-control"
-                                                                       maxlength="220"
-                                                                       placeholder="Subtítulo de sección"
-                                                                       value="{{ section.title ?? '' }}">
-                                                                <span class="input-group-btn">
-                                                                    <button type="button" class="btn btn-danger btn-sm cc-remove-section" title="Eliminar sección">
-                                                                        <i class="fa fa-trash"></i>
-                                                                    </button>
-                                                                </span>
-                                                            </div>
-
-                                                            <div class="cc-items" id="{{ slug }}-section-{{ sectionIndex }}-items">
-                                                                {% for item in sectionItems %}
-                                                                    <div class="input-group cc-item" style="margin-bottom:5px;">
-                                                                        <input type="text"
-                                                                               name="classes[{{ slug }}][sections][{{ sectionIndex }}][items][]"
-                                                                               class="form-control"
-                                                                               maxlength="220"
-                                                                               value="{{ item }}">
-                                                                        <span class="input-group-btn">
-                                                                            <button type="button" class="btn btn-danger btn-sm cc-remove" title="Eliminar">
-                                                                                <i class="fa fa-times"></i>
-                                                                            </button>
-                                                                        </span>
-                                                                    </div>
-                                                                {% else %}
-                                                                    <div class="input-group cc-item" style="margin-bottom:5px;">
-                                                                        <input type="text"
-                                                                               name="classes[{{ slug }}][sections][{{ sectionIndex }}][items][]"
-                                                                               class="form-control"
-                                                                               maxlength="220"
-                                                                               value="">
-                                                                        <span class="input-group-btn">
-                                                                            <button type="button" class="btn btn-danger btn-sm cc-remove" title="Eliminar">
-                                                                                <i class="fa fa-times"></i>
-                                                                            </button>
-                                                                        </span>
-                                                                    </div>
-                                                                {% endfor %}
-                                                            </div>
-
-                                                            <button type="button"
-                                                                    class="btn btn-default btn-xs cc-add"
-                                                                    data-container="{{ slug }}-section-{{ sectionIndex }}-items"
-                                                                    data-name="classes[{{ slug }}][sections][{{ sectionIndex }}][items][]">
-                                                                <i class="fa fa-plus"></i> Agregar línea
+                                    {# ── BENEFICIOS ── #}
+                                    <div class="form-group cc-fixed-section">
+                                        <div class="col-md-3 col-sm-3" style="padding-top:4px;">
+                                            <input type="hidden"
+                                                   name="classes[{{ slug }}][benefitsIcon]"
+                                                   class="cc-section-icon-val"
+                                                   value="{{ classData.benefitsIcon ?? 'bi-check-square' }}">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-addon cc-section-icon-btn"
+                                                      title="Cambiar ícono"
+                                                      style="cursor:pointer;width:36px;text-align:center;padding:4px 6px;">
+                                                    <i class="bi {{ classData.benefitsIcon ?? 'bi-check-square' }}" style="font-size:16px;color:#C17A6A;"></i>
+                                                </span>
+                                                <input type="text"
+                                                       name="classes[{{ slug }}][benefitsLabel]"
+                                                       class="form-control"
+                                                       maxlength="60"
+                                                       placeholder="Beneficios"
+                                                       value="{{ classData.benefitsLabel ?? 'Beneficios' }}">
+                                            </div>
+                                            <div class="cc-section-icon-picker" style="display:none;position:relative;margin-top:4px;"></div>
+                                        </div>
+                                        <div class="col-md-7 col-sm-9">
+                                            <div class="cc-benefits" id="{{ slug }}-benefits">
+                                                {% set classBenefits = classData.benefits ?? [''] %}
+                                                {% for benefit in classBenefits %}
+                                                    <div class="input-group cc-benefit-item" style="margin-bottom:5px;">
+                                                        <input type="text"
+                                                               name="classes[{{ slug }}][benefits][]"
+                                                               class="form-control"
+                                                               maxlength="200"
+                                                               placeholder="Ej: Mejora tu postura y alineación"
+                                                               value="{{ benefit }}">
+                                                        <span class="input-group-btn">
+                                                            <button type="button" class="btn btn-danger btn-sm cc-remove-benefit" title="Eliminar">
+                                                                <i class="fa fa-times"></i>
                                                             </button>
-                                                        </div>
+                                                        </span>
                                                     </div>
                                                 {% endfor %}
                                             </div>
-
                                             <button type="button"
-                                                    class="btn btn-default btn-xs cc-add-section"
+                                                    class="btn btn-default btn-xs cc-add-benefit"
+                                                    data-container="{{ slug }}-benefits"
+                                                    data-slug="{{ slug }}">
+                                                <i class="fa fa-plus"></i> Agregar beneficio
+                                            </button>
+                                            <span class="help-block" style="font-size:11px;">Cada línea aparece con ✓ en el panel lateral.</span>
+                                        </div>
+                                    </div>
+
+                                    {# ── ¿PARA QUIÉN ES? ── #}
+                                    <div class="form-group cc-fixed-section">
+                                        <div class="col-md-3 col-sm-3" style="padding-top:4px;">
+                                            <input type="hidden"
+                                                   name="classes[{{ slug }}][paraQuienEsIcon]"
+                                                   class="cc-section-icon-val"
+                                                   value="{{ classData.paraQuienEsIcon ?? 'bi-people' }}">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-addon cc-section-icon-btn"
+                                                      title="Cambiar ícono"
+                                                      style="cursor:pointer;width:36px;text-align:center;padding:4px 6px;">
+                                                    <i class="bi {{ classData.paraQuienEsIcon ?? 'bi-people' }}" style="font-size:16px;color:#C17A6A;"></i>
+                                                </span>
+                                                <input type="text"
+                                                       name="classes[{{ slug }}][paraQuienEsLabel]"
+                                                       class="form-control"
+                                                       maxlength="60"
+                                                       placeholder="¿Para quién es?"
+                                                       value="{{ classData.paraQuienEsLabel ?? '¿Para quién es?' }}">
+                                            </div>
+                                            <div class="cc-section-icon-picker" style="display:none;position:relative;margin-top:4px;"></div>
+                                        </div>
+                                        <div class="col-md-7 col-sm-9">
+                                            <textarea name="classes[{{ slug }}][paraQuienEs]"
+                                                      class="form-control"
+                                                      rows="2"
+                                                      maxlength="300"
+                                                      placeholder="Ej: Para todos los niveles. Ideal si buscas transformar tu cuerpo…">{{ classData.paraQuienEs ?? '' }}</textarea>
+                                        </div>
+                                    </div>
+
+                                    {# ── DURACIÓN ── #}
+                                    <div class="form-group cc-fixed-section">
+                                        <div class="col-md-3 col-sm-3" style="padding-top:4px;">
+                                            <input type="hidden"
+                                                   name="classes[{{ slug }}][durationIcon]"
+                                                   class="cc-section-icon-val"
+                                                   value="{{ classData.durationIcon ?? 'bi-clock' }}">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-addon cc-section-icon-btn"
+                                                      title="Cambiar ícono"
+                                                      style="cursor:pointer;width:36px;text-align:center;padding:4px 6px;">
+                                                    <i class="bi {{ classData.durationIcon ?? 'bi-clock' }}" style="font-size:16px;color:#C17A6A;"></i>
+                                                </span>
+                                                <input type="text"
+                                                       name="classes[{{ slug }}][durationLabel]"
+                                                       class="form-control"
+                                                       maxlength="60"
+                                                       placeholder="Duración"
+                                                       value="{{ classData.durationLabel ?? 'Duración' }}">
+                                            </div>
+                                            <div class="cc-section-icon-picker" style="display:none;position:relative;margin-top:4px;"></div>
+                                        </div>
+                                        <div class="col-md-4 col-sm-5">
+                                            <input type="text"
+                                                   name="classes[{{ slug }}][duration]"
+                                                   class="form-control"
+                                                   maxlength="60"
+                                                   placeholder="Ej: 55 minutos"
+                                                   value="{{ classData.duration ?? '' }}">
+                                        </div>
+                                    </div>
+
+                                    {# ── SECCIONES ADICIONALES (misma estructura que las fijas) ── #}
+                                    {% set classSections = classData.sections ?? [] %}
+                                    <div class="cc-sections" id="{{ slug }}-sections" data-next-index="{{ classSections|length }}">
+                                        {% for sectionIndex, section in classSections %}
+                                            {% set sectionIcon = section.icon ?? 'bi-star' %}
+                                            <div class="form-group cc-fixed-section cc-section" style="margin-top:8px;">
+                                                <div class="col-md-3 col-sm-3" style="padding-top:4px;">
+                                                    <input type="hidden"
+                                                           name="classes[{{ slug }}][sections][{{ sectionIndex }}][icon]"
+                                                           class="cc-section-icon-val"
+                                                           value="{{ sectionIcon }}">
+                                                    <div class="input-group input-group-sm">
+                                                        <span class="input-group-addon cc-section-icon-btn"
+                                                              title="Cambiar ícono"
+                                                              style="cursor:pointer;width:36px;text-align:center;padding:4px 6px;">
+                                                            <i class="bi {{ sectionIcon }}" style="font-size:16px;color:#C17A6A;"></i>
+                                                        </span>
+                                                        <input type="text"
+                                                               name="classes[{{ slug }}][sections][{{ sectionIndex }}][title]"
+                                                               class="form-control"
+                                                               maxlength="60"
+                                                               placeholder="Subtítulo"
+                                                               value="{{ section.title ?? '' }}">
+                                                        <span class="input-group-btn">
+                                                            <button type="button" class="btn btn-danger btn-sm cc-remove-section" title="Eliminar sección">
+                                                                <i class="fa fa-trash"></i>
+                                                            </button>
+                                                        </span>
+                                                    </div>
+                                                    <div class="cc-section-icon-picker" style="display:none;position:relative;margin-top:4px;"></div>
+                                                </div>
+                                                <div class="col-md-7 col-sm-9">
+                                                    <textarea name="classes[{{ slug }}][sections][{{ sectionIndex }}][text]"
+                                                              class="form-control"
+                                                              rows="2"
+                                                              maxlength="300"
+                                                              placeholder="Describe esta sección…">{{ section.text ?? '' }}</textarea>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:4px;">
+                                        <div class="col-md-10 col-sm-12">
+                                            <button type="button"
+                                                    class="btn btn-default btn-sm cc-add-section"
                                                     data-slug="{{ slug }}"
                                                     data-sections-container="{{ slug }}-sections">
                                                 <i class="fa fa-plus"></i> Agregar sección
                                             </button>
-                                            <span class="help-block" style="font-size:11px;">Puedes agregar o quitar secciones y subtítulos libremente. Las líneas en blanco se ignoran al guardar.</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="ln_solid"></div>
+
+                                    {# ── IMAGEN DEL PANEL (opcional) ── #}
+                                    <div class="form-group">
+                                        <label class="control-label col-md-2 col-sm-3">
+                                            <i class="fa fa-image text-muted"></i> Imagen del panel
+                                        </label>
+                                        <div class="col-md-8 col-sm-9">
+                                            {% set currentPanelImage = classData.panelImage ?? '' %}
+                                            {% if currentPanelImage %}
+                                                <div class="cc-panel-image-preview" style="margin-bottom:10px;">
+                                                    <img src="/media/uploads/class-panels/{{ currentPanelImage }}"
+                                                         alt="Imagen actual"
+                                                         style="max-height:160px; max-width:240px; border-radius:6px; border:1px solid #ddd; object-fit:cover;">
+                                                    <div style="margin-top:6px;">
+                                                        <label style="font-weight:normal; font-size:12px; color:#c0392b; cursor:pointer;">
+                                                            <input type="checkbox" name="classes[{{ slug }}][panelImageDelete]" value="1" style="margin-right:4px;">
+                                                            Eliminar imagen del panel
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                            {# Campo oculto para preservar la imagen actual si no se sube una nueva #}
+                                            <input type="hidden" name="classes[{{ slug }}][panelImageCurrent]" value="{{ currentPanelImage }}">
+                                            <input type="file"
+                                                   name="classes[{{ slug }}][panelImage]"
+                                                   class="form-control"
+                                                   accept="image/jpeg,image/png,image/webp">
+                                            <span class="help-block" style="font-size:11px;">
+                                                {% if currentPanelImage %}
+                                                    Sube una nueva imagen para reemplazar la actual. Si no subes ninguna, se mantiene la actual.
+                                                {% else %}
+                                                    Opcional. Si no se sube imagen, se usa la imagen de la disciplina como fallback.
+                                                {% endif %}
+                                            </span>
                                         </div>
                                     </div>
 
@@ -244,6 +408,8 @@
 
                     </form>
 
+                    {% endif %}{# /if disciplines not empty #}
+
                 </div>{# /x_content #}
             </div>{# /x_panel #}
         </div>
@@ -254,99 +420,232 @@
 {% block javascripts %}
     {{ parent() }}
     <script>
+    // ── Utilidad compartida de icon-picker (infoboxes + secciones) ─────────
+    // Un único handler en document resuelve el bug donde el handler de "cerrar"
+    // se ejecutaba en el mismo evento que el de "abrir" (todos registrados en
+    // document, stopPropagation no detiene otros listeners del mismo nodo).
+    (function (global) {
+        var iconsMap = {{ infoBoxIcons|json_encode|raw }};
+        var iconKeys = Object.keys(iconsMap);
+
+        function buildPickerGrid(currentVal) {
+            var html = '<div style="display:flex;flex-wrap:wrap;gap:4px;padding:8px;'
+                + 'background:#fff;border:1px solid #ddd;border-radius:4px;width:260px;'
+                + 'max-height:220px;overflow-y:auto;position:absolute;z-index:9999;'
+                + 'box-shadow:0 4px 12px rgba(0,0,0,.15);">';
+            iconKeys.forEach(function (cls) {
+                var active = cls === currentVal
+                    ? 'background:#f5ece9;border-color:#C17A6A;'
+                    : 'background:#fff;border-color:#eee;';
+                html += '<span class="cc-pick-item" data-icon="' + cls + '" title="' + iconsMap[cls] + '" '
+                    + 'style="cursor:pointer;padding:5px;border:1px solid #eee;border-radius:4px;'
+                    + 'display:inline-flex;align-items:center;justify-content:center;' + active + '">'
+                    + '<i class="bi ' + cls + '" style="font-size:18px;color:#C17A6A;"></i></span>';
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function closeAllPickers() {
+            document.querySelectorAll('.cc-infobox-icon-picker, .cc-section-icon-picker')
+                .forEach(function (p) { p.style.display = 'none'; p.innerHTML = ''; });
+        }
+
+        document.addEventListener('click', function (e) {
+
+            // 1. Selección de un ícono en cualquier picker ──────────────────
+            var pickItem = e.target.closest('.cc-pick-item');
+            if (pickItem) {
+                var picker = pickItem.closest('.cc-infobox-icon-picker');
+                if (picker) {
+                    var fg = picker.closest('.form-group');
+                    if (fg) {
+                        var hid = fg.querySelector('.cc-infobox-icon-val');
+                        var ico = fg.querySelector('.cc-infobox-icon-btn i');
+                        if (hid) { hid.value = pickItem.dataset.icon; }
+                        if (ico) { ico.className = 'bi ' + pickItem.dataset.icon; }
+                    }
+                    closeAllPickers();
+                    return;
+                }
+                picker = pickItem.closest('.cc-section-icon-picker');
+                if (picker) {
+                    var sec = picker.closest('.cc-section') || picker.closest('.cc-fixed-section');
+                    if (sec) {
+                        var hid = sec.querySelector('.cc-section-icon-val');
+                        var ico = sec.querySelector('.cc-section-icon-btn i');
+                        if (hid) { hid.value = pickItem.dataset.icon; }
+                        if (ico) { ico.className = 'bi ' + pickItem.dataset.icon; }
+                    }
+                    closeAllPickers();
+                    return;
+                }
+                return;
+            }
+
+            // 2. Clic en botón de infobox ────────────────────────────────────
+            var infoBtn = e.target.closest('.cc-infobox-icon-btn');
+            if (infoBtn) {
+                var fg     = infoBtn.closest('.form-group');
+                var picker = fg ? fg.querySelector('.cc-infobox-icon-picker') : null;
+                var hid    = fg ? fg.querySelector('.cc-infobox-icon-val')    : null;
+                if (!picker || !hid) return;
+                var wasOpen = picker.style.display !== 'none';
+                closeAllPickers();
+                if (!wasOpen) {
+                    picker.innerHTML = buildPickerGrid(hid.value);
+                    picker.style.display = 'block';
+                }
+                return;
+            }
+
+            // 3. Clic en botón de ícono de sección (adicional o fija) ──────────
+            var secBtn = e.target.closest('.cc-section-icon-btn');
+            if (secBtn) {
+                var sec    = secBtn.closest('.cc-section') || secBtn.closest('.cc-fixed-section');
+                var picker = sec ? sec.querySelector('.cc-section-icon-picker') : null;
+                var hid    = sec ? sec.querySelector('.cc-section-icon-val')    : null;
+                if (!picker || !hid) return;
+                var wasOpen = picker.style.display !== 'none';
+                closeAllPickers();
+                if (!wasOpen) {
+                    picker.innerHTML = buildPickerGrid(hid.value);
+                    picker.style.display = 'block';
+                }
+                return;
+            }
+
+            // 4. Clic fuera de cualquier picker → cerrar ─────────────────────
+            if (!e.target.closest('.cc-infobox-icon-picker') &&
+                !e.target.closest('.cc-section-icon-picker')) {
+                closeAllPickers();
+            }
+        });
+
+        // Exponer buildPickerGrid para que createSectionHtml lo use al agregar secciones dinámicamente
+        global.pbBuildPickerGrid = buildPickerGrid;
+    })(window);
+    </script>
+
+    <script>
     (function () {
+        // ── Beneficios: agregar/eliminar línea ──────────────────────────────
+        function createBenefitHtml(slug) {
+            var name = 'classes[' + slug + '][benefits][]';
+            return '<div class="input-group cc-benefit-item" style="margin-bottom:5px;">'
+                + '<input type="text" name="' + name + '" class="form-control" maxlength="200"'
+                + ' placeholder="Ej: Mejora tu postura y alineación" value="">'
+                + '<span class="input-group-btn">'
+                + '<button type="button" class="btn btn-danger btn-sm cc-remove-benefit" title="Eliminar">'
+                + '<i class="fa fa-times"></i></button></span></div>';
+        }
+
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.cc-add-benefit');
+            if (!btn) return;
+            var slug = btn.getAttribute('data-slug');
+            var ctr  = document.getElementById(btn.getAttribute('data-container'));
+            if (!ctr || !slug) return;
+            var wrap = document.createElement('div');
+            wrap.innerHTML = createBenefitHtml(slug);
+            var item = wrap.firstChild;
+            ctr.appendChild(item);
+            item.querySelector('input').focus();
+        });
+
+        document.addEventListener('click', function (e) {
+            var btn = e.target.closest('.cc-remove-benefit');
+            if (!btn) return;
+            var item = btn.closest('.cc-benefit-item');
+            if (item) { item.remove(); }
+        });
+
+        // ── Secciones adicionales ───────────────────────────────────────────
         function createLineHtml(fieldName) {
-            return '' +
-                '<div class="input-group cc-item" style="margin-bottom:5px;">' +
-                    '<input type="text" name="' + fieldName + '" class="form-control" maxlength="220" value="">' +
-                    '<span class="input-group-btn">' +
-                        '<button type="button" class="btn btn-danger btn-sm cc-remove" title="Eliminar">' +
-                            '<i class="fa fa-times"></i>' +
-                        '</button>' +
-                    '</span>' +
-                '</div>';
+            return '<div class="input-group cc-item" style="margin-bottom:5px;">'
+                + '<input type="text" name="' + fieldName + '" class="form-control" maxlength="220" value="">'
+                + '<span class="input-group-btn">'
+                + '<button type="button" class="btn btn-danger btn-sm cc-remove" title="Eliminar">'
+                + '<i class="fa fa-times"></i></button></span></div>';
         }
 
-        function createSectionHtml(slug, sectionIndex) {
-            var itemsContainerId = slug + '-section-' + sectionIndex + '-items';
-            var itemFieldName = 'classes[' + slug + '][sections][' + sectionIndex + '][items][]';
-            var titleFieldName = 'classes[' + slug + '][sections][' + sectionIndex + '][title]';
+        // createSectionHtml genera el HTML de una nueva sección con la misma
+        // estructura que las secciones fijas (¿Para quién es?, Duración, etc.):
+        //   col-md-3: [icon-btn][input título][btn eliminar]  +  picker desplegable
+        //   col-md-7: textarea de contenido
+        //
+        // Usa las clases cc-fixed-section Y cc-section para que:
+        //   - el handler del icon-picker la encuentre (cc-fixed-section)
+        //   - el handler de eliminar sepa qué nodo remover  (cc-section)
+        //
+        // ÍNDICES: secuenciales crecientes. El backend filtra secciones vacías en
+        // parseSections, así que los huecos por eliminaciones son inocuos.
+        function createSectionHtml(slug, idx) {
+            var defaultIcon = 'bi-star';
+            var iconField   = 'classes[' + slug + '][sections][' + idx + '][icon]';
+            var titleField  = 'classes[' + slug + '][sections][' + idx + '][title]';
+            var textField   = 'classes[' + slug + '][sections][' + idx + '][text]';
 
-            return '' +
-                '<div class="panel panel-default cc-section" data-section-index="' + sectionIndex + '" style="margin-bottom:10px;">' +
-                    '<div class="panel-body" style="padding:10px;">' +
-                        '<div class="input-group" style="margin-bottom:8px;">' +
-                            '<span class="input-group-addon" style="min-width:88px; text-align:left;">Subtítulo</span>' +
-                            '<input type="text" name="' + titleFieldName + '" class="form-control" maxlength="220" placeholder="Subtítulo de sección" value="">' +
-                            '<span class="input-group-btn">' +
-                                '<button type="button" class="btn btn-danger btn-sm cc-remove-section" title="Eliminar sección">' +
-                                    '<i class="fa fa-trash"></i>' +
-                                '</button>' +
-                            '</span>' +
-                        '</div>' +
-                        '<div class="cc-items" id="' + itemsContainerId + '">' +
-                            createLineHtml(itemFieldName) +
-                        '</div>' +
-                        '<button type="button" class="btn btn-default btn-xs cc-add" data-container="' + itemsContainerId + '" data-name="' + itemFieldName + '">' +
-                            '<i class="fa fa-plus"></i> Agregar línea' +
-                        '</button>' +
-                    '</div>' +
-                '</div>';
+            return '<div class="form-group cc-fixed-section cc-section" style="margin-top:8px;">'
+                + '<div class="col-md-3 col-sm-3" style="padding-top:4px;">'
+                +   '<input type="hidden" name="' + iconField + '" class="cc-section-icon-val" value="' + defaultIcon + '">'
+                +   '<div class="input-group input-group-sm">'
+                +     '<span class="input-group-addon cc-section-icon-btn" title="Cambiar ícono"'
+                +           ' style="cursor:pointer;width:36px;text-align:center;padding:4px 6px;">'
+                +       '<i class="bi ' + defaultIcon + '" style="font-size:16px;color:#C17A6A;"></i>'
+                +     '</span>'
+                +     '<input type="text" name="' + titleField + '" class="form-control" maxlength="60" placeholder="Subtítulo">'
+                +     '<span class="input-group-btn">'
+                +       '<button type="button" class="btn btn-danger btn-sm cc-remove-section" title="Eliminar sección">'
+                +         '<i class="fa fa-trash"></i></button>'
+                +     '</span>'
+                +   '</div>'
+                +   '<div class="cc-section-icon-picker" style="display:none;position:relative;margin-top:4px;"></div>'
+                + '</div>'
+                + '<div class="col-md-7 col-sm-9">'
+                +   '<textarea name="' + textField + '" class="form-control" rows="2" maxlength="300"'
+                +             ' placeholder="Describe esta sección…"></textarea>'
+                + '</div>'
+                + '</div>';
         }
 
-        // Agregar línea a una lista
         document.addEventListener('click', function (e) {
             var btn = e.target.closest('.cc-add');
             if (!btn) return;
-
-            var containerId = btn.getAttribute('data-container');
-            var fieldName   = btn.getAttribute('data-name');
-            var container   = document.getElementById(containerId);
-            if (!container) return;
-
-            var div = document.createElement('div');
-            div.innerHTML = createLineHtml(fieldName);
-            div = div.firstChild;
-            container.appendChild(div);
-            div.querySelector('input').focus();
+            var ctr = document.getElementById(btn.getAttribute('data-container'));
+            if (!ctr) return;
+            var wrap = document.createElement('div');
+            wrap.innerHTML = createLineHtml(btn.getAttribute('data-name'));
+            var item = wrap.firstChild;
+            ctr.appendChild(item);
+            item.querySelector('input').focus();
         });
 
-        // Agregar sección completa (subtítulo + lista)
         document.addEventListener('click', function (e) {
             var btn = e.target.closest('.cc-add-section');
             if (!btn) return;
-
             var slug = btn.getAttribute('data-slug');
-            var containerId = btn.getAttribute('data-sections-container');
-            var container = document.getElementById(containerId);
-            if (!slug || !container) return;
-
-            var nextIndex = parseInt(container.getAttribute('data-next-index') || '0', 10);
-            var wrapper = document.createElement('div');
-            wrapper.innerHTML = createSectionHtml(slug, nextIndex);
-
-            var section = wrapper.firstChild;
-            container.appendChild(section);
-            container.setAttribute('data-next-index', String(nextIndex + 1));
-
-            var input = section.querySelector('input[type="text"]');
-            if (input) input.focus();
+            var ctr  = document.getElementById(btn.getAttribute('data-sections-container'));
+            if (!slug || !ctr) return;
+            var idx = parseInt(ctr.getAttribute('data-next-index') || '0', 10);
+            var wrap = document.createElement('div');
+            wrap.innerHTML = createSectionHtml(slug, idx);
+            ctr.appendChild(wrap.firstChild);
+            ctr.setAttribute('data-next-index', String(idx + 1));
         });
 
-        // Eliminar línea de una lista
         document.addEventListener('click', function (e) {
             var btn = e.target.closest('.cc-remove');
             if (!btn) return;
             var item = btn.closest('.cc-item');
-            if (item) item.remove();
+            if (item) { item.remove(); }
         });
 
-        // Eliminar sección completa
         document.addEventListener('click', function (e) {
             var btn = e.target.closest('.cc-remove-section');
             if (!btn) return;
-            var section = btn.closest('.cc-section');
-            if (section) section.remove();
+            var sec = btn.closest('.cc-section');
+            if (sec) { sec.remove(); }
         });
     })();
     </script>

@@ -1,0 +1,94 @@
+{#
+  Panel izquierdo del calendario v2: filtros + mini-calendario + CTA WhatsApp.
+  Variables requeridas: branchOffice, filter, activeDate, sessionDatesInMonth.
+#}
+
+{# Título — solo en desktop (en mobile el título va en rcv2-topbar) #}
+<div class="rcv2-panel-title">
+    <h1 class="rcv2-panel-title__h1">Reserva tu clase</h1>
+    <p class="rcv2-panel-title__sub">Elige la fecha, el tipo de clase y tu instructor.</p>
+</div>
+
+{# ── UBICACIÓN ── #}
+<div class="rcv2-filter-group">
+    <label class="rcv2-filter-label" for="filter-branch">Ubicación</label>
+    <div class="rcv2-select-wrapper">
+        <i class="bi bi-geo-alt rcv2-select-icon" aria-hidden="true"></i>
+        <select
+            id="filter-branch"
+            class="rcv2-select"
+            onchange="window.location.href = this.value"
+            aria-label="Seleccionar sucursal"
+        >
+            {% for studio in filter.branchOffices %}
+                <option
+                    value="{{ path('reservation_calendar', {'slug': studio.slug}) }}"
+                    {{ studio.slug == branchOffice.slug ? 'selected' : '' }}
+                >{{ studio.name }}</option>
+            {% endfor %}
+        </select>
+        <i class="bi bi-chevron-down rcv2-select-chevron" aria-hidden="true"></i>
+    </div>
+</div>
+
+{# ── TIPO DE CLASE (chips) ── #}
+<div class="rcv2-filter-group">
+    <label class="rcv2-filter-label">Tipo de clase</label>
+    <div class="rcv2-chips" id="filter-chips-discipline" role="group" aria-label="Filtrar por disciplina">
+        <button
+            class="rcv2-chip rcv2-chip--active"
+            type="button"
+            data-filter-discipline=""
+            aria-pressed="true"
+        >Todas</button>
+        {% for entity in filter.disciplines %}
+            <button
+                class="rcv2-chip"
+                type="button"
+                data-filter-discipline="{{ entity.id }}"
+                aria-pressed="false"
+            >{{ entity }}</button>
+        {% endfor %}
+    </div>
+</div>
+
+{# ── INSTRUCTOR ── #}
+<div class="rcv2-filter-group">
+    <label class="rcv2-filter-label" for="filter-instructor">Instructor</label>
+    <div class="rcv2-select-wrapper">
+        <select
+            id="filter-instructor"
+            class="rcv2-select"
+            data-event-filter="instructor"
+            aria-label="Seleccionar instructor"
+        >
+            <option value="">Todos los instructores</option>
+            {% for entity in filter.instructors %}
+                <option value="{{ entity.id }}">{{ entity.profile.firstname }}</option>
+            {% endfor %}
+        </select>
+        <i class="bi bi-chevron-down rcv2-select-chevron" aria-hidden="true"></i>
+    </div>
+</div>
+
+{# ── MINI-CALENDARIO ── #}
+<div class="rcv2-filter-group">
+    <label class="rcv2-filter-label">Selecciona el día</label>
+    {{ include('reservation/_calendar_mini.html.twig') }}
+</div>
+
+{# ── CTA WhatsApp ── #}
+<a
+    href="{{ config_whatsapp_url()|trim }}"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="rcv2-whatsapp-cta"
+    aria-label="Contactar por WhatsApp para ayuda con reservas"
+>
+    <i class="bi bi-whatsapp rcv2-whatsapp-cta__icon" aria-hidden="true"></i>
+    <div class="rcv2-whatsapp-cta__text">
+        <span class="rcv2-whatsapp-cta__title">¿Necesitas ayuda para reservar?</span>
+        <span class="rcv2-whatsapp-cta__sub">Escríbenos por WhatsApp</span>
+    </div>
+    <i class="bi bi-chevron-right rcv2-whatsapp-cta__arrow" aria-hidden="true"></i>
+</a>

@@ -1,14 +1,16 @@
-<section class="pop_box">
-    <div class="row clearfix">
-        <a data-remodal-action="close" class="nav-toggle close"><span class="iconMenu"></span></a>
-        <div class="center">
-            <h3>¡Tu cancelación fue exitosa!</h3>
-            <small>Tu lugar quedó liberado correctamente.</small>
+<section class="pop_box rcv2-modal rcv2-modal--success">
+    <a data-remodal-action="close" class="rcv2-modal__close" aria-label="Cerrar">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+    </a>
+    <div class="rcv2-success">
+        <div class="rcv2-success__icon">
+            <i class="bi bi-check-circle" aria-hidden="true"></i>
         </div>
-
-        <div class="modal-actions">
-            <a href="{{ path('profile') }}" class="btn secondary">Ir a mi cuenta</a>
-            <a href="{{ path('reservation_calendar', {'slug': config_first_branch_slug()}) }}" class="btn">Reservar clase</a>
+        <p class="rcv2-success__title">¡Tu cancelación fue exitosa!</p>
+        <p class="rcv2-success__sub">Tu lugar quedó liberado correctamente.</p>
+        <div class="rcv2-success__actions">
+            <a href="{{ path('profile') }}" class="rcv2-btn-modal rcv2-btn-modal--outline">Ir a mi cuenta</a>
+            <a href="{{ path('reservation_calendar', {'slug': config_first_branch_slug()}) }}" class="rcv2-btn-modal rcv2-btn-modal--primary">Reservar clase</a>
         </div>
     </div>
 </section>

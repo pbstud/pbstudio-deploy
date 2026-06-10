@@ -55,7 +55,42 @@ class ReservationController extends AbstractController
             ]);
         }
 
-        $period = $this->getPeriod($request->query->getInt('year'), $request->query->getInt('weekno'));
+        // Forzar locale español en todos los Carbon
+        Carbon::setLocale('es');
+
+        // Soporte para ?date=YYYY-MM-DD (vista diaria) además del ?weekno/year existente
+        $isDailyView = false;
+        $activeDate  = null;
+        $dateParam   = $request->query->get('date');
+
+        if ($dateParam && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateParam)) {
+            try {
+                $parsed = Carbon::createFromFormat('Y-m-d', $dateParam);
+                if ($parsed instanceof Carbon) {
+                    $activeDate  = $parsed->startOfDay();
+                    $isDailyView = true;
+                }
+            } catch (\Throwable) {
+                // fecha inválida — cae al modo semanal
+            }
+        } elseif (!$request->query->has('weekno') && !$request->query->has('year')) {
+            // Sin parámetros → vista diaria de hoy por defecto
+            $isDailyView = true;
+            $activeDate  = Carbon::today();
+        }
+
+        $period = $activeDate
+            ? $this->getPeriodForDate($activeDate)
+            : $this->getPeriod($request->query->getInt('year'), $request->query->getInt('weekno'));
+
+        // Fecha activa por defecto: hoy si está en el período, si no el inicio del período
+        if ($activeDate === null) {
+            $today       = Carbon::today();
+            $periodStart = Carbon::instance($period->start);
+            $periodEnd   = Carbon::instance($period->end);
+            $activeDate  = $today->between($periodStart, $periodEnd) ? $today : $periodStart->clone();
+        }
+
         $sessions = $sessionRepository->getCalendar($period, $branchOffice);
 
         $weekPrev = $this->getWeekPrev(Carbon::instance($period->start));
@@ -77,28 +112,38 @@ class ReservationController extends AbstractController
             );
         }
 
-        $template = 'calendar_ajax';
-        $filter = [];
+        // Fechas con sesiones en el mes activo → puntos en el mini-calendario
+        $monthStart          = $activeDate->clone()->startOfMonth();
+        $monthEnd            = $activeDate->clone()->endOfMonth();
+        $monthPeriod         = $monthStart->toPeriod($monthEnd);
+        $sessionDatesInMonth = $sessionRepository->getCalendarDatesInMonth($monthPeriod, $branchOffice);
 
-        if (!$request->isXmlHttpRequest()) {
+        // Detectar petición AJAX (jQuery: X-Requested-With, HTMX: HX-Request)
+        $isAjax   = $request->isXmlHttpRequest() || $request->headers->has('HX-Request');
+        $template = $isAjax ? 'calendar_ajax' : 'calendar';
+        $filter   = [];
+
+        if (!$isAjax) {
             $filter['branchOffices'] = $branchOfficeRepository->getPublic();
-            $filter['disciplines'] = $disciplineRepository->getAllActives();
-            $filter['instructors'] = $staffRepository->getAllActiveInstructors();
-            $template = 'calendar';
+            $filter['disciplines']   = $disciplineRepository->getAllActives();
+            $filter['instructors']   = $staffRepository->getAllActiveInstructors();
         }
 
         $sessionsConfig = $configurationRepository->findSessions()?->getData() ?? [];
-        $emptyDayText = trim((string) ($sessionsConfig['calendar_empty_day_text'] ?? ''));
+        $emptyDayText   = trim((string) ($sessionsConfig['calendar_empty_day_text'] ?? ''));
 
         return $this->render(sprintf('reservation/%s.html.twig', $template), [
-            'filter' => $filter,
-            'branchOffice' => $branchOffice,
-            'period' => $period,
-            'sessions' => $sessions,
-            'weekPrev' => $weekPrev,
-            'weekNext' => $weekNext,
+            'filter'               => $filter,
+            'branchOffice'         => $branchOffice,
+            'period'               => $period,
+            'sessions'             => $sessions,
+            'weekPrev'             => $weekPrev,
+            'weekNext'             => $weekNext,
             'userReservedSessionIds' => $userReservedSessionIds,
-            'emptyDayText' => $emptyDayText,
+            'emptyDayText'         => $emptyDayText,
+            'activeDate'           => $activeDate,
+            'isDailyView'          => $isDailyView,
+            'sessionDatesInMonth'  => $sessionDatesInMonth,
         ]);
     }
 
@@ -225,10 +270,15 @@ class ReservationController extends AbstractController
         }
     }
 
+    private function getPeriodForDate(Carbon $date): CarbonPeriod
+    {
+        $start = $date->clone()->startOfWeek(CarbonInterface::MONDAY);
+        return $start->toPeriod($start->clone()->endOfWeek(CarbonInterface::SUNDAY));
+    }
+
     private function getPeriod(int $year, int $weekNo): CarbonPeriod
     {
         $now = Carbon::now();
-        $now->locale('es_MX');
 
         [$curWeek, $curYear] = $this->getCurWeekYear();
 

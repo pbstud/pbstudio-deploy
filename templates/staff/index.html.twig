@@ -33,7 +33,7 @@
 
                                 <p>{{ instructorDescription }}</p>
 
-                                <a href="{{ path('reservation_calendar', {'slug': config_first_branch_slug()}) }}{{ hasProfile and instructor.profile.firstname ? '?instructor=' ~ instructor.profile.firstname|url_encode : '' }}"
+                                <a href="{{ path('reservation_calendar', {'slug': config_first_branch_slug()}) }}?instructor={{ instructor.id }}"
                                    class="btn">Reservar clase</a>
                             </div>
                         </div>

@@ -1,43 +1,49 @@
 {% extends 'layout.html.twig' %}
 
-{% block page_title %}{{ branchOffice.name }} | Semana {{ period.start.weekOfYear }} {{ period.start.yearIso }} - Reservación de clases de pilates y barra | {% endblock %}
+{% block page_title %}{{ branchOffice.name }} | Horarios y reservas | {% endblock %}
 
 {% block content %}
-    <section id="calendar" class="reservations">
-        <div class="row">
-            <div class="content">
-                <h1>Reservar clase</h1>
-                <ul class="branch-office">
-                    {% for studio in filter.branchOffices %}
-                        <li><a href="{{ path('reservation_calendar', {'slug': studio.slug}) }}" class="btn little {{ (studio.slug == branchOffice.slug ? 'active') }}">{{ studio.name }}</a></li>
-                    {% endfor %}
-                </ul>
-                <form class="filters">
-                    <select data-event-filter="type">
-                        <option value="">- Tipo -</option>
-                        <option value="g">Grupal</option>
-                        <option value="i">Individual</option>
-                    </select>
-                    <select data-event-filter="discipline">
-                        <option value="">- Disciplina -</option>
-                        {% for entity in filter.disciplines %}
-                            <option value="{{ entity }}">{{ entity }}</option>
-                        {% endfor %}
-                    </select>
-                    <select data-event-filter="instructor">
-                        <option value="">- Instructor -</option>
-                        {% for entity in filter.instructors %}
-                            <option value="{{ entity.profile.firstname }}">{{ entity.profile.firstname }}</option>
-                        {% endfor %}
-                    </select>
-                </form>
+<div class="rcv2-wrapper" id="reservation-calendar"
+     x-data="{ filtersOpen: false }">
 
-                <div class="week">
-                    <div id="calendar-container">
-                        {{ include('reservation/_calendar_week.html.twig') }}
-                    </div>
-                </div>
-            </div>
+    {# ── BARRA SUPERIOR: título mobile + botón toggle filtros ── #}
+    <div class="rcv2-topbar">
+        <div class="rcv2-topbar__title">
+            <h1 class="rcv2-topbar__h1">Reserva tu clase</h1>
+            <p class="rcv2-topbar__sub">Elige la fecha, el tipo de clase y tu instructor.</p>
         </div>
-    </section>
+        <button
+            class="rcv2-filters-btn"
+            type="button"
+            @click="filtersOpen = !filtersOpen"
+            :aria-expanded="filtersOpen"
+            aria-controls="rcv2-left-panel"
+        >
+            <i class="bi bi-sliders2" aria-hidden="true"></i>
+            <span x-text="filtersOpen ? 'Cerrar' : 'Filtros'">Filtros</span>
+            <i class="bi bi-chevron-down rcv2-filters-btn__chevron"
+               :class="filtersOpen && 'rcv2-filters-btn__chevron--open'"
+               aria-hidden="true"></i>
+        </button>
+    </div>
+
+    {# ── LAYOUT DOS COLUMNAS ── #}
+    <div class="rcv2-layout" :class="filtersOpen && 'rcv2-layout--filters-open'">
+
+        {# Panel izquierdo: filtros + mini-calendario #}
+        <aside id="rcv2-left-panel" class="rcv2-left" aria-label="Filtros de búsqueda">
+            {{ include('reservation/_calendar_filters_panel.html.twig') }}
+        </aside>
+
+        {# Panel derecho: sesiones #}
+        <main class="rcv2-right" id="sessions-panel">
+            {% if isDailyView %}
+                {{ include('reservation/_calendar_day_list.html.twig') }}
+            {% else %}
+                {{ include('reservation/_calendar_week_v2.html.twig') }}
+            {% endif %}
+        </main>
+
+    </div>
+</div>
 {% endblock %}

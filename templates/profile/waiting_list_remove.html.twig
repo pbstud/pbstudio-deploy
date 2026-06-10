@@ -1,52 +1,95 @@
-<section class="pop_box">
-    <div class="row clearfix">
-        <a data-remodal-action="close" class="nav-toggle close"><span class="iconMenu"></span></a>
+<section class="pop_box rcv2-modal">
 
-        {% if waitingList %}
-            {% set session = waitingList.session %}
+    <a data-remodal-action="close" class="rcv2-modal__close" aria-label="Cerrar">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+    </a>
 
-            <div class="center">
-                <h3>¿Deseas salir de la lista de espera?</h3>
-                <small>Tu lugar en espera será liberado para esta clase.</small>
-            </div>
+    {% if waitingList %}
+        {% set session = waitingList.session %}
 
-            <div class="clearfix class_pop {{ session.type|PackageSessionType|lower }}">
-                <div class="grid-1-6 right reserve-{{ session.discipline|replace({' ': '-'})|lower }}">
-                    <div class="class {{ session.discipline|replace({' ': '-'})|lower }}">
-                        <i class="bi bi-{{ 'i' == session.type ? 'person' : 'people' }}"></i>
-                        <h6>{{ session.discipline }}</h6>
-                        <p>{{ session.timeStart|date('h:i a') }}</p>
-                        <p><strong>{{ session.instructor.profile.firstname }}</strong></p>
+        <div class="rcv2-modal__body rcv2-modal__body--single">
+
+            <div class="rcv2-modal__col rcv2-modal__col--full">
+
+                <div class="rcv2-modal__state">
+                    <p class="rcv2-modal__state-title">¿Deseas salir de la lista de espera?</p>
+                    <p class="rcv2-modal__state-sub">Tu lugar en espera será liberado para esta clase.</p>
+                </div>
+
+                <div class="rcv2-modal__summary">
+                    <div class="rcv2-modal__summary-header">
+                        <i class="bi bi-{{ 'i' == session.type ? 'person' : 'people' }} rcv2-modal__summary-icon" aria-hidden="true"></i>
                     </div>
-                    <p><small><b>Día:</b> {{ session.dateStart|date('d/m/y') }}</small></p>
-                    {% set branch_label = session.branchOffice.name %}
-                    {% if session.branchOffice.plaza %}
-                        {% set branch_label = branch_label ~ ' - ' ~ session.branchOffice.plaza %}
-                    {% elseif session.branchOffice.zone %}
-                        {% set branch_label = branch_label ~ ' - ' ~ session.branchOffice.zone %}
-                    {% endif %}
-                    <p><small><b>Sucursal:</b> {{ branch_label }}</small></p>
+                    <p class="rcv2-modal__summary-name">{{ session.discipline }}</p>
+                    <dl class="rcv2-modal__summary-details">
+                        <div class="rcv2-modal__summary-row">
+                            <dt><i class="bi bi-clock" aria-hidden="true"></i></dt>
+                            <dd>{{ session.timeStart|date('h:i a') }}</dd>
+                        </div>
+                        <div class="rcv2-modal__summary-row">
+                            <dt><i class="bi bi-calendar3" aria-hidden="true"></i></dt>
+                            <dd>{{ session.dateStart|date('d/m/Y') }}</dd>
+                        </div>
+                        <div class="rcv2-modal__summary-row">
+                            <dt><i class="bi bi-person" aria-hidden="true"></i></dt>
+                            <dd>{{ session.instructor.profile.firstname }}</dd>
+                        </div>
+                        <div class="rcv2-modal__summary-row">
+                            <dt><i class="bi bi-geo-alt" aria-hidden="true"></i></dt>
+                            <dd>
+                                {% set branch_label = session.branchOffice.name %}
+                                {% if session.branchOffice.plaza %}
+                                    {% set branch_label = branch_label ~ ' — ' ~ session.branchOffice.plaza %}
+                                {% elseif session.branchOffice.zone %}
+                                    {% set branch_label = branch_label ~ ' — ' ~ session.branchOffice.zone %}
+                                {% endif %}
+                                {{ branch_label }}
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <div class="rcv2-modal__actions">
+                    <a
+                        id="btn-waiting-list-remove"
+                        href="#"
+                        data-url="{{ path('waiting_list_remove', {'sessionId': session.id}) }}"
+                        class="rcv2-btn-modal rcv2-btn-modal--danger btn-submit"
+                    >Salir de lista de espera</a>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="rcv2-modal__footer">
+            <i class="bi bi-info-circle" aria-hidden="true"></i>
+            <p>Al salir de la lista tu lugar queda liberado para otras personas.</p>
+        </div>
+
+        <form id="frmWaitingListRemove"
+              action="{{ path('waiting_list_remove', {'sessionId': session.id}) }}"
+              method="post" class="m-fjx" style="display:none;">
+            <input type="hidden" name="_token" value="{{ csrf_token('waiting_list_remove_' ~ session.id) }}" />
+        </form>
+
+    {% else %}
+
+        <div class="rcv2-modal__body rcv2-modal__body--single">
+            <div class="rcv2-modal__col rcv2-modal__col--full">
+                <div class="rcv2-modal__state">
+                    <p class="rcv2-modal__state-title">Este registro ya no está disponible.</p>
+                    <p class="rcv2-modal__state-sub">Actualiza la página para revisar tu lista de espera.</p>
+                </div>
+                <div class="rcv2-modal__actions">
+                    <a href="{{ path('profile_waiting_list') }}" class="rcv2-btn-modal rcv2-btn-modal--secondary">
+                        Ir a lista de espera
+                    </a>
                 </div>
             </div>
+        </div>
 
-            <form id="frmWaitingListRemove" action="{{ path('waiting_list_remove', { 'sessionId': session.id }) }}" method="post" class="m-fjx" style="display:none;">
-                <input type="hidden" name="_token" value="{{ csrf_token('waiting_list_remove_' ~ session.id) }}" />
-            </form>
-            <div class="modal-actions">
-                <a id="btn-waiting-list-remove" href="#" data-url="{{ path('waiting_list_remove', { 'sessionId': session.id }) }}" class="btn btn-submit">Cancelar lista de espera</a>
-            </div>
-        {% else %}
-            <div class="center">
-                <h3>Este registro ya no está disponible.</h3>
-                <small>Actualiza la página para revisar tu lista de espera.</small>
-            </div>
-            <div class="modal-actions">
-                <a href="{{ path('profile_waiting_list') }}" class="btn">Ir a lista de espera</a>
-            </div>
-        {% endif %}
-    </div>
+    {% endif %}
+
 </section>
 
-<script>
-    waitingListRemoveInit();
-</script>
+<script>waitingListRemoveInit();</script>

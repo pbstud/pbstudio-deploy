@@ -12,6 +12,7 @@ final class NotificationDispatcher implements NotificationDispatcherInterface
 {
     public function __construct(
         private readonly NotificationRepository $repository,
+        private readonly \Psr\Log\LoggerInterface $logger,
     ) {}
 
     public function dispatch(
@@ -33,6 +34,12 @@ final class NotificationDispatcher implements NotificationDispatcherInterface
         $resourceKey = $payload['resource_key'] ?? null;
 
         if (null !== $resourceKey && $this->repository->existsRecentDuplicate($user, $type, $resourceKey)) {
+            $this->logger->warning('[NotificationDispatcher] Duplicado reciente detectado', [
+                'user_id'       => $user->getId(),
+                'type'          => $type,
+                'resource_key'  => $resourceKey,
+                'window'        => '300s',
+            ]);
             return null;
         }
 
@@ -45,6 +52,13 @@ final class NotificationDispatcher implements NotificationDispatcherInterface
         $notification->setPriority($priority);
 
         $this->repository->save($notification, flush: true);
+
+        $this->logger->info('[NotificationDispatcher] Notificación despachada', [
+            'user_id'       => $user->getId(),
+            'type'          => $type,
+            'resource_key'  => $resourceKey,
+            'notif_id'      => $notification->getId(),
+        ]);
 
         return $notification;
     }
