@@ -8,6 +8,7 @@ use App\Entity\User;
 use App\Repository\NotificationRepository;
 use App\Service\Notification\NotificationResolver;
 use Doctrine\DBAL\Connection;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,6 +23,7 @@ class NotificationController extends AbstractController
         private readonly NotificationRepository $notificationRepository,
         private readonly NotificationResolver $resolver,
         private readonly Connection $connection,
+        private readonly LoggerInterface $logger,
     ) {}
 
     #[Route('', name: 'list', methods: ['GET'])]
@@ -152,13 +154,18 @@ class NotificationController extends AbstractController
         return $this->json(['marked' => $marked]);
     }
 
-    #[Route('/{id}/read', name: 'mark_read', methods: ['PATCH'])]
+    #[Route('/{id}/read', name: 'mark_read', methods: ['POST'])]
     public function markRead(int $id): JsonResponse
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_REMEMBERED');
 
-        /** @var User $user */
+        /** @var User|null $user */
         $user = $this->getUser();
+
+        if (null === $user) {
+            $this->logger->warning('Notification markRead called with null user', ['id' => $id]);
+            return $this->json(['error' => 'Unauthorized.'], 401);
+        }
 
         try {
             $notification = $this->notificationRepository->markAsRead($id, $user);
@@ -169,16 +176,30 @@ class NotificationController extends AbstractController
             ]);
         } catch (\DomainException) {
             return $this->json(['error' => 'Not found or access denied.'], 403);
+        } catch (\Throwable $e) {
+            $this->logger->error('Unexpected error marking notification as read', [
+                'id'        => $id,
+                'userId'    => $user->getId(),
+                'exception' => $e->getMessage(),
+                'file'      => $e->getFile(),
+                'line'      => $e->getLine(),
+            ]);
+            return $this->json(['error' => 'Internal server error.'], 500);
         }
     }
 
-    #[Route('/{id}/unread', name: 'mark_unread', methods: ['PATCH'])]
+    #[Route('/{id}/unread', name: 'mark_unread', methods: ['POST'])]
     public function markUnread(int $id): JsonResponse
     {
         $this->denyAccessUnlessGranted('IS_AUTHENTICATED_REMEMBERED');
 
-        /** @var User $user */
+        /** @var User|null $user */
         $user = $this->getUser();
+
+        if (null === $user) {
+            $this->logger->warning('Notification markUnread called with null user', ['id' => $id]);
+            return $this->json(['error' => 'Unauthorized.'], 401);
+        }
 
         $this->notificationRepository->markAsUnread($id, $user);
 

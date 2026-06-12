@@ -7,6 +7,7 @@
     data-active="{{ activeDate.format('Y-m-d') }}"
     data-sessions="{{ sessionDatesInMonth|json_encode|e('html_attr') }}"
     data-url="{{ path('reservation_calendar', {'slug': branchOffice.slug}) }}"
+    data-month-sessions-url="{{ path('reservation_month_sessions', {'slug': branchOffice.slug}) }}"
     class="rcv2-mini-cal"
     aria-label="Seleccionar fecha"
 >

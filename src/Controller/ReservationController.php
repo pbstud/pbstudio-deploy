@@ -270,6 +270,35 @@ class ReservationController extends AbstractController
         }
     }
 
+    #[Route('/reservar-clase/{slug}/sesiones-mes', name: 'reservation_month_sessions', methods: ['GET'])]
+    public function monthSessions(
+        Request $request,
+        BranchOfficeRepository $branchOfficeRepository,
+        SessionRepository $sessionRepository,
+        ?string $slug = null,
+    ): Response {
+        $branchOffice = null;
+
+        if (!empty($slug)) {
+            $branchOffice = $branchOfficeRepository->getOneBySlug($slug);
+        }
+
+        if (!$branchOffice) {
+            return $this->json(['dates' => []]);
+        }
+
+        $year  = $request->query->getInt('year', (int) date('Y'));
+        $month = $request->query->getInt('month', (int) date('n'));
+
+        $monthStart = Carbon::createFromDate($year, $month, 1)->startOfMonth();
+        $monthEnd   = Carbon::createFromDate($year, $month, 1)->endOfMonth();
+        $monthPeriod = $monthStart->toPeriod($monthEnd);
+
+        $dates = $sessionRepository->getCalendarDatesInMonth($monthPeriod, $branchOffice);
+
+        return $this->json(['dates' => $dates]);
+    }
+
     private function getPeriodForDate(Carbon $date): CarbonPeriod
     {
         $start = $date->clone()->startOfWeek(CarbonInterface::MONDAY);
