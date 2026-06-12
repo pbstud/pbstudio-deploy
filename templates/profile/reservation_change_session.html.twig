@@ -6,15 +6,33 @@
 
     <div class="rcv2-modal__body">
 
-        {# ── Columna izquierda: encabezado + mapa seleccionable ── #}
-        <div class="rcv2-modal__col rcv2-modal__col--left">
+        {# ── Columna izquierda: encabezado + toggle + mapa seleccionable + WhatsApp ── #}
+        <div class="rcv2-modal__col rcv2-modal__col--left" x-data="{ seatView: 'grid' }">
 
             <div class="rcv2-modal__state">
                 <p class="rcv2-modal__state-title">¡Cambia tu reservación!</p>
                 <p class="rcv2-modal__state-sub">Selecciona el nuevo lugar que prefieres.</p>
             </div>
 
-            <div class="rcv2-modal__seats">
+            {# Toggle de vista (grid / lista) #}
+            <div class="rcv2-seat-toggle">
+                <button type="button"
+                        class="rcv2-seat-toggle__btn"
+                        :class="{ 'active': seatView === 'grid' }"
+                        @click="seatView = 'grid'"
+                        aria-label="Vista cuadrícula">
+                    <i class="bi bi-grid-3x3-gap" aria-hidden="true"></i>
+                </button>
+                <button type="button"
+                        class="rcv2-seat-toggle__btn"
+                        :class="{ 'active': seatView === 'list' }"
+                        @click="seatView = 'list'"
+                        aria-label="Vista lista">
+                    <i class="bi bi-list-ul" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <div class="rcv2-modal__seats" :class="{ 'rcv2-view-list': seatView === 'list' }">
                 <div class="classroom-layout">
                     <div class="seat-map-frame">
                         {{ include('reservation/_modal_seat_map.html.twig', {
@@ -29,33 +47,43 @@
                 </div>
             </div>
 
+            {# WhatsApp help #}
+            <a href="{{ config_whatsapp_url() }}"
+               target="_blank"
+               rel="noopener noreferrer"
+               class="rcv2-whatsapp-help">
+                <span class="rcv2-whatsapp-help__icon">
+                    <i class="bi bi-whatsapp" aria-hidden="true"></i>
+                </span>
+                <span class="rcv2-whatsapp-help__text">
+                    <strong>¿Necesitas ayuda?</strong>
+                    Escríbenos por WhatsApp
+                </span>
+                <i class="bi bi-chevron-right rcv2-whatsapp-help__arrow" aria-hidden="true"></i>
+            </a>
+
         </div>
 
         {# ── Columna derecha: resumen + CTA ── #}
         <div class="rcv2-modal__col rcv2-modal__col--right">
 
             <div class="rcv2-modal__summary">
-                <div class="rcv2-modal__summary-header">
-                    <i class="bi bi-{{ session.individual ? 'person' : 'people' }} rcv2-modal__summary-icon" aria-hidden="true"></i>
+                <div class="rcv2-modal__summary-hero">
+                    <i class="bi bi-{{ session.individual ? 'person' : 'people-fill' }}" aria-hidden="true"></i>
+                    <p class="rcv2-modal__summary-classname">{{ discipline }}</p>
+                    <p class="rcv2-modal__summary-time">{{ session.timeStart|date('h:i a') }}</p>
+                    <p class="rcv2-modal__summary-instructor">{{ session.instructor.profile.firstname }}</p>
                 </div>
-                <p class="rcv2-modal__summary-name">{{ discipline }}</p>
+                <hr class="rcv2-modal__summary-divider">
                 <dl class="rcv2-modal__summary-details">
                     <div class="rcv2-modal__summary-row">
-                        <dt><i class="bi bi-clock" aria-hidden="true"></i></dt>
-                        <dd>{{ session.timeStart|date('h:i a') }}</dd>
-                    </div>
-                    <div class="rcv2-modal__summary-row">
                         <dt><i class="bi bi-calendar3" aria-hidden="true"></i></dt>
-                        <dd>{{ session.dateStart|date('d/m/Y') }}</dd>
-                    </div>
-                    <div class="rcv2-modal__summary-row">
-                        <dt><i class="bi bi-person" aria-hidden="true"></i></dt>
-                        <dd>{{ session.instructor.profile.firstname }}</dd>
+                        <dd>Día: {{ session.dateStart|date('d/m/y') }}</dd>
                     </div>
                     <div class="rcv2-modal__summary-row">
                         <dt><i class="bi bi-geo-alt" aria-hidden="true"></i></dt>
                         <dd>
-                            {% set branch_label = session.branchOffice.name %}
+                            {% set branch_label = 'Sucursal: ' ~ session.branchOffice.name %}
                             {% if session.branchOffice.plaza %}
                                 {% set branch_label = branch_label ~ ' — ' ~ session.branchOffice.plaza %}
                             {% elseif session.branchOffice.zone %}
@@ -71,14 +99,18 @@
                 <a href="#" class="rcv2-btn-modal rcv2-btn-modal--primary btn-confirm btn-submit">
                     Confirmar cambio de reservación
                 </a>
+                <p class="rcv2-modal__trust-badge">
+                    <i class="bi bi-lock" aria-hidden="true"></i>
+                    Tu reserva está segura
+                </p>
             </div>
 
         </div>
     </div>
 
     <div class="rcv2-modal__footer">
-        <i class="bi bi-info-circle" aria-hidden="true"></i>
-        <p>Puedes cancelar tu reservación hasta 12 horas antes sin penalización.</p>
+        <i class="bi bi-stars" aria-hidden="true"></i>
+        <p><strong>IMPORTANTE:</strong> Puedes cancelar tu reservación hasta 12 horas antes sin penalización.</p>
     </div>
 
     <form id="frmReservation"

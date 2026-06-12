@@ -78,6 +78,7 @@ class HomeController extends AbstractController
                 : $disciplineImage;
 
             $panelDataMap[$slug] = [
+                'id'               => $discipline->getId(),
                 'name'             => (string) $discipline,
                 'description'      => $discipline->getDescription() ?? '',
                 'queEs'            => $content['queEs']            ?? '',

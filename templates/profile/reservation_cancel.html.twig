@@ -8,7 +8,7 @@
 
     <div class="rcv2-modal__body">
 
-        {# ── Columna izquierda: estado + mapa (readonly) ── #}
+        {# ── Columna izquierda: estado + mapa (readonly) + WhatsApp ── #}
         <div class="rcv2-modal__col rcv2-modal__col--left">
 
             <div class="rcv2-modal__state">
@@ -49,33 +49,43 @@
                 </div>
             {% endif %}
 
+            {# WhatsApp help #}
+            <a href="{{ config_whatsapp_url() }}"
+               target="_blank"
+               rel="noopener noreferrer"
+               class="rcv2-whatsapp-help">
+                <span class="rcv2-whatsapp-help__icon">
+                    <i class="bi bi-whatsapp" aria-hidden="true"></i>
+                </span>
+                <span class="rcv2-whatsapp-help__text">
+                    <strong>¿Necesitas ayuda?</strong>
+                    Escríbenos por WhatsApp
+                </span>
+                <i class="bi bi-chevron-right rcv2-whatsapp-help__arrow" aria-hidden="true"></i>
+            </a>
+
         </div>
 
         {# ── Columna derecha: resumen + CTA ── #}
         <div class="rcv2-modal__col rcv2-modal__col--right">
 
             <div class="rcv2-modal__summary">
-                <div class="rcv2-modal__summary-header">
-                    <i class="bi bi-{{ session.individual ? 'person' : 'people' }} rcv2-modal__summary-icon" aria-hidden="true"></i>
+                <div class="rcv2-modal__summary-hero">
+                    <i class="bi bi-{{ session.individual ? 'person' : 'people-fill' }}" aria-hidden="true"></i>
+                    <p class="rcv2-modal__summary-classname">{{ discipline }}</p>
+                    <p class="rcv2-modal__summary-time">{{ session.timeStart|date('h:i a') }}</p>
+                    <p class="rcv2-modal__summary-instructor">{{ session.instructor.profile.firstname }}</p>
                 </div>
-                <p class="rcv2-modal__summary-name">{{ discipline }}</p>
+                <hr class="rcv2-modal__summary-divider">
                 <dl class="rcv2-modal__summary-details">
                     <div class="rcv2-modal__summary-row">
-                        <dt><i class="bi bi-clock" aria-hidden="true"></i></dt>
-                        <dd>{{ session.timeStart|date('h:i a') }}</dd>
-                    </div>
-                    <div class="rcv2-modal__summary-row">
                         <dt><i class="bi bi-calendar3" aria-hidden="true"></i></dt>
-                        <dd>{{ session.dateStart|date('d/m/Y') }}</dd>
-                    </div>
-                    <div class="rcv2-modal__summary-row">
-                        <dt><i class="bi bi-person" aria-hidden="true"></i></dt>
-                        <dd>{{ session.instructor.profile.firstname }}</dd>
+                        <dd>Día: {{ session.dateStart|date('d/m/y') }}</dd>
                     </div>
                     <div class="rcv2-modal__summary-row">
                         <dt><i class="bi bi-geo-alt" aria-hidden="true"></i></dt>
                         <dd>
-                            {% set branch_label = session.branchOffice.name %}
+                            {% set branch_label = 'Sucursal: ' ~ session.branchOffice.name %}
                             {% if session.branchOffice.plaza %}
                                 {% set branch_label = branch_label ~ ' — ' ~ session.branchOffice.plaza %}
                             {% elseif session.branchOffice.zone %}
@@ -92,7 +102,7 @@
                     id="btn-reservation-cancel"
                     href="#"
                     data-url="{{ path('reservation_cancel', {'id': reservation.id}) }}"
-                    class="rcv2-btn-modal rcv2-btn-modal--danger btn-submit"
+                    class="rcv2-btn-modal rcv2-btn-modal--primary btn-submit"
                 >Cancelar reservación</a>
             </div>
 
@@ -100,8 +110,8 @@
     </div>
 
     <div class="rcv2-modal__footer">
-        <i class="bi bi-info-circle" aria-hidden="true"></i>
-        <p>Recuerda cancelar máximo {{ time_to_cancel }} horas antes de la clase para evitar penalización.</p>
+        <i class="bi bi-stars" aria-hidden="true"></i>
+        <p><strong>IMPORTANTE:</strong> Recuerda cancelar máximo {{ time_to_cancel }} horas antes de la clase para evitar penalización.</p>
     </div>
 
     <form id="frmReservationCancel"
